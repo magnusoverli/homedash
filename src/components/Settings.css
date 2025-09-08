@@ -239,6 +239,16 @@ input:checked + .toggle-slider:before {
   margin-bottom: 0.5rem;
 }
 
+.api-key-input-group {
+  display: flex;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.api-key-input-group .form-input {
+  flex: 1;
+}
+
 .form-input,
 .form-select {
   padding: 0.75rem 1rem;
@@ -293,6 +303,52 @@ input:checked + .toggle-slider:before {
   border: 1px solid rgba(255, 0, 0, 0.2);
 }
 
+.test-api-key-button {
+  padding: 0.75rem 1.5rem;
+  background: rgba(103, 4, 255, 0.2);
+  border: 1px solid rgba(103, 4, 255, 0.4);
+  border-radius: 5px;
+  color: #b781ff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: 100px;
+}
+
+.test-api-key-button:hover:not(:disabled) {
+  background: rgba(103, 4, 255, 0.3);
+  border-color: #6704ff;
+  color: #ffffff;
+}
+
+.test-api-key-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.api-test-result {
+  padding: 0.75rem 1rem;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  border: 1px solid;
+  transition: all 0.2s ease;
+}
+
+.api-test-result.success {
+  background: rgba(0, 255, 0, 0.1);
+  color: #90ff90;
+  border-color: rgba(0, 255, 0, 0.3);
+}
+
+.api-test-result.error {
+  background: rgba(255, 0, 0, 0.1);
+  color: #ff9999;
+  border-color: rgba(255, 0, 0, 0.3);
+}
+
 @media (max-width: 768px) {
   .settings-header-container {
     padding: 0 1rem;
@@ -328,5 +384,15 @@ input:checked + .toggle-slider:before {
 
   .toggle-switch {
     margin-left: 0;
+  }
+
+  .api-key-input-group {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .test-api-key-button {
+    width: 100%;
+    justify-self: stretch;
   }
 }

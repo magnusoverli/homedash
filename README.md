@@ -7,12 +7,15 @@ A modern web application built with React and Vite, following the HomeDash Desig
 - **Sticky Header**: Navigation header with brand logo and settings icon
 - **Responsive Design**: Mobile-first approach with responsive layouts
 - **HomeDash Design System**: Complete implementation of the design manual
+- **LLM Integration**: Anthropic Claude AI integration with API key validation
 - **Docker Ready**: Production-optimized Docker deployment
 - **Modern Stack**: React 18 + Vite for fast development and builds
+- **Backend Proxy**: Express.js backend for secure API communication
 
 ## Quick Start with Docker
 
 ### Prerequisites
+
 - Docker
 - Docker Compose
 
@@ -46,10 +49,32 @@ docker-compose up --build -d
 
 ## Development
 
-If you want to run the application in development mode:
+### Quick Start (Frontend + Backend)
 
 ```bash
-cd homedash-app
+# Install all dependencies (frontend + backend)
+npm run install:all
+
+# Run both frontend and backend in development mode
+npm run dev:all
+```
+
+The application will be available at:
+
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:3001`
+
+### Frontend Only
+
+```bash
+npm install
+npm run dev
+```
+
+### Backend Only
+
+```bash
+cd backend
 npm install
 npm run dev
 ```
@@ -67,9 +92,11 @@ This application follows the HomeDash Design System specifications:
 ## Architecture
 
 - **Frontend**: React 18 with Vite
+- **Backend**: Express.js proxy server for API calls
 - **Styling**: CSS with CSS custom properties
+- **LLM Provider**: Anthropic Claude API
 - **Deployment**: Multi-stage Docker build
-- **Server**: Serve (static file server)
+- **Server**: Serve (static file server) + Express backend
 - **Container**: Alpine Linux for minimal footprint
 
 ## Project Structure

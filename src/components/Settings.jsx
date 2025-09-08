@@ -16,6 +16,8 @@ const Settings = () => {
   const [availableModels, setAvailableModels] = useState([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [modelsError, setModelsError] = useState('');
+  const [isTestingApiKey, setIsTestingApiKey] = useState(false);
+  const [apiKeyTestResult, setApiKeyTestResult] = useState(null);
 
   useEffect(() => {
     const savedMembers = localStorage.getItem('familyMembers');
@@ -63,64 +65,51 @@ const Settings = () => {
     setIsLoadingModels(true);
     setModelsError('');
 
-    // Since Anthropic API doesn't allow direct browser requests due to CORS,
-    // and there's no public models endpoint, we use the current available models
-    // This still maintains the conditional logic you requested
-    setTimeout(() => {
-      try {
-        if (!apiKey || apiKey.trim().length === 0) {
-          setModelsError('API key is required to show available models.');
-          setAvailableModels([]);
-          setIsLoadingModels(false);
-          return;
-        }
+    try {
+      if (!apiKey || apiKey.trim().length === 0) {
+        setModelsError('API key is required to show available models.');
+        setAvailableModels([]);
+        setIsLoadingModels(false);
+        return;
+      }
 
-        // Current Anthropic Claude models (updated January 2025)
-        const currentAnthropicModels = [
-          {
-            id: 'claude-opus-4-1-20250805',
-            display_name: 'Claude Opus 4.1 (Most Capable)',
-          },
-          {
-            id: 'claude-opus-4-20250514',
-            display_name: 'Claude Opus 4',
-          },
-          {
-            id: 'claude-sonnet-4-20250514',
-            display_name: 'Claude Sonnet 4 (High Performance)',
-          },
-          {
-            id: 'claude-3-7-sonnet-20250219',
-            display_name: 'Claude Sonnet 3.7',
-          },
-          {
-            id: 'claude-3-5-haiku-20241022',
-            display_name: 'Claude Haiku 3.5 (Fastest)',
-          },
-          {
-            id: 'claude-3-haiku-20240307',
-            display_name: 'Claude Haiku 3',
-          },
-        ];
+      const response = await fetch('http://localhost:3001/api/models', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ apiKey }),
+      });
 
-        setAvailableModels(currentAnthropicModels);
+      const data = await response.json();
+
+      if (response.status === 401) {
+        setModelsError('Invalid API key. Please check your credentials.');
+        setAvailableModels([]);
+      } else if (response.ok && data.models) {
+        setAvailableModels(data.models);
         setModelsError('');
 
         // Clear selection if the current model is no longer available
         if (
           selectedModel &&
-          !currentAnthropicModels.find(model => model.id === selectedModel)
+          !data.models.find(model => model.id === selectedModel)
         ) {
           setSelectedModel('');
         }
-      } catch (error) {
-        console.error('Error loading models:', error);
-        setModelsError('Failed to load available models.');
+      } else {
+        setModelsError(data.error || 'Failed to load available models.');
         setAvailableModels([]);
-      } finally {
-        setIsLoadingModels(false);
       }
-    }, 800); // Simulate API call delay
+    } catch (error) {
+      console.error('Error fetching models:', error);
+      setModelsError(
+        'Failed to connect to backend. Please ensure the server is running.'
+      );
+      setAvailableModels([]);
+    } finally {
+      setIsLoadingModels(false);
+    }
   }, [apiKey, selectedModel]);
 
   useEffect(() => {
@@ -173,6 +162,54 @@ const Settings = () => {
   const handleApiKeyChange = key => {
     setApiKey(key);
     setSelectedModel('');
+    setApiKeyTestResult(null);
+  };
+
+  const testApiKey = async () => {
+    if (!apiKey || apiKey.trim().length === 0) {
+      setApiKeyTestResult({
+        success: false,
+        message: 'Please enter an API key first.',
+      });
+      return;
+    }
+
+    setIsTestingApiKey(true);
+    setApiKeyTestResult(null);
+
+    try {
+      const response = await fetch('http://localhost:3001/api/test-key', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ apiKey }),
+      });
+
+      const data = await response.json();
+
+      if (data.valid) {
+        setApiKeyTestResult({
+          success: true,
+          message: 'API key is valid! ✓',
+        });
+      } else {
+        setApiKeyTestResult({
+          success: false,
+          message:
+            data.message || 'Invalid API key. Please check your credentials.',
+        });
+      }
+    } catch (error) {
+      console.error('API key test error:', error);
+      setApiKeyTestResult({
+        success: false,
+        message:
+          'Failed to connect to backend. Please ensure the server is running.',
+      });
+    } finally {
+      setIsTestingApiKey(false);
+    }
   };
 
   return (
@@ -292,14 +329,31 @@ const Settings = () => {
                     <label htmlFor="api-key" className="form-label">
                       Anthropic API Key
                     </label>
-                    <input
-                      type="password"
-                      id="api-key"
-                      className="form-input"
-                      value={apiKey}
-                      onChange={e => handleApiKeyChange(e.target.value)}
-                      placeholder="Enter your Anthropic API key"
-                    />
+                    <div className="api-key-input-group">
+                      <input
+                        type="password"
+                        id="api-key"
+                        className="form-input"
+                        value={apiKey}
+                        onChange={e => handleApiKeyChange(e.target.value)}
+                        placeholder="Enter your Anthropic API key"
+                      />
+                      <button
+                        type="button"
+                        className="test-api-key-button"
+                        onClick={testApiKey}
+                        disabled={!apiKey.trim() || isTestingApiKey}
+                      >
+                        {isTestingApiKey ? 'Testing...' : 'Test Key'}
+                      </button>
+                    </div>
+                    {apiKeyTestResult && (
+                      <div
+                        className={`api-test-result ${apiKeyTestResult.success ? 'success' : 'error'}`}
+                      >
+                        {apiKeyTestResult.message}
+                      </div>
+                    )}
                   </div>
 
                   {apiKey && (

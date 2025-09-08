@@ -1,0 +1,17 @@
+{
+  "name": "homedash-backend",
+  "version": "1.0.0",
+  "description": "Backend proxy for HomeDash LLM integration",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "node-fetch": "^3.3.2"
+  }
+}
