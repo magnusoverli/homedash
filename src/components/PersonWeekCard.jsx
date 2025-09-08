@@ -126,18 +126,6 @@ const PersonWeekCard = ({
       </div>
 
       <div className="week-grid">
-        <div className="time-axis">
-          {timeSlots.map(hour => (
-            <div key={hour} className="time-label">
-              {hour === 12
-                ? '12pm'
-                : hour < 12
-                  ? `${hour}am`
-                  : `${hour - 12}pm`}
-            </div>
-          ))}
-        </div>
-
         <div className="days-container">
           {dayColumns.map((date, index) => {
             const dayInfo = formatDayLabel(date);

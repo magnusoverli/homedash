@@ -56,27 +56,7 @@
 .week-grid {
   display: flex;
   flex: 1;
-  gap: 0.5rem;
   position: relative;
-}
-
-.time-axis {
-  width: 50px;
-  display: flex;
-  flex-direction: column;
-  padding-top: 28px;
-}
-
-.time-label {
-  height: 60px;
-  display: flex;
-  align-items: flex-start;
-  font-size: 0.75rem;
-  color: #b781ff;
-  opacity: 0.7;
-  padding-right: 0.5rem;
-  justify-content: flex-end;
-  border-top: 1px solid rgba(103, 4, 255, 0.05);
 }
 
 .days-container {
@@ -160,21 +140,6 @@
     min-height: 500px;
   }
 
-  .time-axis {
-    width: 45px;
-  }
-
-  .time-label {
-    font-size: 0.7rem;
-    height: 50px;
-  }
-
-  .time-slot {
-    height: 50px;
-  }
-}
-
-@media (max-width: 768px) {
   .days-container {
     gap: 1px;
   }
