@@ -97,11 +97,13 @@ const WeekSelector = ({ currentWeek, onWeekChange }) => {
 
         <div className="week-display">
           <h2 className="week-range">Week of {formatDateRange()}</h2>
-          {!isCurrentWeek() && (
-            <button className="today-button" onClick={handleToday}>
-              Today
-            </button>
-          )}
+          <button
+            className="today-button"
+            onClick={handleToday}
+            disabled={isCurrentWeek()}
+          >
+            Today
+          </button>
         </div>
 
         <button

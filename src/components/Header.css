@@ -110,6 +110,8 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  min-width: 300px;
+  justify-content: center;
 }
 
 .week-range-inline {
@@ -117,6 +119,8 @@
   font-weight: 500;
   color: #ffffff;
   white-space: nowrap;
+  text-align: center;
+  min-width: 220px;
 }
 
 .today-button-small {
@@ -134,6 +138,18 @@
 .today-button-small:hover {
   background: #7a1aff;
   transform: translateY(-1px);
+}
+
+.today-button-small:disabled {
+  background: rgba(103, 4, 255, 0.3);
+  color: rgba(255, 255, 255, 0.5);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.today-button-small:disabled:hover {
+  background: rgba(103, 4, 255, 0.3);
+  transform: none;
 }
 
 /* Responsive Design */
@@ -170,8 +186,13 @@
     gap: 0.5rem;
   }
 
+  .week-display-inline {
+    min-width: 250px;
+  }
+
   .week-range-inline {
     font-size: 0.9rem;
+    min-width: 180px;
   }
 
   .week-nav-button-small {

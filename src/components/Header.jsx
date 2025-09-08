@@ -156,11 +156,13 @@ const Header = ({ currentWeek, onWeekChange, showWeekSelector = false }) => {
               <span className="week-range-inline">
                 Week of {formatDateRange()}
               </span>
-              {!isCurrentWeek() && (
-                <button className="today-button-small" onClick={handleToday}>
-                  Today
-                </button>
-              )}
+              <button
+                className="today-button-small"
+                onClick={handleToday}
+                disabled={isCurrentWeek()}
+              >
+                Today
+              </button>
             </div>
 
             <button

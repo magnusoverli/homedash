@@ -42,6 +42,8 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  min-width: 400px;
+  justify-content: center;
 }
 
 .week-range {
@@ -50,6 +52,8 @@
   color: #ffffff;
   margin: 0;
   white-space: nowrap;
+  text-align: center;
+  min-width: 300px;
 }
 
 .today-button {
@@ -69,14 +73,31 @@
   transform: translateY(-1px);
 }
 
+.today-button:disabled {
+  background: rgba(103, 4, 255, 0.3);
+  color: rgba(255, 255, 255, 0.5);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.today-button:disabled:hover {
+  background: rgba(103, 4, 255, 0.3);
+  transform: none;
+}
+
 @media (max-width: 768px) {
   .week-selector-container {
     padding: 0 1rem;
     gap: 1rem;
   }
 
+  .week-display {
+    min-width: 300px;
+  }
+
   .week-range {
     font-size: 1.1rem;
+    min-width: 250px;
   }
 
   .week-nav-button {
