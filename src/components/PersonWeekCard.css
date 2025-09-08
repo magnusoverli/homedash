@@ -27,6 +27,7 @@
   padding-bottom: 0.25rem;
   border-bottom: 1px solid rgba(103, 4, 255, 0.1);
   margin-bottom: 0.25rem;
+  position: relative;
 }
 
 .member-avatar-small {
@@ -51,6 +52,36 @@
   font-weight: 600;
   color: #ffffff;
   margin: 0;
+  flex: 1;
+}
+
+.add-activity-button {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  background: rgba(103, 4, 255, 0.15);
+  border: 1px solid rgba(103, 4, 255, 0.3);
+  color: #b781ff;
+  font-size: 1.1rem;
+  font-weight: 400;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  padding: 0;
+  margin-left: auto;
+}
+
+.add-activity-button:hover {
+  background: rgba(103, 4, 255, 0.25);
+  border-color: rgba(103, 4, 255, 0.5);
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+.add-activity-button:active {
+  transform: scale(0.95);
 }
 
 .week-grid {

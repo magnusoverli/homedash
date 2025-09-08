@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import ActivityBlock from './ActivityBlock';
+import GenericModal from './GenericModal';
 import './PersonWeekCard.css';
 
 const PersonWeekCard = ({
@@ -11,6 +12,7 @@ const PersonWeekCard = ({
   onDeleteActivity,
 }) => {
   const [dayColumns, setDayColumns] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const timeSlots = [];
   const startHour = 8;
   const endHour = 20;
@@ -108,89 +110,106 @@ const PersonWeekCard = ({
   };
 
   return (
-    <div className="person-week-card">
-      <div className="card-header">
-        <div
-          className="member-avatar-small"
-          style={{ backgroundColor: member.avatarColor }}
-        >
-          <span className="member-initials-small">
-            {member.name
-              .split(' ')
-              .map(n => n[0])
-              .join('')
-              .toUpperCase()}
-          </span>
+    <>
+      <div className="person-week-card">
+        <div className="card-header">
+          <div
+            className="member-avatar-small"
+            style={{ backgroundColor: member.avatarColor }}
+          >
+            <span className="member-initials-small">
+              {member.name
+                .split(' ')
+                .map(n => n[0])
+                .join('')
+                .toUpperCase()}
+            </span>
+          </div>
+          <h3 className="member-name-card">{member.name}</h3>
+          <button
+            className="add-activity-button"
+            aria-label="Add activity"
+            onClick={() => setIsModalOpen(true)}
+          >
+            +
+          </button>
         </div>
-        <h3 className="member-name-card">{member.name}</h3>
-      </div>
 
-      <div className="week-grid">
-        <div className="days-container">
-          {dayColumns.map((date, index) => {
-            const dayInfo = formatDayLabel(date);
-            const dayActivities = getDayActivities(date);
-            const overlaps = checkOverlaps(dayActivities);
+        <div className="week-grid">
+          <div className="days-container">
+            {dayColumns.map((date, index) => {
+              const dayInfo = formatDayLabel(date);
+              const dayActivities = getDayActivities(date);
+              const overlaps = checkOverlaps(dayActivities);
 
-            return (
-              <div
-                key={index}
-                className={`day-column ${isToday(date) ? 'today' : ''}`}
-              >
-                <div className="day-header">
-                  <div className="day-name">{dayInfo.dayName}</div>
-                  <div className="day-number">{dayInfo.dayNumber}</div>
-                </div>
+              return (
+                <div
+                  key={index}
+                  className={`day-column ${isToday(date) ? 'today' : ''}`}
+                >
+                  <div className="day-header">
+                    <div className="day-name">{dayInfo.dayName}</div>
+                    <div className="day-number">{dayInfo.dayNumber}</div>
+                  </div>
 
-                <div className="time-grid-column">
-                  {timeSlots.map(hour => (
-                    <div
-                      key={hour}
-                      className="time-slot"
-                      onClick={() => handleTimeSlotClick(date, hour)}
-                    />
-                  ))}
+                  <div className="time-grid-column">
+                    {timeSlots.map(hour => (
+                      <div
+                        key={hour}
+                        className="time-slot"
+                        onClick={() => handleTimeSlotClick(date, hour)}
+                      />
+                    ))}
 
-                  <div className="activities-layer">
-                    {dayActivities.map((activity, actIndex) => {
-                      const isOverlapping = overlaps.some(group =>
-                        group.includes(activity)
-                      );
-                      const overlapIndex = isOverlapping
-                        ? overlaps
-                            .find(group => group.includes(activity))
-                            .indexOf(activity)
-                        : 0;
-                      const overlapCount = isOverlapping
-                        ? overlaps.find(group => group.includes(activity))
-                            .length
-                        : 1;
+                    <div className="activities-layer">
+                      {dayActivities.map((activity, actIndex) => {
+                        const isOverlapping = overlaps.some(group =>
+                          group.includes(activity)
+                        );
+                        const overlapIndex = isOverlapping
+                          ? overlaps
+                              .find(group => group.includes(activity))
+                              .indexOf(activity)
+                          : 0;
+                        const overlapCount = isOverlapping
+                          ? overlaps.find(group => group.includes(activity))
+                              .length
+                          : 1;
 
-                      return (
-                        <ActivityBlock
-                          key={activity.id || actIndex}
-                          activity={activity}
-                          top={calculateTopPosition(activity.startTime)}
-                          height={calculateHeight(
-                            activity.startTime,
-                            activity.endTime
-                          )}
-                          isOverlapping={isOverlapping}
-                          overlapIndex={overlapIndex}
-                          overlapCount={overlapCount}
-                          onEdit={() => onEditActivity(activity)}
-                          onDelete={() => onDeleteActivity(activity.id)}
-                        />
-                      );
-                    })}
+                        return (
+                          <ActivityBlock
+                            key={activity.id || actIndex}
+                            activity={activity}
+                            top={calculateTopPosition(activity.startTime)}
+                            height={calculateHeight(
+                              activity.startTime,
+                              activity.endTime
+                            )}
+                            isOverlapping={isOverlapping}
+                            overlapIndex={overlapIndex}
+                            overlapCount={overlapCount}
+                            onEdit={() => onEditActivity(activity)}
+                            onDelete={() => onDeleteActivity(activity.id)}
+                          />
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
-    </div>
+
+      <GenericModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={`${member.name}'s Schedule`}
+      >
+        {/* Content for schedule management will go here */}
+      </GenericModal>
+    </>
   );
 };
 
