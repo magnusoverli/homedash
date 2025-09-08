@@ -16,7 +16,7 @@ const PersonWeekCard = ({
   const timeSlots = [];
   const startHour = 8;
   const endHour = 20;
-  const pixelsPerHour = 60;
+  const pixelsPerHour = 54;
 
   for (let hour = startHour; hour <= endHour; hour++) {
     timeSlots.push(hour);

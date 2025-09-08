@@ -84,7 +84,46 @@ const Header = ({ currentWeek, onWeekChange, showWeekSelector = false }) => {
       <div className="header-container">
         <div className="header-brand">
           <div className="brand-logo">
-            <span className="brand-number">2</span>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <rect
+                x="3"
+                y="3"
+                width="7"
+                height="7"
+                rx="1"
+                fill="currentColor"
+              />
+              <rect
+                x="14"
+                y="3"
+                width="7"
+                height="7"
+                rx="1"
+                fill="currentColor"
+              />
+              <rect
+                x="3"
+                y="14"
+                width="7"
+                height="7"
+                rx="1"
+                fill="currentColor"
+              />
+              <rect
+                x="14"
+                y="14"
+                width="7"
+                height="7"
+                rx="1"
+                fill="currentColor"
+              />
+            </svg>
           </div>
           <span className="brand-text">HomeDash</span>
         </div>

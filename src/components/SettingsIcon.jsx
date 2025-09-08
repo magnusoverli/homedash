@@ -1,5 +1,3 @@
-import React from 'react';
-
 const SettingsIcon = ({ size = 24, color = 'currentColor' }) => {
   return (
     <svg
