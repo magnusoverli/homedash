@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import ActivityBlock from './ActivityBlock';
-import GenericModal from './GenericModal';
+import ScheduleModal from './ScheduleModal';
 import './PersonWeekCard.css';
 
 const PersonWeekCard = ({
@@ -202,13 +202,13 @@ const PersonWeekCard = ({
         </div>
       </div>
 
-      <GenericModal
+      <ScheduleModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={`${member.name}'s Schedule`}
       >
         {/* Content for schedule management will go here */}
-      </GenericModal>
+      </ScheduleModal>
     </>
   );
 };
