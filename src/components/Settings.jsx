@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FamilyMemberCard from './FamilyMemberCard';
 import AddMemberForm from './AddMemberForm';
+import API_ENDPOINTS from '../config/api';
 import './Settings.css';
 
 const Settings = () => {
@@ -73,7 +74,7 @@ const Settings = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:3001/api/models', {
+      const response = await fetch(API_ENDPOINTS.MODELS, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -178,7 +179,7 @@ const Settings = () => {
     setApiKeyTestResult(null);
 
     try {
-      const response = await fetch('http://localhost:3001/api/test-key', {
+      const response = await fetch(API_ENDPOINTS.TEST_KEY, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

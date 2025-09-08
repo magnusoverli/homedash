@@ -1,0 +1,12 @@
+# Override file for local development
+# This file is automatically loaded by docker-compose alongside docker-compose.yml
+# Use this for development-specific overrides
+
+services:
+  homedash-backend:
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    command: npm run dev

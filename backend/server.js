@@ -11,7 +11,10 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(
   cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? ['http://localhost:3000', 'http://homedash-app:3000']
+        : ['http://localhost:5173', 'http://localhost:3000'],
     credentials: true,
   })
 );
