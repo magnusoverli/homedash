@@ -151,6 +151,113 @@
   background: rgba(103, 4, 255, 0.5);
 }
 
+/* File Upload Styles */
+.file-upload-area {
+  border: 2px dashed rgba(103, 4, 255, 0.3);
+  border-radius: 5px;
+  background: rgba(103, 4, 255, 0.02);
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.file-upload-area:hover {
+  border-color: rgba(103, 4, 255, 0.5);
+  background: rgba(103, 4, 255, 0.05);
+}
+
+.file-upload-area.drag-over {
+  border-color: #6704ff;
+  background: rgba(103, 4, 255, 0.1);
+}
+
+.upload-icon {
+  color: #b781ff;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-text {
+  color: #ffffff;
+}
+
+.upload-primary {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: #ffffff;
+}
+
+.upload-secondary {
+  font-size: 0.875rem;
+  margin: 0;
+  color: #b781ff;
+}
+
+.file-name {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  color: #ffffff;
+}
+
+.file-size {
+  font-size: 0.875rem;
+  margin: 0;
+  color: #b781ff;
+}
+
+.remove-file-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.remove-file-button:hover {
+  background: rgba(255, 0, 0, 0.2);
+  border-color: rgba(255, 0, 0, 0.3);
+  color: #ff6b6b;
+}
+
+.upload-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.import-button {
+  background: linear-gradient(135deg, #6704ff 0%, #4d04b1 100%);
+  border: none;
+  border-radius: 5px;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.75rem 2rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.import-button:hover {
+  background: linear-gradient(135deg, #4d04b1 0%, #310268 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(103, 4, 255, 0.3);
+}
+
 @media (max-width: 768px) {
   .modal-container {
     width: 95%;
@@ -171,5 +278,17 @@
 
   .modal-section {
     padding: 1rem;
+  }
+
+  .file-upload-area {
+    padding: 1.5rem;
+  }
+
+  .upload-primary {
+    font-size: 0.9rem;
+  }
+
+  .upload-secondary {
+    font-size: 0.8rem;
   }
 }
