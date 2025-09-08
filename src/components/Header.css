@@ -1,0 +1,190 @@
+/* Header Styles - Following HomeDash Design Manual */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: var(--color-primary-dark);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-lg);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Brand Section */
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.brand-logo {
+  width: var(--grid-icon-size);
+  height: var(--grid-icon-size);
+  background: var(--color-primary-purple);
+  border-radius: var(--border-radius-small);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Brand Number "2" - Following logo construction principles */
+.brand-number {
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-white);
+  font-family: var(--font-family-display);
+}
+
+.brand-text {
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-white);
+  font-family: var(--font-family-display);
+}
+
+/* Header Actions */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.settings-button {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--color-white);
+  transition: all 0.2s ease;
+}
+
+.settings-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--color-primary-purple);
+}
+
+.settings-button:focus {
+  outline: 2px solid var(--color-primary-purple);
+  outline-offset: 2px;
+}
+
+/* Week Selector Inline */
+.week-selector-inline {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  justify-content: center;
+  max-width: 500px;
+}
+
+.week-nav-button-small {
+  width: 36px;
+  height: 36px;
+  border-radius: 5px;
+  background: rgba(103, 4, 255, 0.1);
+  border: 1px solid rgba(103, 4, 255, 0.3);
+  color: #b781ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.week-nav-button-small:hover {
+  background: rgba(103, 4, 255, 0.2);
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+.week-display-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.week-range-inline {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.today-button-small {
+  padding: 0.4rem 0.8rem;
+  border-radius: 15px;
+  background: #6704ff;
+  border: none;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.today-button-small:hover {
+  background: #7a1aff;
+  transform: translateY(-1px);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .week-selector-inline {
+    max-width: 400px;
+  }
+
+  .week-range-inline {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-container {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .brand-text {
+    font-size: 1.125rem;
+  }
+
+  .brand-logo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .brand-number {
+    font-size: 1.25rem;
+  }
+
+  .week-selector-inline {
+    max-width: 300px;
+    gap: 0.5rem;
+  }
+
+  .week-range-inline {
+    font-size: 0.9rem;
+  }
+
+  .week-nav-button-small {
+    width: 32px;
+    height: 32px;
+  }
+
+  .today-button-small {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-text {
+    display: none;
+  }
+}

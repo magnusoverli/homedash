@@ -1,0 +1,146 @@
+.activity-block {
+  position: absolute;
+  border-radius: 3px;
+  padding: 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  min-height: 20px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.activity-block:hover {
+  transform: translateX(-2px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+}
+
+.activity-block.empty-activity {
+  background: rgba(103, 4, 255, 0.1) !important;
+  border: 2px dashed rgba(103, 4, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.activity-block.empty-activity::after {
+  content: '+';
+  font-size: 1.2rem;
+  color: #b781ff;
+}
+
+.activity-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  position: relative;
+}
+
+.activity-time {
+  font-size: 0.65rem;
+  opacity: 0.8;
+  color: rgba(16, 1, 27, 0.8);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.activity-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #10011b;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.activity-actions {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: flex;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 3px;
+  padding: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.activity-action-btn {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.activity-action-btn:hover {
+  background: rgba(103, 4, 255, 0.1);
+}
+
+.edit-btn:hover {
+  background: rgba(103, 4, 255, 0.2);
+}
+
+.delete-btn:hover {
+  background: rgba(255, 50, 50, 0.2);
+}
+
+.activity-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #10011b;
+  color: #ffffff;
+  padding: 0.5rem;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 100;
+  margin-bottom: 0.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.activity-block:hover .activity-tooltip {
+  opacity: 1;
+}
+
+.tooltip-title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.tooltip-time {
+  color: #b781ff;
+  font-size: 0.7rem;
+}
+
+.tooltip-description {
+  margin-top: 0.25rem;
+  color: #e5e5ff;
+  font-size: 0.7rem;
+  max-width: 200px;
+  white-space: normal;
+}
+
+@media (max-width: 1200px) {
+  .activity-title {
+    font-size: 0.7rem;
+  }
+
+  .activity-time {
+    font-size: 0.6rem;
+  }
+}

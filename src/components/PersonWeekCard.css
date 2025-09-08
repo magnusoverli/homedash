@@ -1,0 +1,182 @@
+.person-week-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(103, 4, 255, 0.2);
+  border-radius: 5px;
+  padding: 1.5rem;
+  height: 100%;
+  min-height: 580px;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(103, 4, 255, 0.1);
+  margin-bottom: 0.5rem;
+}
+
+.member-avatar-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #10011b;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.member-initials-small {
+  user-select: none;
+}
+
+.member-name-card {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+
+.week-grid {
+  display: flex;
+  flex: 1;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.time-axis {
+  width: 50px;
+  display: flex;
+  flex-direction: column;
+  padding-top: 32px;
+}
+
+.time-label {
+  height: 60px;
+  display: flex;
+  align-items: flex-start;
+  font-size: 0.75rem;
+  color: #b781ff;
+  opacity: 0.7;
+  padding-right: 0.5rem;
+  justify-content: flex-end;
+  border-top: 1px solid rgba(103, 4, 255, 0.05);
+}
+
+.days-container {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.day-column {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.01);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.day-column.today {
+  background: rgba(103, 4, 255, 0.05);
+  box-shadow: 0 0 0 1px rgba(103, 4, 255, 0.2);
+}
+
+.day-header {
+  padding: 0.5rem 0.25rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(103, 4, 255, 0.1);
+  background: rgba(103, 4, 255, 0.03);
+}
+
+.day-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #b781ff;
+  text-transform: uppercase;
+}
+
+.day-number {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-top: 0.1rem;
+}
+
+.time-grid-column {
+  flex: 1;
+  position: relative;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 59px,
+    rgba(103, 4, 255, 0.05) 59px,
+    rgba(103, 4, 255, 0.05) 60px
+  );
+}
+
+.time-slot {
+  height: 60px;
+  border-bottom: 1px solid rgba(103, 4, 255, 0.05);
+  cursor: pointer;
+}
+
+.time-slot:hover {
+  background: rgba(103, 4, 255, 0.03);
+}
+
+.activities-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.activities-layer > * {
+  pointer-events: all;
+}
+
+@media (max-width: 1200px) {
+  .person-week-card {
+    min-height: 500px;
+  }
+
+  .time-axis {
+    width: 45px;
+  }
+
+  .time-label {
+    font-size: 0.7rem;
+    height: 50px;
+  }
+
+  .time-slot {
+    height: 50px;
+  }
+}
+
+@media (max-width: 768px) {
+  .days-container {
+    gap: 1px;
+  }
+
+  .day-header {
+    padding: 0.25rem;
+  }
+
+  .day-name {
+    font-size: 0.7rem;
+  }
+
+  .day-number {
+    font-size: 0.8rem;
+  }
+}
