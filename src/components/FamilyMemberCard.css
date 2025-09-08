@@ -92,25 +92,25 @@
 }
 
 .button-confirm-delete {
-  background: rgba(255, 50, 50, 0.1);
-  border-color: rgba(255, 50, 50, 0.3);
-  color: #ff9999;
-}
-
-.button-confirm-delete:hover {
-  background: rgba(255, 50, 50, 0.2);
-  border-color: rgba(255, 50, 50, 0.5);
-}
-
-.button-cancel-delete {
   background: rgba(50, 255, 50, 0.1);
   border-color: rgba(50, 255, 50, 0.3);
   color: #99ff99;
 }
 
-.button-cancel-delete:hover {
+.button-confirm-delete:hover {
   background: rgba(50, 255, 50, 0.2);
   border-color: rgba(50, 255, 50, 0.5);
+}
+
+.button-cancel-delete {
+  background: rgba(255, 50, 50, 0.1);
+  border-color: rgba(255, 50, 50, 0.3);
+  color: #ff9999;
+}
+
+.button-cancel-delete:hover {
+  background: rgba(255, 50, 50, 0.2);
+  border-color: rgba(255, 50, 50, 0.5);
 }
 
 .edit-form {

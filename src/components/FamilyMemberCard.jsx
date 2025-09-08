@@ -139,27 +139,6 @@ const FamilyMemberCard = ({
         {showDeleteConfirm ? (
           <div className="delete-confirm">
             <button
-              className="button-icon button-confirm-delete"
-              onClick={handleDelete}
-              aria-label="Confirm delete"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 20 20"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M4 10L8 14L16 6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-            <button
               className="button-icon button-cancel-delete"
               onClick={() => setShowDeleteConfirm(false)}
               aria-label="Cancel delete"
@@ -173,6 +152,27 @@ const FamilyMemberCard = ({
               >
                 <path
                   d="M15 5L5 15M5 5L15 15"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+            <button
+              className="button-icon button-confirm-delete"
+              onClick={handleDelete}
+              aria-label="Confirm delete"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M4 10L8 14L16 6"
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
