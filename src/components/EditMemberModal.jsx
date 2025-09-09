@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import GenericModal from './GenericModal';
 import dataService from '../services/dataService';
+import { useToast } from '../contexts/ToastContext';
 import './EditMemberModal.css';
 
 const AVATAR_COLORS = [
@@ -23,6 +24,7 @@ const EditMemberModal = ({
   onUpdate, 
   onDelete 
 }) => {
+  const { showSuccess, showError, showConfirmation } = useToast();
   const [formData, setFormData] = useState({
     name: '',
     avatarColor: '#FFF48D',
@@ -44,6 +46,7 @@ const EditMemberModal = ({
   const [hasSchoolSchedule, setHasSchoolSchedule] = useState(false);
   const [isDeletingSchedule, setIsDeletingSchedule] = useState(false);
   const [scheduleDeleteError, setScheduleDeleteError] = useState('');
+  const [showScheduleDeleteConfirm, setShowScheduleDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (member) {
@@ -116,13 +119,13 @@ const EditMemberModal = ({
       // Validate file type
       const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
       if (!validTypes.includes(file.type)) {
-        alert('Please select a valid image file (JPEG, PNG, or GIF)');
+        showError('Please select a valid image file (JPEG, PNG, or GIF)');
         return;
       }
       
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB');
+        showError('File size must be less than 5MB');
         return;
       }
 
@@ -167,7 +170,9 @@ const EditMemberModal = ({
       checkForSchoolSchedule();
       
       // Show success message
-      alert(`School plan extracted successfully!\n\nFound:\n- ${result.savedData.schedules.length} school schedules\n- ${result.savedData.activities.length} activities\n- ${result.savedData.homework.length} homework assignments\n\nData has been saved to the database.`);
+      showSuccess(
+        `School plan imported successfully! Found ${result.savedData.schedules.length + result.savedData.activities.length} items.`
+      );
       
     } catch (error) {
       console.error('Error extracting school plan:', error);
@@ -180,11 +185,13 @@ const EditMemberModal = ({
   const handleDeleteSchoolSchedule = async () => {
     if (!member?.id) return;
 
-    const confirmed = window.confirm(
-      `Are you sure you want to delete the school schedule for ${member?.name || 'this family member'}? This will only remove ${member?.name ? member.name + "'s" : 'this member\'s'} imported school time slots.`
-    );
+    // Show inline confirmation instead of toast
+    setShowScheduleDeleteConfirm(true);
+    setScheduleDeleteError('');
+  };
 
-    if (!confirmed) return;
+  const confirmDeleteSchedule = async () => {
+    if (!member?.id) return;
 
     setIsDeletingSchedule(true);
     setScheduleDeleteError('');
@@ -212,7 +219,10 @@ const EditMemberModal = ({
       setHasSchoolSchedule(false);
       setScheduleDeleteError('');
       
-      alert(`Successfully deleted ${totalSchoolEntries.length} school entries (${schoolScheduleActivities.length} schedules, ${schoolActivities.length} activities).`);
+      setShowScheduleDeleteConfirm(false);
+      showSuccess(
+        `School schedule deleted successfully.`
+      );
       
     } catch (error) {
       console.error('Error deleting school schedule:', error);
@@ -220,6 +230,11 @@ const EditMemberModal = ({
     } finally {
       setIsDeletingSchedule(false);
     }
+  };
+
+  const cancelDeleteSchedule = () => {
+    setShowScheduleDeleteConfirm(false);
+    setScheduleDeleteError('');
   };
 
 
@@ -475,7 +490,7 @@ const EditMemberModal = ({
                 <polyline points="22,4 12,14.01 9,11.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <span>
-                Successfully extracted: {extractionResult.savedData.schedules.length} schedules, {extractionResult.savedData.activities.length} activities, {extractionResult.savedData.homework.length} homework items
+                School plan imported successfully
               </span>
             </div>
           )}
@@ -543,6 +558,39 @@ const EditMemberModal = ({
                   <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2"/>
                 </svg>
                 <span>{scheduleDeleteError}</span>
+              </div>
+            )}
+
+            {showScheduleDeleteConfirm && (
+              <div className="schedule-delete-confirmation">
+                <div className="confirmation-message">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" stroke="#f59e0b" strokeWidth="2"/>
+                    <line x1="12" y1="9" x2="12" y2="13" stroke="#f59e0b" strokeWidth="2"/>
+                    <circle cx="12" cy="17" r="1" fill="#f59e0b"/>
+                  </svg>
+                  <span>
+                    Delete <strong>{member?.name || 'this member'}</strong>'s school schedule?
+                  </span>
+                </div>
+                <div className="confirmation-actions">
+                  <button
+                    type="button"
+                    className="button button-danger-confirm"
+                    onClick={confirmDeleteSchedule}
+                    disabled={isDeletingSchedule}
+                  >
+                    {isDeletingSchedule ? 'Deleting...' : 'Yes, Delete'}
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-secondary-small"
+                    onClick={cancelDeleteSchedule}
+                    disabled={isDeletingSchedule}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             )}
           </div>

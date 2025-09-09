@@ -1,0 +1,54 @@
+/* Toast Container Styles - Global positioning */
+
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  pointer-events: none;
+  
+  /* Stack toasts vertically */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  
+  /* Ensure container doesn't interfere with page content */
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  
+  /* Allow scroll if too many toasts */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.toast-container::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+/* Enable pointer events only on toast elements */
+.toast-container .toast {
+  pointer-events: all;
+}
+
+/* Responsive positioning */
+@media (max-width: 480px) {
+  .toast-container {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    align-items: stretch;
+  }
+}
+
+/* Adjust positioning when modals are open */
+.modal-backdrop ~ .toast-container {
+  z-index: 10001; /* Above modal backdrop */
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .toast-container {
+    /* Ensure high visibility */
+    filter: contrast(1.2);
+  }
+}
