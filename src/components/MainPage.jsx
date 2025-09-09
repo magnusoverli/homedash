@@ -81,6 +81,7 @@ const MainPage = ({ currentWeek }) => {
             startTime: activity.start_time,
             endTime: activity.end_time,
             description: activity.description,
+            notes: activity.notes,
           });
         });
 

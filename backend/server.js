@@ -407,7 +407,7 @@ app.get('/api/activities', async (req, res) => {
 });
 
 app.post('/api/activities', async (req, res) => {
-  const { member_id, title, date, start_time, end_time, description } =
+  const { member_id, title, date, start_time, end_time, description, activity_type, recurrence_type, recurrence_end_date, notes } =
     req.body;
 
   if (!member_id || !title || !date || !start_time || !end_time) {
@@ -418,9 +418,9 @@ app.post('/api/activities', async (req, res) => {
 
   try {
     const result = await runQuery(
-      `INSERT INTO activities (member_id, title, date, start_time, end_time, description) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [member_id, title, date, start_time, end_time, description || null]
+      `INSERT INTO activities (member_id, title, date, start_time, end_time, description, activity_type, recurrence_type, recurrence_end_date, notes) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [member_id, title, date, start_time, end_time, description || null, activity_type || 'manual', recurrence_type || 'none', recurrence_end_date || null, notes || null]
     );
     const activity = await getOne('SELECT * FROM activities WHERE id = ?', [
       result.id,
@@ -434,7 +434,7 @@ app.post('/api/activities', async (req, res) => {
 
 app.put('/api/activities/:id', async (req, res) => {
   const { id } = req.params;
-  const { title, date, start_time, end_time, description } = req.body;
+  const { title, date, start_time, end_time, description, activity_type, recurrence_type, recurrence_end_date, notes } = req.body;
 
   if (!title || !date || !start_time || !end_time) {
     return res.status(400).json({
@@ -446,9 +446,10 @@ app.put('/api/activities/:id', async (req, res) => {
     await runQuery(
       `UPDATE activities 
        SET title = ?, date = ?, start_time = ?, end_time = ?, description = ?, 
+           activity_type = ?, recurrence_type = ?, recurrence_end_date = ?, notes = ?,
            updated_at = CURRENT_TIMESTAMP 
        WHERE id = ?`,
-      [title, date, start_time, end_time, description || null, id]
+      [title, date, start_time, end_time, description || null, activity_type || 'manual', recurrence_type || 'none', recurrence_end_date || null, notes || null, id]
     );
     const activity = await getOne('SELECT * FROM activities WHERE id = ?', [
       id,
@@ -875,8 +876,20 @@ function parseSchoolPlanResponse(responseText) {
             activitiesText = activitiesText.substring(0, endIndex + 1);
             console.log(`📋 Activities JSON text: ${activitiesText}`);
             
-            datasets.school_activities = JSON.parse(activitiesText);
+            const parsedActivities = JSON.parse(activitiesText);
+            
+            // Ensure each activity has required fields with defaults
+            datasets.school_activities = parsedActivities.map(activity => ({
+              day: activity.day,
+              name: activity.name,
+              start: activity.start,
+              end: activity.end,
+              type: activity.type || 'recurring', // Default to recurring for backward compatibility
+              specific_date: activity.specific_date || null
+            }));
+            
             console.log(`✅ Parsed school_activities with ${datasets.school_activities.length} activities`);
+            console.log(`📊 Activity types: ${datasets.school_activities.map(a => `${a.name}:${a.type}`).join(', ')}`);
             activitiesFound = true;
             break;
           }
@@ -990,17 +1003,22 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
               // Only create if the date is within school year and not in the past
               if (targetDate >= importWeekStart && targetDate <= schoolYearEnd) {
                 const dateString = targetDate.toISOString().split('T')[0];
+                const notes = times.notes || null;
                 
                 const result = await runQuery(
-                  `INSERT INTO activities (member_id, title, date, start_time, end_time, description) 
-                   VALUES (?, ?, ?, ?, ?, ?)`,
+                  `INSERT INTO activities (member_id, title, date, start_time, end_time, description, activity_type, recurrence_type, recurrence_end_date, notes) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                   [
                     memberId, 
                     'School', 
                     dateString,
                     times.start,
                     times.end,
-                    'Regular school schedule [TYPE:school_schedule]'
+                    'Regular school schedule [TYPE:school_schedule]',
+                    'school_schedule',
+                    'weekly',
+                    schoolYearEnd.toISOString().split('T')[0],
+                    notes
                   ]
                 );
                 entriesCreated++;
@@ -1040,61 +1058,117 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
       );
       console.log(`🗑️  Deleted ${deleteActivitiesResult.changes || 0} existing school activity entries`);
       
-      // Process each school activity
+      // Process each school activity with type awareness
       for (const activity of extractedData.school_activities) {
-        console.log(`🎯 Processing activity:`, activity);
+        console.log(`🎯 Processing ${activity.type || 'recurring'} activity:`, activity);
         
         if (activity.day && activity.name && activity.start && activity.end) {
           const dayNum = dayMapping[activity.day];
-          console.log(`🗓️  Activity "${activity.name}" on ${activity.day} (${dayNum}) ${activity.start}-${activity.end}`);
+          console.log(`🗓️  Activity "${activity.name}" on ${activity.day} (${dayNum}) ${activity.start}-${activity.end} - Type: ${activity.type || 'recurring'}`);
           
           if (dayNum) {
-            // Generate recurring entries for this activity throughout the school year
-            let currentWeek = new Date(importWeekStart);
-            let entriesCreated = 0;
+            const activityType = activity.type || 'recurring';
+            const recurrenceType = activityType === 'recurring' ? 'weekly' : 'none';
+            const recurrenceEndDate = activityType === 'recurring' ? schoolYearEnd.toISOString().split('T')[0] : null;
             
-            while (currentWeek <= schoolYearEnd) {
-              // Calculate the specific date for this day of the week
-              const targetDate = new Date(currentWeek);
-              const dayDiff = dayNum - 1; // dayNum is 1-based, we need 0-based for date calculation
-              targetDate.setDate(currentWeek.getDate() + dayDiff);
+            if (activityType === 'one_time') {
+              // Handle one-time activities
+              console.log(`📅 Creating one-time entry for ${activity.name} (${activity.day})`);
               
-              // Only create if the date is within school year and not in the past
+              // One-time activities are always placed on the corresponding day of the current import week
+              const targetDate = new Date(importWeekStart);
+              const dayDiff = dayNum - 1; // dayNum is 1-based, we need 0-based for date calculation
+              targetDate.setDate(importWeekStart.getDate() + dayDiff);
+              console.log(`📍 Placing one-time activity on ${activity.day} of current week: ${targetDate.toISOString().split('T')[0]}`);
+              
               if (targetDate >= importWeekStart && targetDate <= schoolYearEnd) {
                 const dateString = targetDate.toISOString().split('T')[0];
                 
                 const result = await runQuery(
-                  `INSERT INTO activities (member_id, title, date, start_time, end_time, description) 
-                   VALUES (?, ?, ?, ?, ?, ?)`,
+                  `INSERT INTO activities (member_id, title, date, start_time, end_time, description, activity_type, recurrence_type, recurrence_end_date) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                   [
                     memberId, 
                     activity.name, 
                     dateString,
                     activity.start,
                     activity.end,
-                    `School activity: ${activity.name} [TYPE:school_activity]`
+                    `School activity: ${activity.name} [TYPE:school_activity]`,
+                    'school_activity',
+                    recurrenceType,
+                    recurrenceEndDate
                   ]
                 );
-                entriesCreated++;
                 
-                // Only add to savedData for the first few entries (to avoid huge response)
-                if (entriesCreated <= 5) {
-                  savedData.activities.push({ 
-                    id: result.id, 
-                    day: activity.day, 
-                    name: activity.name,
-                    date: dateString, 
-                    start: activity.start,
-                    end: activity.end
-                  });
+                savedData.activities.push({ 
+                  id: result.id, 
+                  day: activity.day, 
+                  name: activity.name,
+                  date: dateString, 
+                  start: activity.start,
+                  end: activity.end,
+                  type: activityType
+                });
+                
+                console.log(`✅ Created one-time entry for "${activity.name}" on ${dateString}`);
+              } else {
+                console.log(`⚠️  One-time activity date ${targetDate.toISOString().split('T')[0]} is outside school year range`);
+              }
+            } else {
+              // Handle recurring activities (existing logic enhanced)
+              console.log(`📅 Creating recurring entries for ${activity.name} (${activity.day})`);
+              
+              // Generate recurring entries for this activity throughout the school year
+              let currentWeek = new Date(importWeekStart);
+              let entriesCreated = 0;
+              
+              while (currentWeek <= schoolYearEnd) {
+                // Calculate the specific date for this day of the week
+                const targetDate = new Date(currentWeek);
+                const dayDiff = dayNum - 1; // dayNum is 1-based, we need 0-based for date calculation
+                targetDate.setDate(currentWeek.getDate() + dayDiff);
+                
+                // Only create if the date is within school year and not in the past
+                if (targetDate >= importWeekStart && targetDate <= schoolYearEnd) {
+                  const dateString = targetDate.toISOString().split('T')[0];
+                  
+                  const result = await runQuery(
+                    `INSERT INTO activities (member_id, title, date, start_time, end_time, description, activity_type, recurrence_type, recurrence_end_date) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                      memberId, 
+                      activity.name, 
+                      dateString,
+                      activity.start,
+                      activity.end,
+                      `School activity: ${activity.name} [TYPE:school_activity]`,
+                      'school_activity',
+                      recurrenceType,
+                      recurrenceEndDate
+                    ]
+                  );
+                  entriesCreated++;
+                  
+                  // Only add to savedData for the first few entries (to avoid huge response)
+                  if (entriesCreated <= 5) {
+                    savedData.activities.push({ 
+                      id: result.id, 
+                      day: activity.day, 
+                      name: activity.name,
+                      date: dateString, 
+                      start: activity.start,
+                      end: activity.end,
+                      type: activityType
+                    });
+                  }
                 }
+                
+                // Move to next week
+                currentWeek.setDate(currentWeek.getDate() + 7);
               }
               
-              // Move to next week
-              currentWeek.setDate(currentWeek.getDate() + 7);
+              console.log(`✅ Created ${entriesCreated} recurring entries for activity "${activity.name}"`);
             }
-            
-            console.log(`✅ Created ${entriesCreated} recurring entries for activity "${activity.name}"`);
           } else {
             console.log(`⚠️  Day ${activity.day} not recognized in dayMapping`);
           }

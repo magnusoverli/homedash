@@ -53,6 +53,9 @@ const initDatabase = () => {
           start_time TEXT NOT NULL,
           end_time TEXT NOT NULL,
           description TEXT,
+          activity_type TEXT DEFAULT 'manual',
+          recurrence_type TEXT DEFAULT 'none',
+          recurrence_end_date TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
@@ -62,6 +65,47 @@ const initDatabase = () => {
           if (err) {
             console.error('Error creating activities table:', err);
             return reject(err);
+          }
+        }
+      );
+
+      // Add new columns to existing activities table if they don't exist
+      db.run(
+        `ALTER TABLE activities ADD COLUMN activity_type TEXT DEFAULT 'manual'`,
+        err => {
+          // Ignore error if column already exists
+          if (err && !err.message.includes('duplicate column name')) {
+            console.error('Error adding activity_type column:', err);
+          }
+        }
+      );
+
+      db.run(
+        `ALTER TABLE activities ADD COLUMN recurrence_type TEXT DEFAULT 'none'`,
+        err => {
+          // Ignore error if column already exists
+          if (err && !err.message.includes('duplicate column name')) {
+            console.error('Error adding recurrence_type column:', err);
+          }
+        }
+      );
+
+      db.run(
+        `ALTER TABLE activities ADD COLUMN recurrence_end_date TEXT`,
+        err => {
+          // Ignore error if column already exists
+          if (err && !err.message.includes('duplicate column name')) {
+            console.error('Error adding recurrence_end_date column:', err);
+          }
+        }
+      );
+
+      db.run(
+        `ALTER TABLE activities ADD COLUMN notes TEXT`,
+        err => {
+          // Ignore error if column already exists
+          if (err && !err.message.includes('duplicate column name')) {
+            console.error('Error adding notes column:', err);
           }
         }
       );

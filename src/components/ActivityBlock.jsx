@@ -130,6 +130,9 @@ const ActivityBlock = ({
         {isSchoolScheduleActivity() && height >= 60 && (
           <div className="activity-end-time">{formatTime(activity.endTime)}</div>
         )}
+        {isSchoolScheduleActivity() && activity.notes && height >= 50 && (
+          <div className="activity-notes">{activity.notes}</div>
+        )}
       </div>
 
       {showActions && activity.title && (
@@ -152,6 +155,9 @@ const ActivityBlock = ({
           </div>
           {activity.description && (
             <div className="tooltip-description">{activity.description}</div>
+          )}
+          {activity.notes && (
+            <div className="tooltip-notes">Note: {activity.notes}</div>
           )}
         </div>
       )}
