@@ -96,6 +96,52 @@ const ActivityBlock = ({
     };
   };
 
+  const normalizeNote = note => {
+    if (!note) return note;
+    
+    const lowerNote = note.toLowerCase();
+    
+    // Normalize PE-related terms to "Gym"
+    if (lowerNote.includes('kropps') || 
+        lowerNote.includes('gym') || 
+        lowerNote.includes('pe')) {
+      return 'Gym';
+    }
+    
+    // Filter out regular school subjects that shouldn't be notes
+    const regularSubjects = ['krle', 'matte', 'matematikk', 'norsk', 'engelsk', 'naturfag', 'samfunnsfag'];
+    if (regularSubjects.includes(lowerNote)) {
+      return null; // Return null to filter out
+    }
+    
+    // Add other normalizations as needed in the future
+    // e.g., swimming, outdoor school, etc.
+    
+    return note;
+  };
+
+  const parseNotes = notes => {
+    if (!notes) return [];
+    
+    // Handle special cases first before splitting
+    const lowerNotes = notes.toLowerCase();
+    
+    // Special handling for "gym/krle" - should only return "Gym"
+    if (lowerNotes === 'gym/krle') {
+      return ['Gym'];
+    }
+    
+    // Split notes by common separators and normalize each
+    const noteList = notes
+      .split(/[,/&+]/) // Split by comma, slash, ampersand, or plus
+      .map(note => note.trim())
+      .filter(note => note.length > 0)
+      .map(note => normalizeNote(note))
+      .filter(note => note !== null); // Remove filtered out subjects
+    
+    return noteList;
+  };
+
   const handleClick = e => {
     e.stopPropagation();
     if (!activity.title) {
@@ -130,10 +176,18 @@ const ActivityBlock = ({
         {isSchoolScheduleActivity() && height >= 60 && (
           <div className="activity-end-time">{formatTime(activity.endTime)}</div>
         )}
-        {isSchoolScheduleActivity() && activity.notes && height >= 50 && (
-          <div className="activity-notes">{activity.notes}</div>
-        )}
       </div>
+
+      {/* Notes positioned in the middle-left of the activity block */}
+      {isSchoolScheduleActivity() && activity.notes && height >= 60 && (
+        <div className="activity-notes-container">
+          {parseNotes(activity.notes).map((note, index) => (
+            <div key={index} className="activity-note-badge">
+              {note}
+            </div>
+          ))}
+        </div>
+      )}
 
       {showActions && activity.title && (
         <div className="activity-actions">
@@ -157,7 +211,9 @@ const ActivityBlock = ({
             <div className="tooltip-description">{activity.description}</div>
           )}
           {activity.notes && (
-            <div className="tooltip-notes">Note: {activity.notes}</div>
+            <div className="tooltip-notes">
+              Notes: {parseNotes(activity.notes).join(', ')}
+            </div>
           )}
         </div>
       )}

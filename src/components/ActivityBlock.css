@@ -66,17 +66,28 @@
   margin-top: auto;
 }
 
-.activity-notes {
-  font-size: 0.65rem;
+.activity-notes-container {
+  position: absolute;
+  left: 0.5rem;
+  top: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  z-index: 5;
+}
+
+.activity-note-badge {
+  font-size: 0.6rem;
   font-weight: 600;
   color: #6704FF;
-  background: rgba(103, 4, 255, 0.1);
-  padding: 0.15rem 0.25rem;
-  border-radius: 8px;
-  text-align: center;
-  margin-top: 0.2rem;
-  border: 1px solid rgba(103, 4, 255, 0.2);
+  background: rgba(103, 4, 255, 0.15);
+  padding: 0.2rem 0.4rem;
+  border-radius: 12px;
+  border: 1px solid rgba(103, 4, 255, 0.3);
   line-height: 1;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(103, 4, 255, 0.2);
+  backdrop-filter: blur(2px);
 }
 
 .activity-actions {
