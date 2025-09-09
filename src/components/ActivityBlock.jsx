@@ -54,6 +54,14 @@ const ActivityBlock = ({
     return activity.description && activity.description.includes('[TYPE:school_schedule]');
   };
 
+  const isSchoolActivity = () => {
+    return activity.description && activity.description.includes('[TYPE:school_activity]');
+  };
+
+  const isSchoolRelated = () => {
+    return isSchoolScheduleActivity() || isSchoolActivity();
+  };
+
   const getAbbreviatedTitle = title => {
     if (!title) return 'New Activity';
 

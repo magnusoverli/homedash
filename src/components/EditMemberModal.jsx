@@ -91,10 +91,13 @@ const EditMemberModal = ({
     try {
       // Check if member has any activities with school schedule type
       const activities = await dataService.getActivities({ memberId: member.id });
-      const schoolActivities = activities.filter(activity => 
+      const schoolScheduleActivities = activities.filter(activity => 
         activity.description && activity.description.includes('[TYPE:school_schedule]')
       );
-      setHasSchoolSchedule(schoolActivities.length > 0);
+      const schoolActivities = activities.filter(activity => 
+        activity.description && activity.description.includes('[TYPE:school_activity]')
+      );
+      setHasSchoolSchedule(schoolScheduleActivities.length > 0 || schoolActivities.length > 0);
     } catch (error) {
       console.error('Error checking for school schedule:', error);
     }
@@ -190,20 +193,26 @@ const EditMemberModal = ({
       // Get all activities for this member
       const activities = await dataService.getActivities({ memberId: member.id });
       
-      // Find school schedule activities
+      // Find school schedule and school activity entries
       const schoolScheduleActivities = activities.filter(activity => 
         activity.description && activity.description.includes('[TYPE:school_schedule]')
       );
+      
+      const schoolActivities = activities.filter(activity => 
+        activity.description && activity.description.includes('[TYPE:school_activity]')
+      );
 
-      // Delete each school schedule activity
-      for (const activity of schoolScheduleActivities) {
+      const totalSchoolEntries = [...schoolScheduleActivities, ...schoolActivities];
+
+      // Delete each school-related activity
+      for (const activity of totalSchoolEntries) {
         await dataService.deleteActivity(activity.id);
       }
 
       setHasSchoolSchedule(false);
       setScheduleDeleteError('');
       
-      alert(`Successfully deleted ${schoolScheduleActivities.length} school schedule entries.`);
+      alert(`Successfully deleted ${totalSchoolEntries.length} school entries (${schoolScheduleActivities.length} schedules, ${schoolActivities.length} activities).`);
       
     } catch (error) {
       console.error('Error deleting school schedule:', error);

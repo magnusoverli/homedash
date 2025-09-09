@@ -734,20 +734,17 @@ app.post('/api/extract-school-plan', upload.single('schoolPlanImage'), async (re
 
 // Helper function to parse the LLM response
 function parseSchoolPlanResponse(responseText) {
-  console.log('🔄 Starting LLM response parsing (focusing on school_schedule only)...');
+  console.log('🔄 Starting LLM response parsing (school_schedule + school_activities)...');
   
-  // Focus only on school_schedule for now
   const datasets = {
     school_schedule: null,
     school_activities: null,
     school_homework: null
   };
 
-  let foundMatch = null;
-
   try {
-    // Find the start of the schedule JSON object
-    // Look for the opening brace, allowing for whitespace before "Monday"
+    // Parse school_schedule (existing logic)
+    console.log('📅 Parsing school_schedule...');
     const mondayIndex = responseText.indexOf('"Monday"');
     let scheduleStart = -1;
     
@@ -759,11 +756,11 @@ function parseSchoolPlanResponse(responseText) {
           scheduleStart = i;
           break;
         } else if (char !== ' ' && char !== '\n' && char !== '\r' && char !== '\t') {
-          // Found non-whitespace that's not an opening brace
           break;
         }
       }
     }
+    
     if (scheduleStart !== -1) {
       console.log('📅 Found schedule starting at position:', scheduleStart);
       
@@ -816,13 +813,91 @@ function parseSchoolPlanResponse(responseText) {
       console.log('❌ Could not find school schedule in response');
     }
 
-    // Skip parsing activities and homework for now
-    console.log('⏭️  Skipping activities and homework parsing');
+    // Parse school_activities
+    console.log('🎯 Parsing school_activities...');
+    
+    // Look for the activities array - it should start with [ and contain "day" fields
+    const activitiesPatterns = [
+      /Dataset 2 - school_activities:\s*(\[[\s\S]*?\])/i,
+      /school_activities[:\s]*(\[[\s\S]*?\])/i,
+      /activities[:\s]*(\[[\s\S]*?\])/i
+    ];
+    
+    let activitiesFound = false;
+    
+    for (const pattern of activitiesPatterns) {
+      const match = responseText.match(pattern);
+      if (match && match[1]) {
+        try {
+          console.log(`🎯 Found activities pattern: ${match[1].substring(0, 100)}...`);
+          
+          // Extract the JSON array
+          let activitiesText = match[1].trim();
+          
+          // Find the complete array by balancing brackets
+          let bracketCount = 0;
+          let inString = false;
+          let escapeNext = false;
+          let endIndex = -1;
+          
+          for (let i = 0; i < activitiesText.length; i++) {
+            const char = activitiesText[i];
+            
+            if (escapeNext) {
+              escapeNext = false;
+              continue;
+            }
+            
+            if (char === '\\') {
+              escapeNext = true;
+              continue;
+            }
+            
+            if (char === '"') {
+              inString = !inString;
+              continue;
+            }
+            
+            if (!inString) {
+              if (char === '[') {
+                bracketCount++;
+              } else if (char === ']') {
+                bracketCount--;
+                if (bracketCount === 0) {
+                  endIndex = i;
+                  break;
+                }
+              }
+            }
+          }
+          
+          if (endIndex !== -1) {
+            activitiesText = activitiesText.substring(0, endIndex + 1);
+            console.log(`📋 Activities JSON text: ${activitiesText}`);
+            
+            datasets.school_activities = JSON.parse(activitiesText);
+            console.log(`✅ Parsed school_activities with ${datasets.school_activities.length} activities`);
+            activitiesFound = true;
+            break;
+          }
+        } catch (parseError) {
+          console.log(`⚠️  Failed to parse activities with pattern ${pattern}: ${parseError.message}`);
+          continue;
+        }
+      }
+    }
+    
+    if (!activitiesFound) {
+      console.log('📝 No school_activities found in response');
+      datasets.school_activities = [];
+    }
+
+    // Skip homework parsing for now
+    console.log('⏭️  Skipping homework parsing (focusing on schedule + activities)');
 
     return datasets;
   } catch (error) {
     console.error(`❌ JSON parsing error: ${error.message}`);
-    console.log(`📄 Problematic text: ${foundMatch ? foundMatch[foundMatch.length - 1] : 'No match found'}`);
     throw new Error(`Failed to parse LLM response: ${error.message}`);
   }
 }
@@ -866,20 +941,22 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
   };
 
   try {
+    // Get school year range and import week start (used for both schedules and activities)
+    const importDate = new Date();
+    const { schoolYearStart, schoolYearEnd } = getSchoolYearRange(importDate);
+    const importWeekStart = getWeekStart(importDate);
+    
+    // Day mapping used for both schedules and activities
+    const dayMapping = {
+      'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5
+    };
+    
+    console.log(`📚 School year: ${schoolYearStart.toDateString()} to ${schoolYearEnd.toDateString()}`);
+    console.log(`📆 Import week starts: ${importWeekStart.toDateString()}`);
+
     // Save school schedule as recurring activities
     if (extractedData.school_schedule) {
       console.log(`📅 Processing recurring school schedule...`);
-      const dayMapping = {
-        'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5
-      };
-
-      // Get school year range and import week start
-      const importDate = new Date();
-      const { schoolYearStart, schoolYearEnd } = getSchoolYearRange(importDate);
-      const importWeekStart = getWeekStart(importDate);
-      
-      console.log(`📚 School year: ${schoolYearStart.toDateString()} to ${schoolYearEnd.toDateString()}`);
-      console.log(`📆 Import week starts: ${importWeekStart.toDateString()}`);
       
       // Step 1: Clean up existing school schedules from import week onwards
       console.log(`🧹 Cleaning up existing school schedules from ${importWeekStart.toISOString().split('T')[0]} onwards...`);
@@ -948,11 +1025,89 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
       }
     }
 
-    // Skip school activities for now
-    console.log('⏭️  Skipping school activities (focusing on schedules only)');
+    // Save school activities as recurring activities
+    if (extractedData.school_activities && extractedData.school_activities.length > 0) {
+      console.log(`🎯 Processing school activities...`);
+      
+      // Clean up existing school activities from import week onwards
+      console.log(`🧹 Cleaning up existing school activities from ${importWeekStart.toISOString().split('T')[0]} onwards...`);
+      const deleteActivitiesResult = await runQuery(
+        `DELETE FROM activities 
+         WHERE member_id = ? 
+         AND description LIKE '%[TYPE:school_activity]%' 
+         AND date >= ?`,
+        [memberId, importWeekStart.toISOString().split('T')[0]]
+      );
+      console.log(`🗑️  Deleted ${deleteActivitiesResult.changes || 0} existing school activity entries`);
+      
+      // Process each school activity
+      for (const activity of extractedData.school_activities) {
+        console.log(`🎯 Processing activity:`, activity);
+        
+        if (activity.day && activity.name && activity.start && activity.end) {
+          const dayNum = dayMapping[activity.day];
+          console.log(`🗓️  Activity "${activity.name}" on ${activity.day} (${dayNum}) ${activity.start}-${activity.end}`);
+          
+          if (dayNum) {
+            // Generate recurring entries for this activity throughout the school year
+            let currentWeek = new Date(importWeekStart);
+            let entriesCreated = 0;
+            
+            while (currentWeek <= schoolYearEnd) {
+              // Calculate the specific date for this day of the week
+              const targetDate = new Date(currentWeek);
+              const dayDiff = dayNum - 1; // dayNum is 1-based, we need 0-based for date calculation
+              targetDate.setDate(currentWeek.getDate() + dayDiff);
+              
+              // Only create if the date is within school year and not in the past
+              if (targetDate >= importWeekStart && targetDate <= schoolYearEnd) {
+                const dateString = targetDate.toISOString().split('T')[0];
+                
+                const result = await runQuery(
+                  `INSERT INTO activities (member_id, title, date, start_time, end_time, description) 
+                   VALUES (?, ?, ?, ?, ?, ?)`,
+                  [
+                    memberId, 
+                    activity.name, 
+                    dateString,
+                    activity.start,
+                    activity.end,
+                    `School activity: ${activity.name} [TYPE:school_activity]`
+                  ]
+                );
+                entriesCreated++;
+                
+                // Only add to savedData for the first few entries (to avoid huge response)
+                if (entriesCreated <= 5) {
+                  savedData.activities.push({ 
+                    id: result.id, 
+                    day: activity.day, 
+                    name: activity.name,
+                    date: dateString, 
+                    start: activity.start,
+                    end: activity.end
+                  });
+                }
+              }
+              
+              // Move to next week
+              currentWeek.setDate(currentWeek.getDate() + 7);
+            }
+            
+            console.log(`✅ Created ${entriesCreated} recurring entries for activity "${activity.name}"`);
+          } else {
+            console.log(`⚠️  Day ${activity.day} not recognized in dayMapping`);
+          }
+        } else {
+          console.log(`⚠️  Missing required fields for activity:`, activity);
+        }
+      }
+    } else {
+      console.log('📝 No school activities to process');
+    }
 
     // Skip homework for now  
-    console.log('⏭️  Skipping homework (focusing on schedules only)');
+    console.log('⏭️  Skipping homework (focusing on schedules + activities only)');
 
     console.log(`✅ Database save completed successfully`);
     return savedData;

@@ -11,10 +11,13 @@ EXTRACTION RULES:
 1. school_schedule dataset:
    - Start time: Look for "Start" followed by HH:MM
    - End time: Look for "Slutt" followed by HH:MM
+   - IMPORTANT: Do NOT extend the school day end time for "Leksehjelp" activities
 
 2. school_activities dataset:
    - Activities scheduled AFTER "Slutt" time
-   - Evening activities (typically 17:00 or later)
+   - Afternoon/evening activities (can start as early as 13:00)
+   - SPECIAL CASE: "Leksehjelp" activities that start at or after "Slutt" time must ALWAYS be extracted as separate activities, even if they start exactly when school ends
+   - Examples: "Leksehjelp", parent meetings, evening events
 
 3. school_homework dataset:
    - Find the homework table/section (contains "Lekser" or "Læringsmål og lekser")
