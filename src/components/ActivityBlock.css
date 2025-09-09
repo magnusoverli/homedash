@@ -1,20 +1,20 @@
 .activity-block {
   position: absolute;
-  border-radius: 3px;
+  border-radius: 5px;
   padding: 0.25rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   overflow: hidden;
   min-height: 20px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .activity-block:hover {
   transform: translateX(-2px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   z-index: 10;
 }
 
@@ -41,10 +41,10 @@
 }
 
 .activity-time {
-  font-size: 0.65rem;
-  opacity: 0.8;
-  color: rgba(16, 1, 27, 0.8);
-  font-weight: 500;
+  font-size: 0.72rem;
+  opacity: 0.9;
+  color: rgba(16, 1, 27, 0.85);
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -58,10 +58,10 @@
 }
 
 .activity-end-time {
-  font-size: 0.65rem;
-  opacity: 0.8;
-  color: rgba(16, 1, 27, 0.8);
-  font-weight: 500;
+  font-size: 0.72rem;
+  opacity: 0.9;
+  color: rgba(16, 1, 27, 0.85);
+  font-weight: 700;
   line-height: 1;
   margin-top: auto;
 }
@@ -96,9 +96,6 @@
   background: rgba(103, 4, 255, 0.1);
 }
 
-.edit-btn:hover {
-  background: rgba(103, 4, 255, 0.2);
-}
 
 .delete-btn:hover {
   background: rgba(255, 50, 50, 0.2);
@@ -151,6 +148,6 @@
   }
 
   .activity-time {
-    font-size: 0.6rem;
+    font-size: 0.68rem;
   }
 }

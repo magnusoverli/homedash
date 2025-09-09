@@ -120,10 +120,6 @@ const MainPage = ({ currentWeek }) => {
     setShowActivityModal(true);
   };
 
-  const handleEditActivity = activity => {
-    setEditingActivity(activity);
-    setShowActivityModal(true);
-  };
 
   const handleDeleteActivity = async (memberId, activityId) => {
     try {
@@ -281,7 +277,6 @@ const MainPage = ({ currentWeek }) => {
                 onAddActivity={data =>
                   handleAddActivity({ ...data, memberId: member.id })
                 }
-                onEditActivity={handleEditActivity}
                 onDeleteActivity={activityId =>
                   handleDeleteActivity(member.id, activityId)
                 }

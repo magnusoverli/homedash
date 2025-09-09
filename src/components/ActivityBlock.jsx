@@ -30,7 +30,6 @@ const ActivityBlock = ({
   isOverlapping,
   overlapIndex,
   overlapCount,
-  onEdit,
   onDelete,
 }) => {
   const [showActions, setShowActions] = useState(false);
@@ -100,16 +99,13 @@ const ActivityBlock = ({
   const handleClick = e => {
     e.stopPropagation();
     if (!activity.title) {
-      onEdit();
+      // Empty activities no longer trigger edit modal
+      return;
     } else {
       setShowActions(!showActions);
     }
   };
 
-  const handleEdit = e => {
-    e.stopPropagation();
-    onEdit();
-  };
 
   const handleDelete = e => {
     e.stopPropagation();
@@ -138,13 +134,6 @@ const ActivityBlock = ({
 
       {showActions && activity.title && (
         <div className="activity-actions">
-          <button
-            className="activity-action-btn edit-btn"
-            onClick={handleEdit}
-            aria-label="Edit activity"
-          >
-            ✏️
-          </button>
           <button
             className="activity-action-btn delete-btn"
             onClick={handleDelete}

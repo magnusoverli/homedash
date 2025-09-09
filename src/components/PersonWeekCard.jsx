@@ -8,7 +8,6 @@ const PersonWeekCard = ({
   activities,
   weekStart,
   onAddActivity,
-  onEditActivity,
   onDeleteActivity,
 }) => {
   const [dayColumns, setDayColumns] = useState([]);
@@ -188,7 +187,6 @@ const PersonWeekCard = ({
                             isOverlapping={isOverlapping}
                             overlapIndex={overlapIndex}
                             overlapCount={overlapCount}
-                            onEdit={() => onEditActivity(activity)}
                             onDelete={() => onDeleteActivity(activity.id)}
                           />
                         );
