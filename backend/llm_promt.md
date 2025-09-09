@@ -25,8 +25,10 @@ EXTRACTION RULES:
    - ONLY extract activities that start AT OR AFTER the "Slutt" time for that specific day
    - DO NOT extract activities that occur DURING regular school hours (between "Start" and "Slutt")
    - Activities within the school day (like "Lekekurs", regular subjects, breaks) are part of the school schedule, NOT separate activities
+   - SPECIFICALLY EXCLUDE: Any activities with names containing "Lekekurs", "lekekurs", "TL", "lærer", "lærerutdanning", or other teacher/course-related terms that occur during school hours
    - ONLY extract: afternoon/evening activities, homework help sessions, parent meetings that occur after school ends
    - Key principle: If an activity starts after the "Slutt" time, it's a separate activity; if it starts before "Slutt", it's part of the regular school day
+   - Double-check: Before extracting any activity, verify it starts AFTER the day's "Slutt" time - if not, it should be ignored
    
    ACTIVITY TYPE CLASSIFICATION:
    - "recurring": Regular activities that happen weekly (e.g., "Leksehjelp")
@@ -68,9 +70,17 @@ Dataset 3 - school_homework:
 
 EXTRACTION APPROACH:
 
-Apply timing-based logic to determine what should be extracted:
+Apply strict timing-based logic to determine what should be extracted:
 1. Activities after school ends → Extract with appropriate type classification
 2. Activities during school hours → Part of regular curriculum, do not extract
+3. CRITICAL FILTER: Check each potential activity against the day's "Slutt" time
+   - If activity start time < Slutt time → IGNORE (it's part of regular school)
+   - If activity start time >= Slutt time → Extract as separate activity
+4. COMMON EXCLUSIONS: Never extract activities with these patterns during school hours:
+   - "Lekekurs" (training courses for teachers)
+   - Regular subject names (Matte, Norsk, Engelsk, etc.)
+   - Teacher training or professional development
+   - Any activity that appears in the regular timetable grid
 
 IMPORTANT DATE HANDLING:
 - For one-time events, ALWAYS set specific_date to null
