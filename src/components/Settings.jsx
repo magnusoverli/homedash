@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FamilyMemberCard from './FamilyMemberCard';
 import AddMemberForm from './AddMemberForm';
+import EditMemberModal from './EditMemberModal';
 import API_ENDPOINTS from '../config/api';
 import dataService from '../services/dataService';
 import './Settings.css';
@@ -11,6 +12,7 @@ const Settings = () => {
   const [familyMembers, setFamilyMembers] = useState([]);
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLoadingMembers, setIsLoadingMembers] = useState(true);
   const [membersError, setMembersError] = useState('');
 
@@ -155,7 +157,13 @@ const Settings = () => {
         setAvailableModels([]);
       } else if (response.ok && data.models) {
         setAvailableModels(data.models);
-        setModelsError('');
+        
+        // Show warning if API key validation failed but models are available
+        if (data.warning) {
+          setModelsError(data.warning);
+        } else {
+          setModelsError('');
+        }
 
         // Clear selection if the current model is no longer available
         if (
@@ -224,6 +232,7 @@ const Settings = () => {
       const updated = await dataService.updateFamilyMember(updatedMember.id, {
         name: updatedMember.name,
         color: updatedMember.avatarColor || updatedMember.color,
+        schoolPlanImage: updatedMember.schoolPlanImage,
       });
       // Map backend 'color' field to frontend 'avatarColor'
       setFamilyMembers(
@@ -234,6 +243,7 @@ const Settings = () => {
         )
       );
       setEditingMember(null);
+      setIsEditModalOpen(false);
     } catch (error) {
       console.error('Error updating member:', error);
       // Fallback to localStorage
@@ -251,6 +261,7 @@ const Settings = () => {
         )
       );
       setEditingMember(null);
+      setIsEditModalOpen(false);
     }
   };
 
@@ -258,6 +269,8 @@ const Settings = () => {
     try {
       await dataService.deleteFamilyMember(memberId);
       setFamilyMembers(familyMembers.filter(member => member.id !== memberId));
+      setIsEditModalOpen(false);
+      setEditingMember(null);
     } catch (error) {
       console.error('Error deleting member:', error);
       // Fallback to localStorage
@@ -266,7 +279,19 @@ const Settings = () => {
       );
       setFamilyMembers(updatedMembers);
       localStorage.setItem('familyMembers', JSON.stringify(updatedMembers));
+      setIsEditModalOpen(false);
+      setEditingMember(null);
     }
+  };
+
+  const handleEditMember = (member) => {
+    setEditingMember(member);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingMember(null);
   };
 
   const handleBack = () => {
@@ -386,11 +411,11 @@ const Settings = () => {
                   <FamilyMemberCard
                     key={member.id}
                     member={member}
-                    isEditing={editingMember?.id === member.id}
-                    onEdit={() => setEditingMember(member)}
+                    isEditing={false}
+                    onEdit={() => handleEditMember(member)}
                     onUpdate={handleUpdateMember}
                     onDelete={handleDeleteMember}
-                    onCancelEdit={() => setEditingMember(null)}
+                    onCancelEdit={() => {}}
                   />
                 ))
               )}
@@ -522,6 +547,14 @@ const Settings = () => {
           </section>
         </div>
       </main>
+
+      <EditMemberModal
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        member={editingMember}
+        onUpdate={handleUpdateMember}
+        onDelete={handleDeleteMember}
+      />
     </div>
   );
 };

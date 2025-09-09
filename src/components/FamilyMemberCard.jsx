@@ -1,41 +1,13 @@
 import { useState } from 'react';
 import './FamilyMemberCard.css';
 
-const AVATAR_COLORS = [
-  { name: 'Yellow', hex: '#FFF48D' },
-  { name: 'Orange', hex: '#FCDD8C' },
-  { name: 'Salmon', hex: '#F4B3BB' },
-  { name: 'Pink', hex: '#DEB2FA' },
-  { name: 'Purple', hex: '#B2AEFF' },
-  { name: 'Blue', hex: '#BADAF8' },
-  { name: 'Turquoise', hex: '#C1FDFD' },
-  { name: 'Green', hex: '#D2FCC3' },
-  { name: 'Gray', hex: '#ECECEC' },
-];
-
 const FamilyMemberCard = ({
   member,
-  isEditing,
   onEdit,
-  onUpdate,
   onDelete,
-  onCancelEdit,
 }) => {
-  const [editName, setEditName] = useState(member.name);
-  const [editColor, setEditColor] = useState(
-    member.avatarColor || member.color
-  );
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const handleSave = () => {
-    if (editName.trim()) {
-      onUpdate({
-        ...member,
-        name: editName.trim(),
-        avatarColor: editColor,
-      });
-    }
-  };
 
   const handleDelete = () => {
     onDelete(member.id);
@@ -50,59 +22,6 @@ const FamilyMemberCard = ({
     return name.slice(0, 2).toUpperCase();
   };
 
-  if (isEditing) {
-    return (
-      <div className="member-card member-card-editing">
-        <div className="member-avatar" style={{ backgroundColor: editColor }}>
-          <span className="member-initials">
-            {getInitials(editName || 'NN')}
-          </span>
-        </div>
-
-        <div className="edit-form">
-          <input
-            type="text"
-            className="edit-name-input"
-            value={editName}
-            onChange={e => setEditName(e.target.value)}
-            placeholder="Name"
-            autoFocus
-            maxLength={50}
-          />
-
-          <div className="color-picker">
-            <label className="color-picker-label">Avatar Color</label>
-            <div className="color-options">
-              {AVATAR_COLORS.map(color => (
-                <button
-                  key={color.hex}
-                  className={`color-option ${
-                    editColor === color.hex ? 'selected' : ''
-                  }`}
-                  style={{ backgroundColor: color.hex }}
-                  onClick={() => setEditColor(color.hex)}
-                  aria-label={`Select ${color.name}`}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="edit-actions">
-            <button
-              className="button button-primary"
-              onClick={handleSave}
-              disabled={!editName.trim()}
-            >
-              Save
-            </button>
-            <button className="button button-secondary" onClick={onCancelEdit}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="member-card">

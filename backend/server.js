@@ -207,10 +207,52 @@ app.post('/api/models', async (req, res) => {
 
     res.json({ models, valid: true });
   } catch (error) {
-    console.error('Error fetching models:', error);
-    res.status(500).json({
-      error: 'Failed to fetch models',
-      models: [],
+    console.error('Error validating API key:', error);
+    // Return models anyway since the models list is static
+    // The API key validation is just for user feedback
+    const models = [
+      {
+        id: 'claude-opus-4-1-20250805',
+        display_name: 'Claude Opus 4.1 (Most Capable)',
+        context_window: 200000,
+        max_tokens: 32000,
+      },
+      {
+        id: 'claude-opus-4-20250514',
+        display_name: 'Claude Opus 4',
+        context_window: 200000,
+        max_tokens: 32000,
+      },
+      {
+        id: 'claude-sonnet-4-20250514',
+        display_name: 'Claude Sonnet 4 (High Performance)',
+        context_window: 200000,
+        max_tokens: 64000,
+      },
+      {
+        id: 'claude-3-7-sonnet-20250219',
+        display_name: 'Claude Sonnet 3.7',
+        context_window: 200000,
+        max_tokens: 64000,
+      },
+      {
+        id: 'claude-3-5-haiku-20241022',
+        display_name: 'Claude Haiku 3.5 (Fastest)',
+        context_window: 200000,
+        max_tokens: 8192,
+      },
+      {
+        id: 'claude-3-haiku-20240307',
+        display_name: 'Claude Haiku 3',
+        context_window: 200000,
+        max_tokens: 4096,
+      },
+    ];
+    
+    res.json({ 
+      models, 
+      valid: false, 
+      warning: 'Could not validate API key, but models are available' 
     });
   }
 });
