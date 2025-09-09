@@ -827,6 +827,34 @@ function parseSchoolPlanResponse(responseText) {
   }
 }
 
+// Helper function to calculate school year dates
+function getSchoolYearRange(importDate = new Date()) {
+  const currentYear = importDate.getFullYear();
+  const currentMonth = importDate.getMonth(); // 0-based (0 = January)
+  
+  let schoolYearStart, schoolYearEnd;
+  
+  if (currentMonth >= 7) { // August (7) or later - current school year
+    schoolYearStart = new Date(currentYear, 7, 1); // August 1st
+    schoolYearEnd = new Date(currentYear + 1, 6, 31); // July 31st next year
+  } else { // Before August - previous school year
+    schoolYearStart = new Date(currentYear - 1, 7, 1); // August 1st previous year
+    schoolYearEnd = new Date(currentYear, 6, 31); // July 31st current year
+  }
+  
+  return { schoolYearStart, schoolYearEnd };
+}
+
+// Helper function to get the start of the week (Monday) for a given date
+function getWeekStart(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+  d.setDate(diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 // Helper function to save extracted data to database
 async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
   console.log(`💾 Starting database save for member ${memberId}`);
@@ -840,42 +868,77 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
   try {
     // Save school schedule as recurring activities
     if (extractedData.school_schedule) {
-      console.log(`📅 Processing school schedule...`);
+      console.log(`📅 Processing recurring school schedule...`);
       const dayMapping = {
         'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5
       };
 
+      // Get school year range and import week start
+      const importDate = new Date();
+      const { schoolYearStart, schoolYearEnd } = getSchoolYearRange(importDate);
+      const importWeekStart = getWeekStart(importDate);
+      
+      console.log(`📚 School year: ${schoolYearStart.toDateString()} to ${schoolYearEnd.toDateString()}`);
+      console.log(`📆 Import week starts: ${importWeekStart.toDateString()}`);
+      
+      // Step 1: Clean up existing school schedules from import week onwards
+      console.log(`🧹 Cleaning up existing school schedules from ${importWeekStart.toISOString().split('T')[0]} onwards...`);
+      const deleteResult = await runQuery(
+        `DELETE FROM activities 
+         WHERE member_id = ? 
+         AND description LIKE '%[TYPE:school_schedule]%' 
+         AND date >= ?`,
+        [memberId, importWeekStart.toISOString().split('T')[0]]
+      );
+      console.log(`🗑️  Deleted ${deleteResult.changes || 0} existing school schedule entries`);
+      
+      // Step 2: Generate recurring entries for each day of the week
       for (const [day, times] of Object.entries(extractedData.school_schedule)) {
         console.log(`📅 Processing day: ${day}, times:`, times);
         if (times && times.start && times.end) {
-          // Create recurring weekly schedule entries
           const dayNum = dayMapping[day];
           console.log(`🗓️  Day ${day} mapped to number: ${dayNum}`);
+          
           if (dayNum) {
-            // Calculate the date for this day of the current week
-            const now = new Date();
-            const currentDay = now.getDay();
-            const diff = dayNum - currentDay;
-            const targetDate = new Date(now);
-            targetDate.setDate(now.getDate() + diff);
-            const dateString = targetDate.toISOString().split('T')[0];
+            // Generate entries for this day throughout the school year
+            let currentWeek = new Date(importWeekStart);
+            let entriesCreated = 0;
             
-            console.log(`📍 Saving schedule: ${day} (${dateString}) ${times.start}-${times.end}`);
+            while (currentWeek <= schoolYearEnd) {
+              // Calculate the specific date for this day of the week
+              const targetDate = new Date(currentWeek);
+              const dayDiff = dayNum - 1; // dayNum is 1-based, we need 0-based for date calculation
+              targetDate.setDate(currentWeek.getDate() + dayDiff);
+              
+              // Only create if the date is within school year and not in the past
+              if (targetDate >= importWeekStart && targetDate <= schoolYearEnd) {
+                const dateString = targetDate.toISOString().split('T')[0];
+                
+                const result = await runQuery(
+                  `INSERT INTO activities (member_id, title, date, start_time, end_time, description) 
+                   VALUES (?, ?, ?, ?, ?, ?)`,
+                  [
+                    memberId, 
+                    'School', 
+                    dateString,
+                    times.start,
+                    times.end,
+                    'Regular school schedule [TYPE:school_schedule]'
+                  ]
+                );
+                entriesCreated++;
+                
+                // Only add to savedData for the first few entries (to avoid huge response)
+                if (entriesCreated <= 10) {
+                  savedData.schedules.push({ id: result.id, day, date: dateString, ...times });
+                }
+              }
+              
+              // Move to next week
+              currentWeek.setDate(currentWeek.getDate() + 7);
+            }
             
-            const result = await runQuery(
-              `INSERT INTO activities (member_id, title, date, start_time, end_time, description) 
-               VALUES (?, ?, ?, ?, ?, ?)`,
-              [
-                memberId, 
-                'School', 
-                dateString,
-                times.start,
-                times.end,
-                'Regular school schedule [TYPE:school_schedule]'
-              ]
-            );
-            console.log(`✅ Schedule saved with ID: ${result.id}`);
-            savedData.schedules.push({ id: result.id, day, ...times });
+            console.log(`✅ Created ${entriesCreated} recurring entries for ${day}`);
           } else {
             console.log(`⚠️  Day ${day} not recognized in dayMapping`);
           }
