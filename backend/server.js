@@ -2,19 +2,54 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import fetch from 'node-fetch';
+import { initDatabase, runQuery, getAll, getOne } from './database.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+initDatabase().catch(console.error);
+
 // Middleware
 app.use(
   cors({
-    origin:
-      process.env.NODE_ENV === 'production'
-        ? ['http://localhost:3000', 'http://homedash-app:3000']
-        : ['http://localhost:5173', 'http://localhost:3000'],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or Postman)
+      if (!origin) return callback(null, true);
+
+      // In production, allow requests from any origin on port 3000 or common dev ports
+      if (process.env.NODE_ENV === 'production') {
+        // Allow any origin that's accessing the frontend
+        // This is safe because we're in a local network environment
+        return callback(null, true);
+      }
+
+      // In development, allow localhost with common ports
+      const allowedOrigins = [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'http://localhost:3001',
+      ];
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // Allow same hostname with different ports (for local network access)
+      try {
+        const validPorts = ['3000', '3001', '5173'];
+        const requestPort = new URL(origin).port;
+
+        if (validPorts.includes(requestPort)) {
+          return callback(null, true);
+        }
+      } catch (e) {
+        // Invalid URL, reject
+      }
+
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   })
 );
@@ -215,7 +250,227 @@ app.post('/api/messages', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend server running on http://localhost:${PORT}`);
-  console.log(`CORS enabled for: http://localhost:5173`);
+// Family Members Endpoints
+app.get('/api/family-members', async (req, res) => {
+  try {
+    const members = await getAll(
+      'SELECT * FROM family_members ORDER BY created_at'
+    );
+    res.json(members);
+  } catch (error) {
+    console.error('Error fetching family members:', error);
+    res.status(500).json({ error: 'Failed to fetch family members' });
+  }
+});
+
+app.post('/api/family-members', async (req, res) => {
+  const { name, color } = req.body;
+
+  if (!name || !color) {
+    return res.status(400).json({ error: 'Name and color are required' });
+  }
+
+  try {
+    const result = await runQuery(
+      'INSERT INTO family_members (name, color) VALUES (?, ?)',
+      [name, color]
+    );
+    const member = await getOne('SELECT * FROM family_members WHERE id = ?', [
+      result.id,
+    ]);
+    res.status(201).json(member);
+  } catch (error) {
+    console.error('Error creating family member:', error);
+    res.status(500).json({ error: 'Failed to create family member' });
+  }
+});
+
+app.put('/api/family-members/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, color } = req.body;
+
+  if (!name || !color) {
+    return res.status(400).json({ error: 'Name and color are required' });
+  }
+
+  try {
+    await runQuery(
+      'UPDATE family_members SET name = ?, color = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [name, color, id]
+    );
+    const member = await getOne('SELECT * FROM family_members WHERE id = ?', [
+      id,
+    ]);
+    if (!member) {
+      return res.status(404).json({ error: 'Family member not found' });
+    }
+    res.json(member);
+  } catch (error) {
+    console.error('Error updating family member:', error);
+    res.status(500).json({ error: 'Failed to update family member' });
+  }
+});
+
+app.delete('/api/family-members/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await runQuery('DELETE FROM family_members WHERE id = ?', [
+      id,
+    ]);
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Family member not found' });
+    }
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting family member:', error);
+    res.status(500).json({ error: 'Failed to delete family member' });
+  }
+});
+
+// Activities Endpoints
+app.get('/api/activities', async (req, res) => {
+  const { member_id, date, start_date, end_date } = req.query;
+
+  try {
+    let sql = 'SELECT * FROM activities WHERE 1=1';
+    const params = [];
+
+    if (member_id) {
+      sql += ' AND member_id = ?';
+      params.push(member_id);
+    }
+
+    if (date) {
+      sql += ' AND date = ?';
+      params.push(date);
+    }
+
+    if (start_date && end_date) {
+      sql += ' AND date >= ? AND date <= ?';
+      params.push(start_date, end_date);
+    }
+
+    sql += ' ORDER BY date, start_time';
+
+    const activities = await getAll(sql, params);
+    res.json(activities);
+  } catch (error) {
+    console.error('Error fetching activities:', error);
+    res.status(500).json({ error: 'Failed to fetch activities' });
+  }
+});
+
+app.post('/api/activities', async (req, res) => {
+  const { member_id, title, date, start_time, end_time, description } =
+    req.body;
+
+  if (!member_id || !title || !date || !start_time || !end_time) {
+    return res.status(400).json({
+      error: 'member_id, title, date, start_time, and end_time are required',
+    });
+  }
+
+  try {
+    const result = await runQuery(
+      `INSERT INTO activities (member_id, title, date, start_time, end_time, description) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [member_id, title, date, start_time, end_time, description || null]
+    );
+    const activity = await getOne('SELECT * FROM activities WHERE id = ?', [
+      result.id,
+    ]);
+    res.status(201).json(activity);
+  } catch (error) {
+    console.error('Error creating activity:', error);
+    res.status(500).json({ error: 'Failed to create activity' });
+  }
+});
+
+app.put('/api/activities/:id', async (req, res) => {
+  const { id } = req.params;
+  const { title, date, start_time, end_time, description } = req.body;
+
+  if (!title || !date || !start_time || !end_time) {
+    return res.status(400).json({
+      error: 'title, date, start_time, and end_time are required',
+    });
+  }
+
+  try {
+    await runQuery(
+      `UPDATE activities 
+       SET title = ?, date = ?, start_time = ?, end_time = ?, description = ?, 
+           updated_at = CURRENT_TIMESTAMP 
+       WHERE id = ?`,
+      [title, date, start_time, end_time, description || null, id]
+    );
+    const activity = await getOne('SELECT * FROM activities WHERE id = ?', [
+      id,
+    ]);
+    if (!activity) {
+      return res.status(404).json({ error: 'Activity not found' });
+    }
+    res.json(activity);
+  } catch (error) {
+    console.error('Error updating activity:', error);
+    res.status(500).json({ error: 'Failed to update activity' });
+  }
+});
+
+app.delete('/api/activities/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await runQuery('DELETE FROM activities WHERE id = ?', [id]);
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Activity not found' });
+    }
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting activity:', error);
+    res.status(500).json({ error: 'Failed to delete activity' });
+  }
+});
+
+// Settings Endpoints
+app.get('/api/settings', async (req, res) => {
+  try {
+    const settings = await getAll('SELECT key, value FROM settings');
+    const settingsObject = settings.reduce((acc, { key, value }) => {
+      acc[key] = value;
+      return acc;
+    }, {});
+    res.json(settingsObject);
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({ error: 'Failed to fetch settings' });
+  }
+});
+
+app.put('/api/settings/:key', async (req, res) => {
+  const { key } = req.params;
+  const { value } = req.body;
+
+  if (value === undefined) {
+    return res.status(400).json({ error: 'Value is required' });
+  }
+
+  try {
+    await runQuery(
+      `INSERT INTO settings (key, value) VALUES (?, ?)
+       ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP`,
+      [key, value, value]
+    );
+    res.json({ key, value });
+  } catch (error) {
+    console.error('Error updating setting:', error);
+    res.status(500).json({ error: 'Failed to update setting' });
+  }
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Backend server running on http://0.0.0.0:${PORT}`);
+  console.log(`CORS enabled for: dynamic origins based on request`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });

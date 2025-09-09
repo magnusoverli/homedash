@@ -3,8 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        - VITE_API_URL=${VITE_API_URL:-http://localhost:3001}
+      args: []
     container_name: homedash-app
     restart: unless-stopped
     ports:
@@ -41,6 +40,8 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
+    volumes:
+      - homedash-data:/app/data
     healthcheck:
       test:
         [
@@ -61,3 +62,6 @@ services:
 networks:
   homedash-network:
     driver: bridge
+
+volumes:
+  homedash-data:

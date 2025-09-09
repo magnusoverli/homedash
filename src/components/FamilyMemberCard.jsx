@@ -22,7 +22,9 @@ const FamilyMemberCard = ({
   onCancelEdit,
 }) => {
   const [editName, setEditName] = useState(member.name);
-  const [editColor, setEditColor] = useState(member.avatarColor);
+  const [editColor, setEditColor] = useState(
+    member.avatarColor || member.color
+  );
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleSave = () => {
@@ -106,7 +108,7 @@ const FamilyMemberCard = ({
     <div className="member-card">
       <div
         className="member-avatar"
-        style={{ backgroundColor: member.avatarColor }}
+        style={{ backgroundColor: member.avatarColor || member.color }}
       >
         <span className="member-initials">{getInitials(member.name)}</span>
       </div>

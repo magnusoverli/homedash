@@ -1,9 +1,6 @@
 # Multi-stage build for optimized production image
 FROM node:20-alpine AS builder
 
-# Accept build arguments
-ARG VITE_API_URL=http://localhost:3001
-
 WORKDIR /app
 
 # Copy package files
@@ -15,10 +12,7 @@ RUN npm ci && npm cache clean --force
 # Copy source code
 COPY . .
 
-# Set environment variable for build
-ENV VITE_API_URL=${VITE_API_URL}
-
-# Build the application
+# Build the application without setting VITE_API_URL to enable dynamic detection
 RUN npm run build
 
 # Production stage

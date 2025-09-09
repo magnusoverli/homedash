@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import FamilyMemberCard from './FamilyMemberCard';
 import AddMemberForm from './AddMemberForm';
 import API_ENDPOINTS from '../config/api';
+import dataService from '../services/dataService';
 import './Settings.css';
 
 const Settings = () => {
@@ -10,6 +11,8 @@ const Settings = () => {
   const [familyMembers, setFamilyMembers] = useState([]);
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(true);
+  const [membersError, setMembersError] = useState('');
 
   const [llmIntegrationEnabled, setLlmIntegrationEnabled] = useState(false);
   const [apiKey, setApiKey] = useState('');
@@ -19,48 +22,111 @@ const Settings = () => {
   const [modelsError, setModelsError] = useState('');
   const [isTestingApiKey, setIsTestingApiKey] = useState(false);
   const [apiKeyTestResult, setApiKeyTestResult] = useState(null);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
 
+  // Load family members from API
   useEffect(() => {
-    const savedMembers = localStorage.getItem('familyMembers');
-    if (savedMembers) {
-      setFamilyMembers(JSON.parse(savedMembers));
-    }
+    const loadFamilyMembers = async () => {
+      setIsLoadingMembers(true);
+      try {
+        const members = await dataService.getFamilyMembers();
+        // Map backend 'color' field to frontend 'avatarColor'
+        const mappedMembers = members.map(m => ({
+          ...m,
+          avatarColor: m.color,
+        }));
+        setFamilyMembers(mappedMembers);
+        setMembersError('');
+      } catch (error) {
+        console.error('Error loading family members:', error);
+        setMembersError('Failed to load family members');
+        // Fallback to localStorage if API fails
+        const savedMembers = localStorage.getItem('familyMembers');
+        if (savedMembers) {
+          setFamilyMembers(JSON.parse(savedMembers));
+        }
+      } finally {
+        setIsLoadingMembers(false);
+      }
+    };
+    loadFamilyMembers();
   }, []);
 
+  // Load settings from API
   useEffect(() => {
-    localStorage.setItem('familyMembers', JSON.stringify(familyMembers));
-  }, [familyMembers]);
+    const loadSettings = async () => {
+      setIsLoadingSettings(true);
+      try {
+        const settings = await dataService.getSettings();
+        if (settings.llmIntegrationEnabled !== undefined) {
+          setLlmIntegrationEnabled(settings.llmIntegrationEnabled === 'true');
+        }
+        if (settings.anthropicApiKey) {
+          setApiKey(settings.anthropicApiKey);
+        }
+        if (settings.selectedAnthropicModel) {
+          setSelectedModel(settings.selectedAnthropicModel);
+        }
+      } catch (error) {
+        console.error('Error loading settings:', error);
+        // Fallback to localStorage if API fails
+        const savedLlmEnabled = localStorage.getItem('llmIntegrationEnabled');
+        const savedApiKey = localStorage.getItem('anthropicApiKey');
+        const savedModel = localStorage.getItem('selectedAnthropicModel');
 
-  useEffect(() => {
-    const savedLlmEnabled = localStorage.getItem('llmIntegrationEnabled');
-    const savedApiKey = localStorage.getItem('anthropicApiKey');
-    const savedModel = localStorage.getItem('selectedAnthropicModel');
-
-    if (savedLlmEnabled) {
-      setLlmIntegrationEnabled(JSON.parse(savedLlmEnabled));
-    }
-    if (savedApiKey) {
-      setApiKey(savedApiKey);
-    }
-    if (savedModel) {
-      setSelectedModel(savedModel);
-    }
+        if (savedLlmEnabled) {
+          setLlmIntegrationEnabled(JSON.parse(savedLlmEnabled));
+        }
+        if (savedApiKey) {
+          setApiKey(savedApiKey);
+        }
+        if (savedModel) {
+          setSelectedModel(savedModel);
+        }
+      } finally {
+        setIsLoadingSettings(false);
+      }
+    };
+    loadSettings();
   }, []);
 
+  // Save LLM settings to API when they change
   useEffect(() => {
-    localStorage.setItem(
-      'llmIntegrationEnabled',
-      JSON.stringify(llmIntegrationEnabled)
-    );
-  }, [llmIntegrationEnabled]);
+    if (!isLoadingSettings) {
+      dataService
+        .updateSetting('llmIntegrationEnabled', String(llmIntegrationEnabled))
+        .catch(error => {
+          console.error('Error saving llmIntegrationEnabled:', error);
+          // Fallback to localStorage
+          localStorage.setItem(
+            'llmIntegrationEnabled',
+            JSON.stringify(llmIntegrationEnabled)
+          );
+        });
+    }
+  }, [llmIntegrationEnabled, isLoadingSettings]);
 
   useEffect(() => {
-    localStorage.setItem('anthropicApiKey', apiKey);
-  }, [apiKey]);
+    if (!isLoadingSettings && apiKey) {
+      dataService.updateSetting('anthropicApiKey', apiKey).catch(error => {
+        console.error('Error saving apiKey:', error);
+        // Fallback to localStorage
+        localStorage.setItem('anthropicApiKey', apiKey);
+      });
+    }
+  }, [apiKey, isLoadingSettings]);
 
   useEffect(() => {
-    localStorage.setItem('selectedAnthropicModel', selectedModel);
-  }, [selectedModel]);
+    if (!isLoadingSettings && selectedModel) {
+      dataService
+        .updateSetting('selectedAnthropicModel', selectedModel)
+        .catch(error => {
+          console.error('Error saving selectedModel:', error);
+          // Fallback to localStorage
+          localStorage.setItem('selectedAnthropicModel', selectedModel);
+        });
+    }
+  }, [selectedModel, isLoadingSettings]);
 
   const fetchAvailableModels = useCallback(async () => {
     setIsLoadingModels(true);
@@ -123,27 +189,84 @@ const Settings = () => {
     }
   }, [llmIntegrationEnabled, apiKey, fetchAvailableModels]);
 
-  const handleAddMember = member => {
-    const newMember = {
-      ...member,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-    };
-    setFamilyMembers([...familyMembers, newMember]);
-    setIsAddingMember(false);
+  const handleAddMember = async member => {
+    try {
+      const newMember = await dataService.createFamilyMember({
+        name: member.name,
+        color: member.avatarColor || member.color,
+      });
+      // Map backend 'color' field to frontend 'avatarColor'
+      setFamilyMembers([
+        ...familyMembers,
+        { ...newMember, avatarColor: newMember.color },
+      ]);
+      setIsAddingMember(false);
+    } catch (error) {
+      console.error('Error adding member:', error);
+      // Fallback to localStorage
+      const newMember = {
+        ...member,
+        id: Date.now().toString(),
+        color: member.avatarColor || member.color,
+        createdAt: new Date().toISOString(),
+      };
+      setFamilyMembers([...familyMembers, newMember]);
+      localStorage.setItem(
+        'familyMembers',
+        JSON.stringify([...familyMembers, newMember])
+      );
+      setIsAddingMember(false);
+    }
   };
 
-  const handleUpdateMember = updatedMember => {
-    setFamilyMembers(
-      familyMembers.map(member =>
-        member.id === updatedMember.id ? updatedMember : member
-      )
-    );
-    setEditingMember(null);
+  const handleUpdateMember = async updatedMember => {
+    try {
+      const updated = await dataService.updateFamilyMember(updatedMember.id, {
+        name: updatedMember.name,
+        color: updatedMember.avatarColor || updatedMember.color,
+      });
+      // Map backend 'color' field to frontend 'avatarColor'
+      setFamilyMembers(
+        familyMembers.map(member =>
+          member.id === updated.id
+            ? { ...updated, avatarColor: updated.color }
+            : member
+        )
+      );
+      setEditingMember(null);
+    } catch (error) {
+      console.error('Error updating member:', error);
+      // Fallback to localStorage
+      setFamilyMembers(
+        familyMembers.map(member =>
+          member.id === updatedMember.id ? updatedMember : member
+        )
+      );
+      localStorage.setItem(
+        'familyMembers',
+        JSON.stringify(
+          familyMembers.map(member =>
+            member.id === updatedMember.id ? updatedMember : member
+          )
+        )
+      );
+      setEditingMember(null);
+    }
   };
 
-  const handleDeleteMember = memberId => {
-    setFamilyMembers(familyMembers.filter(member => member.id !== memberId));
+  const handleDeleteMember = async memberId => {
+    try {
+      await dataService.deleteFamilyMember(memberId);
+      setFamilyMembers(familyMembers.filter(member => member.id !== memberId));
+    } catch (error) {
+      console.error('Error deleting member:', error);
+      // Fallback to localStorage
+      const updatedMembers = familyMembers.filter(
+        member => member.id !== memberId
+      );
+      setFamilyMembers(updatedMembers);
+      localStorage.setItem('familyMembers', JSON.stringify(updatedMembers));
+    }
   };
 
   const handleBack = () => {
@@ -254,17 +377,23 @@ const Settings = () => {
             </div>
 
             <div className="members-grid">
-              {familyMembers.map(member => (
-                <FamilyMemberCard
-                  key={member.id}
-                  member={member}
-                  isEditing={editingMember?.id === member.id}
-                  onEdit={() => setEditingMember(member)}
-                  onUpdate={handleUpdateMember}
-                  onDelete={handleDeleteMember}
-                  onCancelEdit={() => setEditingMember(null)}
-                />
-              ))}
+              {isLoadingMembers ? (
+                <div className="loading-message">Loading family members...</div>
+              ) : membersError ? (
+                <div className="error-message">{membersError}</div>
+              ) : (
+                familyMembers.map(member => (
+                  <FamilyMemberCard
+                    key={member.id}
+                    member={member}
+                    isEditing={editingMember?.id === member.id}
+                    onEdit={() => setEditingMember(member)}
+                    onUpdate={handleUpdateMember}
+                    onDelete={handleDeleteMember}
+                    onCancelEdit={() => setEditingMember(null)}
+                  />
+                ))
+              )}
 
               {isAddingMember ? (
                 <AddMemberForm

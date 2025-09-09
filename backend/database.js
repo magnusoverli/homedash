@@ -1,0 +1,144 @@
+import sqlite3 from 'sqlite3';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const dbDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
+
+const dbPath = path.join(dbDir, 'homedash.db');
+
+const Database = sqlite3.verbose().Database;
+const db = new Database(dbPath, err => {
+  if (err) {
+    console.error('Error opening database:', err.message);
+  } else {
+    console.log('Connected to the SQLite database.');
+  }
+});
+
+const initDatabase = () => {
+  return new Promise((resolve, reject) => {
+    db.serialize(() => {
+      db.run(
+        `
+        CREATE TABLE IF NOT EXISTS family_members (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          color TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `,
+        err => {
+          if (err) {
+            console.error('Error creating family_members table:', err);
+            return reject(err);
+          }
+        }
+      );
+
+      db.run(
+        `
+        CREATE TABLE IF NOT EXISTS activities (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          member_id INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          date TEXT NOT NULL,
+          start_time TEXT NOT NULL,
+          end_time TEXT NOT NULL,
+          description TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
+        )
+      `,
+        err => {
+          if (err) {
+            console.error('Error creating activities table:', err);
+            return reject(err);
+          }
+        }
+      );
+
+      db.run(
+        `
+        CREATE TABLE IF NOT EXISTS settings (
+          key TEXT PRIMARY KEY,
+          value TEXT,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `,
+        err => {
+          if (err) {
+            console.error('Error creating settings table:', err);
+            return reject(err);
+          }
+        }
+      );
+
+      db.run(`
+        CREATE INDEX IF NOT EXISTS idx_activities_member_date 
+        ON activities(member_id, date)
+      `);
+
+      db.run(
+        `
+        CREATE INDEX IF NOT EXISTS idx_activities_date 
+        ON activities(date)
+      `,
+        err => {
+          if (err) {
+            console.error('Error creating indexes:', err);
+            return reject(err);
+          }
+          console.log('Database initialized successfully');
+          resolve();
+        }
+      );
+    });
+  });
+};
+
+const runQuery = (sql, params = []) => {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function (err) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve({ id: this.lastID, changes: this.changes });
+      }
+    });
+  });
+};
+
+const getAll = (sql, params = []) => {
+  return new Promise((resolve, reject) => {
+    db.all(sql, params, (err, rows) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(rows);
+      }
+    });
+  });
+};
+
+const getOne = (sql, params = []) => {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (err, row) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(row);
+      }
+    });
+  });
+};
+
+export { db, initDatabase, runQuery, getAll, getOne };
