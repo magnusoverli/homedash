@@ -72,6 +72,11 @@ app.post('/api/test-key', async (req, res) => {
   }
 
   try {
+    // Use a simple message endpoint to validate the API key
+    // This is more reliable than trying to use non-existent admin endpoints
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -81,10 +86,13 @@ app.post('/api/test-key', async (req, res) => {
       },
       body: JSON.stringify({
         model: 'claude-3-haiku-20240307',
-        max_tokens: 5,
-        messages: [{ role: 'user', content: 'Hi' }],
+        max_tokens: 1,
+        messages: [{ role: 'user', content: 'Hi' }]
       }),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     if (response.status === 401) {
       return res.json({
@@ -92,44 +100,69 @@ app.post('/api/test-key', async (req, res) => {
         message: 'Invalid API key',
       });
     } else if (response.status === 400) {
-      // 400 can mean the request is malformed but the key is valid
-      const errorData = await response.json();
-      if (
-        errorData.error?.type === 'invalid_request_error' &&
-        errorData.error?.message?.includes('credit')
-      ) {
-        return res.json({
-          valid: false,
-          message: 'API key is valid but has no credits',
-        });
-      }
-      // If we get a 400 for other reasons, the key is likely valid
+      // A 400 error might indicate the API key is valid but request is malformed
+      // which is actually what we want for testing purposes
       return res.json({
         valid: true,
-        message: 'API key is valid',
+        message: 'API key is valid!',
       });
     } else if (response.ok) {
       return res.json({
         valid: true,
-        message: 'API key is valid',
+        message: 'API key is valid and working!',
       });
     } else {
-      return res.json({
-        valid: false,
-        message: `Unexpected response: ${response.status}`,
+      // Try fallback with models endpoint
+      const modelsResponse = await fetch('https://api.anthropic.com/v1/models', {
+        method: 'GET',
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal
       });
+
+      if (modelsResponse.status === 401) {
+        return res.json({
+          valid: false,
+          message: 'Invalid API key',
+        });
+      } else if (modelsResponse.ok) {
+        const modelsData = await modelsResponse.json();
+        const modelCount = modelsData.data ? modelsData.data.length : 0;
+        return res.json({
+          valid: true,
+          message: `API key is valid! Found ${modelCount} available models.`,
+        });
+      } else {
+        return res.json({
+          valid: false,
+          message: `Could not validate API key: ${response.status}`,
+        });
+      }
     }
   } catch (error) {
     console.error('Error testing API key:', error);
+    
+    // Check if it's a timeout error
+    if (error.name === 'AbortError') {
+      return res.status(500).json({
+        valid: false,
+        message: 'Request timed out - please check your network connection and try again',
+        error: 'TIMEOUT',
+      });
+    }
+    
     return res.status(500).json({
       valid: false,
-      message: 'Failed to validate API key',
+      message: 'Failed to validate API key - please check your network connection',
       error: error.message,
     });
   }
 });
 
-// Get available models endpoint
+// Get available models endpoint - purely dynamic from Anthropic API
 app.post('/api/models', async (req, res) => {
   const { apiKey } = req.body;
 
@@ -140,119 +173,74 @@ app.post('/api/models', async (req, res) => {
     });
   }
 
-  // Since Anthropic doesn't have a models endpoint, we return the current available models
-  // This endpoint validates the key and returns models if valid
   try {
-    // First validate the API key with a minimal request
-    const testResponse = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
+    // Fetch models from Anthropic's API with a timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+    const modelsResponse = await fetch('https://api.anthropic.com/v1/models', {
+      method: 'GET',
       headers: {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 5,
-        messages: [{ role: 'user', content: 'test' }],
-      }),
+      signal: controller.signal
     });
 
-    if (testResponse.status === 401) {
+    clearTimeout(timeoutId);
+
+    if (modelsResponse.status === 401) {
       return res.status(401).json({
         error: 'Invalid API key',
         models: [],
       });
     }
 
-    // If key is valid (or we get a 400 for other reasons), return available models
-    const models = [
-      {
-        id: 'claude-opus-4-1-20250805',
-        display_name: 'Claude Opus 4.1 (Most Capable)',
-        context_window: 200000,
-        max_tokens: 32000,
-      },
-      {
-        id: 'claude-opus-4-20250514',
-        display_name: 'Claude Opus 4',
-        context_window: 200000,
-        max_tokens: 32000,
-      },
-      {
-        id: 'claude-sonnet-4-20250514',
-        display_name: 'Claude Sonnet 4 (High Performance)',
-        context_window: 200000,
-        max_tokens: 64000,
-      },
-      {
-        id: 'claude-3-7-sonnet-20250219',
-        display_name: 'Claude Sonnet 3.7',
-        context_window: 200000,
-        max_tokens: 64000,
-      },
-      {
-        id: 'claude-3-5-haiku-20241022',
-        display_name: 'Claude Haiku 3.5 (Fastest)',
-        context_window: 200000,
-        max_tokens: 8192,
-      },
-      {
-        id: 'claude-3-haiku-20240307',
-        display_name: 'Claude Haiku 3',
-        context_window: 200000,
-        max_tokens: 4096,
-      },
-    ];
+    if (modelsResponse.ok) {
+      const modelsData = await modelsResponse.json();
+      
+      // Transform the response to match our frontend format
+      const models = modelsData.data.map(model => ({
+        id: model.id,
+        display_name: model.display_name || model.id,
+        created_at: model.created_at,
+      }));
 
-    res.json({ models, valid: true });
+      console.log(`Successfully fetched ${models.length} models from Anthropic API`);
+      res.json({ models });
+    } else {
+      console.error('Anthropic API returned non-200 status:', modelsResponse.status);
+      return res.status(modelsResponse.status).json({
+        error: `Failed to fetch models from Anthropic API (${modelsResponse.status})`,
+        models: [],
+      });
+    }
   } catch (error) {
-    console.error('Error validating API key:', error);
-    // Return models anyway since the models list is static
-    // The API key validation is just for user feedback
-    const models = [
-      {
-        id: 'claude-opus-4-1-20250805',
-        display_name: 'Claude Opus 4.1 (Most Capable)',
-        context_window: 200000,
-        max_tokens: 32000,
-      },
-      {
-        id: 'claude-opus-4-20250514',
-        display_name: 'Claude Opus 4',
-        context_window: 200000,
-        max_tokens: 32000,
-      },
-      {
-        id: 'claude-sonnet-4-20250514',
-        display_name: 'Claude Sonnet 4 (High Performance)',
-        context_window: 200000,
-        max_tokens: 64000,
-      },
-      {
-        id: 'claude-3-7-sonnet-20250219',
-        display_name: 'Claude Sonnet 3.7',
-        context_window: 200000,
-        max_tokens: 64000,
-      },
-      {
-        id: 'claude-3-5-haiku-20241022',
-        display_name: 'Claude Haiku 3.5 (Fastest)',
-        context_window: 200000,
-        max_tokens: 8192,
-      },
-      {
-        id: 'claude-3-haiku-20240307',
-        display_name: 'Claude Haiku 3',
-        context_window: 200000,
-        max_tokens: 4096,
-      },
-    ];
+    console.error('Error fetching models from API:', error);
     
-    res.json({ 
-      models, 
-      valid: false, 
-      warning: 'Could not validate API key, but models are available' 
+    // Check if it's a timeout error
+    if (error.name === 'AbortError') {
+      return res.status(500).json({
+        error: 'Request timed out while fetching models',
+        message: 'The request to Anthropic API timed out. Please check your network connection.',
+        models: [],
+      });
+    }
+    
+    // Check if it's an auth error vs network error
+    if (error.message && error.message.includes('401')) {
+      return res.status(401).json({
+        error: 'Invalid API key',
+        models: [],
+      });
+    }
+    
+    // For other network errors, return error
+    res.status(500).json({
+      error: 'Failed to fetch models from Anthropic API',
+      message: error.message,
+      models: [],
     });
   }
 });
@@ -266,6 +254,9 @@ app.post('/api/messages', async (req, res) => {
   }
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout for messages
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -274,7 +265,10 @@ app.post('/api/messages', async (req, res) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(messageData),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     const data = await response.json();
 
@@ -285,6 +279,14 @@ app.post('/api/messages', async (req, res) => {
     res.json(data);
   } catch (error) {
     console.error('Error proxying message:', error);
+    
+    if (error.name === 'AbortError') {
+      return res.status(500).json({
+        error: 'Request timed out',
+        message: 'The request to Anthropic API timed out. Please try again.',
+      });
+    }
+    
     res.status(500).json({
       error: 'Failed to proxy message',
       message: error.message,
