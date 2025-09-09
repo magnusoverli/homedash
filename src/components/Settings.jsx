@@ -172,6 +172,16 @@ const Settings = () => {
         ) {
           setSelectedModel('');
         }
+
+        // Auto-select Claude Sonnet 4 as default if no model is selected
+        if (!selectedModel) {
+          const claudeSonnet4 = data.models.find(model => 
+            model.id === 'claude-sonnet-4-20250514'
+          );
+          if (claudeSonnet4) {
+            setSelectedModel(claudeSonnet4.id);
+          }
+        }
       } else {
         setModelsError(data.error || 'Failed to load available models.');
         setAvailableModels([]);
