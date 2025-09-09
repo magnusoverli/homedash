@@ -68,6 +68,29 @@ const initDatabase = () => {
 
       db.run(
         `
+        CREATE TABLE IF NOT EXISTS homework (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          member_id INTEGER NOT NULL,
+          subject TEXT NOT NULL,
+          assignment TEXT NOT NULL,
+          due_date TEXT,
+          completed BOOLEAN DEFAULT FALSE,
+          extracted_from_image TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
+        )
+      `,
+        err => {
+          if (err) {
+            console.error('Error creating homework table:', err);
+            return reject(err);
+          }
+        }
+      );
+
+      db.run(
+        `
         CREATE TABLE IF NOT EXISTS settings (
           key TEXT PRIMARY KEY,
           value TEXT,
@@ -87,16 +110,27 @@ const initDatabase = () => {
         ON activities(member_id, date)
       `);
 
-      db.run(
-        `
+      db.run(`
         CREATE INDEX IF NOT EXISTS idx_activities_date 
         ON activities(date)
+      `);
+
+      db.run(`
+        CREATE INDEX IF NOT EXISTS idx_homework_member 
+        ON homework(member_id)
+      `);
+
+      db.run(
+        `
+        CREATE INDEX IF NOT EXISTS idx_homework_due_date 
+        ON homework(due_date)
       `,
         err => {
           if (err) {
             console.error('Error creating indexes:', err);
             return reject(err);
           }
+          
           console.log('Database initialized successfully');
           resolve();
         }

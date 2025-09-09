@@ -45,11 +45,13 @@ const ActivityBlock = ({
 
   const formatTime = timeString => {
     const [hours, minutes] = timeString.split(':').map(Number);
-    const period = hours >= 12 ? 'pm' : 'am';
-    const displayHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
     return minutes === 0
-      ? `${displayHours}${period}`
-      : `${displayHours}:${minutes.toString().padStart(2, '0')}${period}`;
+      ? `${hours.toString().padStart(2, '0')}:00`
+      : `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  };
+
+  const isSchoolScheduleActivity = () => {
+    return activity.description && activity.description.includes('[TYPE:school_schedule]');
   };
 
   const getAbbreviatedTitle = title => {
@@ -121,6 +123,9 @@ const ActivityBlock = ({
         <div className="activity-title">
           {getAbbreviatedTitle(activity.title)}
         </div>
+        {isSchoolScheduleActivity() && height >= 60 && (
+          <div className="activity-end-time">{formatTime(activity.endTime)}</div>
+        )}
       </div>
 
       {showActions && activity.title && (

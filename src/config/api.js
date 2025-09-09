@@ -29,6 +29,9 @@ export const API_ENDPOINTS = {
   FAMILY_MEMBERS: `${API_BASE_URL}/api/family-members`,
   ACTIVITIES: `${API_BASE_URL}/api/activities`,
   SETTINGS: `${API_BASE_URL}/api/settings`,
+  // School plan endpoints
+  HOMEWORK: `${API_BASE_URL}/api/homework`,
+  EXTRACT_SCHOOL_PLAN: `${API_BASE_URL}/api/extract-school-plan`,
 };
 
 export default API_ENDPOINTS;

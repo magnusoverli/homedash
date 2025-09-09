@@ -129,6 +129,67 @@ class DataService {
     return this.handleResponse(response);
   }
 
+  // Homework
+  async getHomework(filters = {}) {
+    const params = new URLSearchParams();
+    if (filters.member_id) params.append('member_id', filters.member_id);
+
+    const url = `${API_URL}/api/homework${params.toString() ? '?' + params.toString() : ''}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return this.handleResponse(response);
+  }
+
+  async createHomework(homeworkData) {
+    const response = await fetch(`${API_URL}/api/homework`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(homeworkData),
+    });
+    return this.handleResponse(response);
+  }
+
+  async updateHomework(id, homeworkData) {
+    const response = await fetch(`${API_URL}/api/homework/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(homeworkData),
+    });
+    return this.handleResponse(response);
+  }
+
+  async deleteHomework(id) {
+    const response = await fetch(`${API_URL}/api/homework/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return this.handleResponse(response);
+  }
+
+  // School Plan Extraction
+  async extractSchoolPlan(memberId, imageFile, apiKey) {
+    const formData = new FormData();
+    formData.append('member_id', memberId);
+    formData.append('api_key', apiKey);
+    formData.append('schoolPlanImage', imageFile);
+
+    const response = await fetch(`${API_URL}/api/extract-school-plan`, {
+      method: 'POST',
+      body: formData, // No Content-Type header for FormData
+    });
+    return this.handleResponse(response);
+  }
+
   // Migration helper
   async migrateFromLocalStorage() {
     try {

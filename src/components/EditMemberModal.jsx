@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import GenericModal from './GenericModal';
+import dataService from '../services/dataService';
 import './EditMemberModal.css';
 
 const AVATAR_COLORS = [
@@ -28,6 +29,21 @@ const EditMemberModal = ({
     schoolPlanImage: null,
   });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  // LLM extraction state
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractionResult, setExtractionResult] = useState(null);
+  const [extractionError, setExtractionError] = useState('');
+  const [llmSettings, setLlmSettings] = useState({
+    enabled: false,
+    apiKey: '',
+    selectedModel: ''
+  });
+  
+  // School schedule management
+  const [hasSchoolSchedule, setHasSchoolSchedule] = useState(false);
+  const [isDeletingSchedule, setIsDeletingSchedule] = useState(false);
+  const [scheduleDeleteError, setScheduleDeleteError] = useState('');
 
   useEffect(() => {
     if (member) {
@@ -38,7 +54,51 @@ const EditMemberModal = ({
       });
     }
     setShowDeleteConfirm(false);
+    setExtractionResult(null);
+    setExtractionError('');
   }, [member]);
+
+  // Load LLM settings and check for school schedule when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      loadLlmSettings();
+      checkForSchoolSchedule();
+    }
+  }, [isOpen, member]);
+
+  const loadLlmSettings = async () => {
+    try {
+      const settings = await dataService.getSettings();
+      setLlmSettings({
+        enabled: settings.llmIntegrationEnabled === 'true',
+        apiKey: settings.anthropicApiKey || '',
+        selectedModel: settings.selectedAnthropicModel || ''
+      });
+    } catch (error) {
+      console.error('Error loading LLM settings:', error);
+      // Fallback to localStorage
+      setLlmSettings({
+        enabled: localStorage.getItem('llmIntegrationEnabled') === 'true',
+        apiKey: localStorage.getItem('anthropicApiKey') || '',
+        selectedModel: localStorage.getItem('selectedAnthropicModel') || ''
+      });
+    }
+  };
+
+  const checkForSchoolSchedule = async () => {
+    if (!member?.id) return;
+    
+    try {
+      // Check if member has any activities with school schedule type
+      const activities = await dataService.getActivities({ memberId: member.id });
+      const schoolActivities = activities.filter(activity => 
+        activity.description && activity.description.includes('[TYPE:school_schedule]')
+      );
+      setHasSchoolSchedule(schoolActivities.length > 0);
+    } catch (error) {
+      console.error('Error checking for school schedule:', error);
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -76,6 +136,81 @@ const EditMemberModal = ({
       ...prev,
       schoolPlanImage: null
     }));
+    setExtractionResult(null);
+    setExtractionError('');
+  };
+
+  const handleExtractSchoolPlan = async () => {
+    if (!formData.schoolPlanImage || !member?.id || !llmSettings.apiKey) {
+      setExtractionError('Image, member, and API key are required for extraction');
+      return;
+    }
+
+    setIsExtracting(true);
+    setExtractionError('');
+    setExtractionResult(null);
+
+    try {
+      const result = await dataService.extractSchoolPlan(
+        member.id,
+        formData.schoolPlanImage,
+        llmSettings.apiKey
+      );
+
+      setExtractionResult(result);
+      setExtractionError('');
+      
+      // Refresh school schedule status
+      checkForSchoolSchedule();
+      
+      // Show success message
+      alert(`School plan extracted successfully!\n\nFound:\n- ${result.savedData.schedules.length} school schedules\n- ${result.savedData.activities.length} activities\n- ${result.savedData.homework.length} homework assignments\n\nData has been saved to the database.`);
+      
+    } catch (error) {
+      console.error('Error extracting school plan:', error);
+      setExtractionError(error.message || 'Failed to extract school plan');
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
+  const handleDeleteSchoolSchedule = async () => {
+    if (!member?.id) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete the school schedule for ${member?.name || 'this family member'}? This will only remove ${member?.name ? member.name + "'s" : 'this member\'s'} imported school time slots.`
+    );
+
+    if (!confirmed) return;
+
+    setIsDeletingSchedule(true);
+    setScheduleDeleteError('');
+
+    try {
+      // Get all activities for this member
+      const activities = await dataService.getActivities({ memberId: member.id });
+      
+      // Find school schedule activities
+      const schoolScheduleActivities = activities.filter(activity => 
+        activity.description && activity.description.includes('[TYPE:school_schedule]')
+      );
+
+      // Delete each school schedule activity
+      for (const activity of schoolScheduleActivities) {
+        await dataService.deleteActivity(activity.id);
+      }
+
+      setHasSchoolSchedule(false);
+      setScheduleDeleteError('');
+      
+      alert(`Successfully deleted ${schoolScheduleActivities.length} school schedule entries.`);
+      
+    } catch (error) {
+      console.error('Error deleting school schedule:', error);
+      setScheduleDeleteError(error.message || 'Failed to delete school schedule');
+    } finally {
+      setIsDeletingSchedule(false);
+    }
   };
 
 
@@ -206,28 +341,60 @@ const EditMemberModal = ({
                       : 'School Plan Image'
                     }
                   </span>
-                  <button
-                    type="button"
-                    className="button-remove-image"
-                    onClick={handleRemoveImage}
-                    aria-label="Remove school plan image"
-                  >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
+                  <div className="image-buttons">
+                    {llmSettings.enabled && llmSettings.apiKey && (
+                      <button
+                        type="button"
+                        className="button-extract"
+                        onClick={handleExtractSchoolPlan}
+                        disabled={isExtracting || !formData.schoolPlanImage}
+                        aria-label="Import data from school plan"
+                      >
+                        {isExtracting ? (
+                          <>
+                            <svg className="extract-spinner" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeDasharray="31.416" strokeDashoffset="31.416">
+                                <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite"/>
+                                <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite"/>
+                              </circle>
+                            </svg>
+                            Extracting...
+                          </>
+                        ) : (
+                          <>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            Import
+                          </>
+                        )}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="button-remove-image"
+                      onClick={handleRemoveImage}
+                      aria-label="Remove school plan image"
                     >
-                      <path
-                        d="M12 4L4 12M4 4L12 12"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M12 4L4 12M4 4L12 12"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -279,7 +446,98 @@ const EditMemberModal = ({
               </div>
             )}
           </div>
+
+          {/* Extraction Status */}
+          {extractionError && (
+            <div className="extraction-status error">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" strokeWidth="2"/>
+                <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              <span>{extractionError}</span>
+            </div>
+          )}
+
+          {extractionResult && (
+            <div className="extraction-status success">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M22 11.08V12a10 10 0 11-5.93-9.14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <polyline points="22,4 12,14.01 9,11.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span>
+                Successfully extracted: {extractionResult.savedData.schedules.length} schedules, {extractionResult.savedData.activities.length} activities, {extractionResult.savedData.homework.length} homework items
+              </span>
+            </div>
+          )}
+
+          {!llmSettings.enabled && formData.schoolPlanImage && (
+            <div className="extraction-status info">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                <path d="M12 16v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 8h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span>Enable LLM Integration in Settings to extract data from school plans automatically</span>
+            </div>
+          )}
         </div>
+
+        {/* School Schedule Management */}
+        {hasSchoolSchedule && (
+          <div className="modal-section">
+            <div className="school-schedule-compact">
+              <div className="schedule-info">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M22 11.08V12a10 10 0 11-5.93-9.14" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <polyline points="22,4 12,14.01 9,11.01" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span className="schedule-text">School schedule imported</span>
+              </div>
+
+              <button
+                type="button"
+                className="button-delete-schedule-compact"
+                onClick={handleDeleteSchoolSchedule}
+                disabled={isDeletingSchedule}
+                title={`Delete school schedule for ${member?.name || 'this member'}`}
+              >
+                {isDeletingSchedule ? (
+                  <>
+                    <svg className="delete-spinner" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeDasharray="31.416" strokeDashoffset="31.416">
+                        <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite"/>
+                        <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite"/>
+                      </circle>
+                    </svg>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <polyline points="3,6 5,6 21,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <line x1="10" y1="11" x2="10" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <line x1="14" y1="11" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Delete
+                  </>
+                )}
+              </button>
+            </div>
+
+            {scheduleDeleteError && (
+              <div className="extraction-status error">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                <span>{scheduleDeleteError}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="modal-actions">

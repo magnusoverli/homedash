@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import fetch from 'node-fetch';
+import multer from 'multer';
 import { initDatabase, runQuery, getAll, getOne } from './database.js';
 
 dotenv.config();
@@ -476,6 +477,427 @@ app.delete('/api/activities/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to delete activity' });
   }
 });
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Check file type
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
+
+// Homework Endpoints
+app.get('/api/homework', async (req, res) => {
+  const { member_id } = req.query;
+  
+  try {
+    let homework;
+    if (member_id) {
+      homework = await getAll(
+        'SELECT * FROM homework WHERE member_id = ? ORDER BY created_at DESC',
+        [member_id]
+      );
+    } else {
+      homework = await getAll(
+        'SELECT h.*, fm.name as member_name FROM homework h JOIN family_members fm ON h.member_id = fm.id ORDER BY h.created_at DESC'
+      );
+    }
+    res.json(homework);
+  } catch (error) {
+    console.error('Error fetching homework:', error);
+    res.status(500).json({ error: 'Failed to fetch homework' });
+  }
+});
+
+app.post('/api/homework', async (req, res) => {
+  const { member_id, subject, assignment, due_date, completed, extracted_from_image } = req.body;
+
+  if (!member_id || !subject || !assignment) {
+    return res.status(400).json({ 
+      error: 'member_id, subject, and assignment are required' 
+    });
+  }
+
+  try {
+    const result = await runQuery(
+      `INSERT INTO homework (member_id, subject, assignment, due_date, completed, extracted_from_image) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [member_id, subject, assignment, due_date || null, completed || false, extracted_from_image || null]
+    );
+    const homework = await getOne('SELECT * FROM homework WHERE id = ?', [result.id]);
+    res.status(201).json(homework);
+  } catch (error) {
+    console.error('Error creating homework:', error);
+    res.status(500).json({ error: 'Failed to create homework' });
+  }
+});
+
+app.put('/api/homework/:id', async (req, res) => {
+  const { id } = req.params;
+  const { subject, assignment, due_date, completed } = req.body;
+
+  if (!subject || !assignment) {
+    return res.status(400).json({ 
+      error: 'subject and assignment are required' 
+    });
+  }
+
+  try {
+    await runQuery(
+      `UPDATE homework 
+       SET subject = ?, assignment = ?, due_date = ?, completed = ?, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = ?`,
+      [subject, assignment, due_date || null, completed || false, id]
+    );
+    const homework = await getOne('SELECT * FROM homework WHERE id = ?', [id]);
+    if (!homework) {
+      return res.status(404).json({ error: 'Homework not found' });
+    }
+    res.json(homework);
+  } catch (error) {
+    console.error('Error updating homework:', error);
+    res.status(500).json({ error: 'Failed to update homework' });
+  }
+});
+
+app.delete('/api/homework/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await runQuery('DELETE FROM homework WHERE id = ?', [id]);
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Homework not found' });
+    }
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting homework:', error);
+    res.status(500).json({ error: 'Failed to delete homework' });
+  }
+});
+
+// School Plan Extraction Endpoint
+app.post('/api/extract-school-plan', upload.single('schoolPlanImage'), async (req, res) => {
+  const { member_id, api_key } = req.body;
+  const imageFile = req.file;
+
+  console.log('=== SCHOOL PLAN EXTRACTION STARTED ===');
+  console.log(`Member ID: ${member_id}`);
+  console.log(`Image file: ${imageFile ? imageFile.originalname : 'none'}`);
+  console.log(`Image size: ${imageFile ? (imageFile.size / 1024).toFixed(2) : 0} KB`);
+  console.log(`Image type: ${imageFile ? imageFile.mimetype : 'none'}`);
+  console.log(`API key provided: ${api_key ? 'Yes (length: ' + api_key.length + ')' : 'No'}`);
+
+  if (!member_id || !api_key || !imageFile) {
+    console.log('❌ Validation failed - missing required fields');
+    return res.status(400).json({ 
+      error: 'member_id, api_key, and schoolPlanImage are required' 
+    });
+  }
+
+  try {
+    // Read the prompt from the llm_promt.md file
+    const path = await import('path');
+    const fs = await import('fs');
+    const promptPath = path.join(process.cwd(), 'llm_promt.md');
+    const prompt = fs.readFileSync(promptPath, 'utf8');
+    console.log(`📄 Prompt loaded successfully (${prompt.length} characters)`);
+
+    // Convert image to base64
+    const imageBase64 = imageFile.buffer.toString('base64');
+    const imageMimeType = imageFile.mimetype;
+    console.log(`🖼️  Image converted to base64 (${imageBase64.length} characters)`);
+    console.log(`📡 Sending request to Anthropic API...`);
+
+    // Prepare the message for Claude with vision
+    const messageData = {
+      model: 'claude-3-5-sonnet-20241022', // Using a model that supports vision
+      max_tokens: 4000,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: prompt
+            },
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: imageMimeType,
+                data: imageBase64
+              }
+            }
+          ]
+        }
+      ]
+    };
+
+    // Send request to Anthropic API
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout for vision
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': api_key,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(messageData),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.log(`❌ Anthropic API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+      return res.status(response.status).json({
+        error: 'Failed to extract school plan',
+        message: errorData.error?.message || 'Unknown error from Anthropic API'
+      });
+    }
+
+    const data = await response.json();
+    const extractedText = data.content[0].text;
+    console.log(`✅ Anthropic API response received`);
+    console.log(`📝 Extracted text length: ${extractedText.length} characters`);
+    console.log('--- RAW LLM RESPONSE ---');
+    console.log(extractedText);
+    console.log('--- END RAW RESPONSE ---');
+
+    // Parse the extracted datasets from the response
+    let extractedData;
+    try {
+      console.log('🔍 Parsing LLM response for datasets...');
+      extractedData = parseSchoolPlanResponse(extractedText);
+      console.log('✅ Parsing successful');
+      console.log(`📊 Parsed datasets:`)
+      console.log(`   - school_schedule: ${extractedData.school_schedule ? Object.keys(extractedData.school_schedule).length : 0} days`);
+      console.log(`   - school_activities: ${extractedData.school_activities ? extractedData.school_activities.length : 0} activities`);
+      console.log(`   - school_homework: ${extractedData.school_homework ? extractedData.school_homework.length : 0} assignments`);
+    } catch (parseError) {
+      console.error('❌ Error parsing LLM response:', parseError);
+      return res.status(400).json({
+        error: 'Failed to parse extracted data',
+        message: 'The AI response could not be parsed into the expected format',
+        rawResponse: extractedText
+      });
+    }
+
+    // Transform and save the data
+    console.log('💾 Saving extracted data to database...');
+    const savedData = await saveExtractedSchoolPlan(member_id, extractedData, imageFile.originalname);
+    console.log('✅ Data saved successfully');
+    console.log(`📈 Saved records:`)
+    console.log(`   - schedules: ${savedData.schedules.length}`);
+    console.log(`   - activities: ${savedData.activities.length}`);
+    console.log(`   - homework: ${savedData.homework.length}`);
+
+    console.log('🎉 SCHOOL PLAN EXTRACTION COMPLETED SUCCESSFULLY');
+
+    res.json({
+      success: true,
+      message: 'School plan extracted successfully',
+      extractedData: extractedData,
+      savedData: savedData
+    });
+
+  } catch (error) {
+    console.error('❌ Error extracting school plan:', error);
+    console.log('💥 SCHOOL PLAN EXTRACTION FAILED');
+    
+    if (error.name === 'AbortError') {
+      console.log('⏰ Request timed out');
+      return res.status(500).json({
+        error: 'Request timed out',
+        message: 'The extraction request took too long. Please try again.',
+      });
+    }
+    
+    console.log(`🚨 Error details: ${error.message}`);
+    res.status(500).json({
+      error: 'Failed to extract school plan',
+      message: error.message,
+    });
+  }
+});
+
+// Helper function to parse the LLM response
+function parseSchoolPlanResponse(responseText) {
+  console.log('🔄 Starting LLM response parsing (focusing on school_schedule only)...');
+  
+  // Focus only on school_schedule for now
+  const datasets = {
+    school_schedule: null,
+    school_activities: null,
+    school_homework: null
+  };
+
+  let foundMatch = null;
+
+  try {
+    // Find the start of the schedule JSON object
+    // Look for the opening brace, allowing for whitespace before "Monday"
+    const mondayIndex = responseText.indexOf('"Monday"');
+    let scheduleStart = -1;
+    
+    if (mondayIndex !== -1) {
+      // Work backwards from "Monday" to find the opening brace
+      for (let i = mondayIndex - 1; i >= 0; i--) {
+        const char = responseText[i];
+        if (char === '{') {
+          scheduleStart = i;
+          break;
+        } else if (char !== ' ' && char !== '\n' && char !== '\r' && char !== '\t') {
+          // Found non-whitespace that's not an opening brace
+          break;
+        }
+      }
+    }
+    if (scheduleStart !== -1) {
+      console.log('📅 Found schedule starting at position:', scheduleStart);
+      
+      // Find the matching closing brace
+      let braceCount = 0;
+      let scheduleEnd = scheduleStart;
+      let inString = false;
+      let escapeNext = false;
+      
+      for (let i = scheduleStart; i < responseText.length; i++) {
+        const char = responseText[i];
+        
+        if (escapeNext) {
+          escapeNext = false;
+          continue;
+        }
+        
+        if (char === '\\') {
+          escapeNext = true;
+          continue;
+        }
+        
+        if (char === '"') {
+          inString = !inString;
+          continue;
+        }
+        
+        if (!inString) {
+          if (char === '{') {
+            braceCount++;
+          } else if (char === '}') {
+            braceCount--;
+            if (braceCount === 0) {
+              scheduleEnd = i;
+              break;
+            }
+          }
+        }
+      }
+      
+      if (braceCount === 0) {
+        const scheduleText = responseText.substring(scheduleStart, scheduleEnd + 1);
+        console.log(`📋 Schedule JSON text: ${scheduleText}`);
+        datasets.school_schedule = JSON.parse(scheduleText);
+        console.log(`✅ Parsed school_schedule with ${Object.keys(datasets.school_schedule).length} days`);
+      } else {
+        console.log('❌ Could not find closing brace for schedule JSON');
+      }
+    } else {
+      console.log('❌ Could not find school schedule in response');
+    }
+
+    // Skip parsing activities and homework for now
+    console.log('⏭️  Skipping activities and homework parsing');
+
+    return datasets;
+  } catch (error) {
+    console.error(`❌ JSON parsing error: ${error.message}`);
+    console.log(`📄 Problematic text: ${foundMatch ? foundMatch[foundMatch.length - 1] : 'No match found'}`);
+    throw new Error(`Failed to parse LLM response: ${error.message}`);
+  }
+}
+
+// Helper function to save extracted data to database
+async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
+  console.log(`💾 Starting database save for member ${memberId}`);
+  
+  const savedData = {
+    schedules: [],
+    activities: [],
+    homework: []
+  };
+
+  try {
+    // Save school schedule as recurring activities
+    if (extractedData.school_schedule) {
+      console.log(`📅 Processing school schedule...`);
+      const dayMapping = {
+        'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5
+      };
+
+      for (const [day, times] of Object.entries(extractedData.school_schedule)) {
+        console.log(`📅 Processing day: ${day}, times:`, times);
+        if (times && times.start && times.end) {
+          // Create recurring weekly schedule entries
+          const dayNum = dayMapping[day];
+          console.log(`🗓️  Day ${day} mapped to number: ${dayNum}`);
+          if (dayNum) {
+            // Calculate the date for this day of the current week
+            const now = new Date();
+            const currentDay = now.getDay();
+            const diff = dayNum - currentDay;
+            const targetDate = new Date(now);
+            targetDate.setDate(now.getDate() + diff);
+            const dateString = targetDate.toISOString().split('T')[0];
+            
+            console.log(`📍 Saving schedule: ${day} (${dateString}) ${times.start}-${times.end}`);
+            
+            const result = await runQuery(
+              `INSERT INTO activities (member_id, title, date, start_time, end_time, description) 
+               VALUES (?, ?, ?, ?, ?, ?)`,
+              [
+                memberId, 
+                'School', 
+                dateString,
+                times.start,
+                times.end,
+                'Regular school schedule [TYPE:school_schedule]'
+              ]
+            );
+            console.log(`✅ Schedule saved with ID: ${result.id}`);
+            savedData.schedules.push({ id: result.id, day, ...times });
+          } else {
+            console.log(`⚠️  Day ${day} not recognized in dayMapping`);
+          }
+        } else {
+          console.log(`⚠️  Missing start/end times for ${day}:`, times);
+        }
+      }
+    }
+
+    // Skip school activities for now
+    console.log('⏭️  Skipping school activities (focusing on schedules only)');
+
+    // Skip homework for now  
+    console.log('⏭️  Skipping homework (focusing on schedules only)');
+
+    console.log(`✅ Database save completed successfully`);
+    return savedData;
+  } catch (error) {
+    console.error('❌ Error saving extracted school plan:', error);
+    throw error;
+  }
+}
 
 // Settings Endpoints
 app.get('/api/settings', async (req, res) => {

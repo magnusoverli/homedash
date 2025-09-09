@@ -54,6 +54,16 @@
   color: #10011b;
   line-height: 1.2;
   word-break: break-word;
+  flex: 1;
+}
+
+.activity-end-time {
+  font-size: 0.65rem;
+  opacity: 0.8;
+  color: rgba(16, 1, 27, 0.8);
+  font-weight: 500;
+  line-height: 1;
+  margin-top: auto;
 }
 
 .activity-actions {
