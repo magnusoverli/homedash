@@ -129,6 +129,16 @@ class DataService {
     return this.handleResponse(response);
   }
 
+  async getPromptContent() {
+    const response = await fetch(`${API_URL}/api/prompt-content`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return this.handleResponse(response);
+  }
+
   // Homework
   async getHomework(filters = {}) {
     const params = new URLSearchParams();

@@ -25,6 +25,7 @@ const Settings = () => {
   const [isTestingApiKey, setIsTestingApiKey] = useState(false);
   const [apiKeyTestResult, setApiKeyTestResult] = useState(null);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+  const [selectedPromptVersion, setSelectedPromptVersion] = useState('original');
 
   // Load family members from API
   useEffect(() => {
@@ -69,12 +70,16 @@ const Settings = () => {
         if (settings.selectedAnthropicModel) {
           setSelectedModel(settings.selectedAnthropicModel);
         }
+        if (settings.selectedPromptVersion) {
+          setSelectedPromptVersion(settings.selectedPromptVersion);
+        }
       } catch (error) {
         console.error('Error loading settings:', error);
         // Fallback to localStorage if API fails
         const savedLlmEnabled = localStorage.getItem('llmIntegrationEnabled');
         const savedApiKey = localStorage.getItem('anthropicApiKey');
         const savedModel = localStorage.getItem('selectedAnthropicModel');
+        const savedPromptVersion = localStorage.getItem('selectedPromptVersion');
 
         if (savedLlmEnabled) {
           setLlmIntegrationEnabled(JSON.parse(savedLlmEnabled));
@@ -84,6 +89,9 @@ const Settings = () => {
         }
         if (savedModel) {
           setSelectedModel(savedModel);
+        }
+        if (savedPromptVersion) {
+          setSelectedPromptVersion(savedPromptVersion);
         }
       } finally {
         setIsLoadingSettings(false);
@@ -129,6 +137,18 @@ const Settings = () => {
         });
     }
   }, [selectedModel, isLoadingSettings]);
+
+  useEffect(() => {
+    if (!isLoadingSettings && selectedPromptVersion) {
+      dataService
+        .updateSetting('selectedPromptVersion', selectedPromptVersion)
+        .catch(error => {
+          console.error('Error saving selectedPromptVersion:', error);
+          // Fallback to localStorage
+          localStorage.setItem('selectedPromptVersion', selectedPromptVersion);
+        });
+    }
+  }, [selectedPromptVersion, isLoadingSettings]);
 
   const fetchAvailableModels = useCallback(async () => {
     setIsLoadingModels(true);
@@ -551,6 +571,26 @@ const Settings = () => {
                       )}
                     </div>
                   )}
+
+                  <div className="form-group">
+                    <div className="toggle-container">
+                      <label htmlFor="prompt-toggle" className="toggle-label">
+                        <span className="toggle-text">Use optimized prompt</span>
+                        <div className="toggle-switch">
+                          <input
+                            type="checkbox"
+                            id="prompt-toggle"
+                            checked={selectedPromptVersion === 'optimized'}
+                            onChange={e => setSelectedPromptVersion(e.target.checked ? 'optimized' : 'original')}
+                          />
+                          <span className="toggle-slider"></span>
+                        </div>
+                      </label>
+                    </div>
+                    <p className="form-description">
+                      Enable to use the optimized prompt with improved organization and clarity instead of the original comprehensive prompt.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

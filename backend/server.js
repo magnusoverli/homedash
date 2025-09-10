@@ -718,12 +718,17 @@ app.post('/api/extract-school-plan', upload.single('schoolPlanImage'), async (re
   }
 
   try {
-    // Read the prompt from the llm_promt.md file
+    // Get the selected prompt version from settings
+    const promptVersionSetting = await getOne('SELECT value FROM settings WHERE key = ?', ['selectedPromptVersion']);
+    const selectedVersion = promptVersionSetting?.value || 'original';
+    
+    // Read the appropriate prompt file
     const path = await import('path');
     const fs = await import('fs');
-    const promptPath = path.join(process.cwd(), 'llm_promt.md');
+    const promptFileName = selectedVersion === 'optimized' ? 'llm_promt_optimized.md' : 'llm_promt.md';
+    const promptPath = path.join(process.cwd(), promptFileName);
     const prompt = fs.readFileSync(promptPath, 'utf8');
-    console.log(`📄 Prompt loaded successfully (${prompt.length} characters)`);
+    console.log(`📄 Prompt loaded successfully (${prompt.length} characters, version: ${selectedVersion})`);
 
     // Convert image to base64
     const imageBase64 = imageFile.buffer.toString('base64');
@@ -1391,6 +1396,46 @@ app.put('/api/settings/:key', async (req, res) => {
   } catch (error) {
     console.error('Error updating setting:', error);
     res.status(500).json({ error: 'Failed to update setting' });
+  }
+});
+
+// Prompt Content Endpoint
+app.get('/api/prompt-content', async (req, res) => {
+  const fs = require('fs').promises;
+  const path = require('path');
+  
+  try {
+    // Get the selected prompt version from settings
+    const promptVersionSetting = await getOne('SELECT value FROM settings WHERE key = ?', ['selectedPromptVersion']);
+    const selectedVersion = promptVersionSetting?.value || 'original';
+    
+    // Determine which prompt file to read
+    const promptFileName = selectedVersion === 'optimized' ? 'llm_promt_optimized.md' : 'llm_promt.md';
+    const promptPath = path.join(__dirname, promptFileName);
+    
+    // Read and return the prompt content
+    const promptContent = await fs.readFile(promptPath, 'utf8');
+    
+    res.json({
+      version: selectedVersion,
+      content: promptContent
+    });
+  } catch (error) {
+    console.error('Error reading prompt file:', error);
+    
+    // Fallback to original prompt if optimized file doesn't exist or there's an error
+    try {
+      const fallbackPath = path.join(__dirname, 'llm_promt.md');
+      const fallbackContent = await fs.readFile(fallbackPath, 'utf8');
+      
+      res.json({
+        version: 'original',
+        content: fallbackContent
+      });
+    } catch (fallbackError) {
+      console.error('Error reading fallback prompt file:', fallbackError);
+      res.status(500).json({ error: 'Failed to read prompt content' });
+    }
   }
 });
 
