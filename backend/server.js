@@ -246,6 +246,475 @@ app.post('/api/models', async (req, res) => {
   }
 });
 
+// Test Spond credentials endpoint
+app.post('/api/test-spond-credentials', async (req, res) => {
+  const { email, password } = req.body;
+
+  console.log('=== SPOND CREDENTIALS TEST ENDPOINT ===');
+  console.log(`📧 Email: ${email}`);
+  console.log(`🔒 Password length: ${password?.length || 0} characters`);
+  console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
+
+  if (!email || !password) {
+    console.log('❌ Missing credentials');
+    return res.status(400).json({
+      valid: false,
+      message: 'Email and password are required',
+      error: 'MISSING_CREDENTIALS'
+    });
+  }
+
+  try {
+    console.log('🚀 Starting REAL Spond API authentication...');
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
+    console.log('📡 Making actual API call to: https://api.spond.com/core/v1/login');
+    console.log('📤 Request headers: Content-Type: application/json');
+    console.log('📤 Request body: { email: "***", password: "***" }');
+
+    // REAL Spond API call
+    const response = await fetch('https://api.spond.com/core/v1/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email,
+        password: password
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    console.log(`📥 Real Spond API response status: ${response.status}`);
+    console.log(`📥 Real Spond API response status text: ${response.statusText}`);
+
+    if (response.ok) {
+      const responseData = await response.json();
+      console.log('✅ Spond API authentication: SUCCESS');
+      console.log('📥 Real Spond API response body:');
+      console.log(JSON.stringify(responseData, null, 2));
+
+      return res.json({
+        valid: true,
+        message: 'Spond credentials validated successfully! ✓',
+        responseData: responseData
+      });
+    } else {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      console.log('❌ Spond API authentication: FAILED');
+      console.log(`📥 Real error response status: ${response.status}`);
+      console.log('📥 Real error response body:');
+      console.log(JSON.stringify(errorData, null, 2));
+      
+      let errorMessage = 'Invalid Spond credentials';
+      if (response.status === 401) {
+        errorMessage = 'Invalid email or password';
+      } else if (response.status === 429) {
+        errorMessage = 'Too many login attempts. Please try again later.';
+      } else if (response.status >= 500) {
+        errorMessage = 'Spond server error. Please try again later.';
+      }
+
+      return res.status(response.status).json({
+        valid: false,
+        message: errorMessage,
+        error: errorData.error || 'AUTHENTICATION_FAILED',
+        statusCode: response.status
+      });
+    }
+
+  } catch (error) {
+    console.error('💥 Spond credentials test error:', error);
+    console.log('🔍 Error analysis:');
+    console.log(`  - Type: ${error.constructor.name}`);
+    console.log(`  - Message: ${error.message}`);
+    console.log(`  - Code: ${error.code || 'N/A'}`);
+    
+    if (error.name === 'AbortError') {
+      console.log('⏰ Request timed out');
+      return res.status(500).json({
+        valid: false,
+        message: 'Request timed out while connecting to Spond. Please try again.',
+        error: 'TIMEOUT'
+      });
+    }
+    
+    return res.status(500).json({
+      valid: false,
+      message: 'Failed to validate Spond credentials due to network error',
+      error: 'NETWORK_ERROR',
+      details: error.message
+    });
+  } finally {
+    console.log('🏁 Spond credentials test completed');
+    console.log('=== END SPOND CREDENTIALS TEST ===');
+  }
+});
+
+// Store Spond credentials for a family member
+app.post('/api/spond-credentials/:memberId', async (req, res) => {
+  const { memberId } = req.params;
+  const { email, password, loginToken, userData } = req.body;
+
+  console.log(`💾 Storing Spond credentials for member ${memberId}`);
+  console.log(`📧 Email: ${email}`);
+  console.log(`🔑 Login token: ${loginToken ? '[PRESENT]' : '[MISSING]'}`);
+
+  if (!email || !password) {
+    return res.status(400).json({
+      error: 'Email and password are required'
+    });
+  }
+
+  try {
+    // Enhanced credential data with token lifecycle tracking
+    const credentialData = {
+      email,
+      password, // In production, this should be encrypted
+      loginToken: loginToken || null,
+      userData: userData ? JSON.stringify(userData) : null,
+      // Token lifecycle tracking
+      tokenCreatedAt: loginToken ? new Date().toISOString() : null,
+      tokenLastValidated: loginToken ? new Date().toISOString() : null,
+      tokenInvalidatedAt: null,
+      tokenLifespanDays: null,
+      lastAuthenticated: new Date().toISOString(),
+      authenticationCount: 1, // Track how many times user has authenticated
+      // Token validation history
+      validationHistory: JSON.stringify([{
+        timestamp: new Date().toISOString(),
+        action: 'TOKEN_CREATED',
+        success: true,
+        notes: 'Initial authentication and token creation'
+      }])
+    };
+
+    await runQuery(
+      `INSERT INTO settings (key, value) VALUES (?, ?)
+       ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP`,
+      [`spond_credentials_${memberId}`, JSON.stringify(credentialData), JSON.stringify(credentialData)]
+    );
+
+    console.log(`✅ Spond credentials stored for member ${memberId}`);
+    
+    res.json({
+      success: true,
+      message: 'Spond credentials stored successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Error storing Spond credentials:', error);
+    res.status(500).json({
+      error: 'Failed to store Spond credentials'
+    });
+  }
+});
+
+// Get Spond credentials for a family member
+app.get('/api/spond-credentials/:memberId', async (req, res) => {
+  const { memberId } = req.params;
+
+  console.log(`🔍 Retrieving Spond credentials for member ${memberId}`);
+
+  try {
+    const result = await getOne(
+      'SELECT value FROM settings WHERE key = ?',
+      [`spond_credentials_${memberId}`]
+    );
+
+    if (!result) {
+      console.log(`❌ No Spond credentials found for member ${memberId}`);
+      return res.json({
+        hasCredentials: false,
+        authenticated: false
+      });
+    }
+
+    const credentialData = JSON.parse(result.value);
+    console.log(`✅ Found Spond credentials for member ${memberId}`);
+    console.log(`📧 Email: ${credentialData.email}`);
+    console.log(`🔑 Has login token: ${credentialData.loginToken ? 'Yes' : 'No'}`);
+    console.log(`⏰ Last authenticated: ${credentialData.lastAuthenticated}`);
+
+    // Return credential info without exposing password
+    res.json({
+      hasCredentials: true,
+      authenticated: !!credentialData.loginToken,
+      email: credentialData.email,
+      lastAuthenticated: credentialData.lastAuthenticated,
+      userData: credentialData.userData ? JSON.parse(credentialData.userData) : null
+    });
+
+  } catch (error) {
+    console.error('❌ Error retrieving Spond credentials:', error);
+    res.status(500).json({
+      error: 'Failed to retrieve Spond credentials',
+      hasCredentials: false,
+      authenticated: false
+    });
+  }
+});
+
+// Delete Spond credentials for a family member
+app.delete('/api/spond-credentials/:memberId', async (req, res) => {
+  const { memberId } = req.params;
+
+  console.log(`🗑️ Deleting Spond credentials for member ${memberId}`);
+
+  try {
+    const result = await runQuery(
+      'DELETE FROM settings WHERE key = ?',
+      [`spond_credentials_${memberId}`]
+    );
+
+    if (result.changes === 0) {
+      console.log(`❌ No Spond credentials found to delete for member ${memberId}`);
+      return res.status(404).json({
+        error: 'No Spond credentials found for this member'
+      });
+    }
+
+    console.log(`✅ Spond credentials deleted for member ${memberId}`);
+    
+    res.json({
+      success: true,
+      message: 'Spond credentials deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Error deleting Spond credentials:', error);
+    res.status(500).json({
+      error: 'Failed to delete Spond credentials'
+    });
+  }
+});
+
+// Validate existing Spond token and log results for lifecycle tracking
+app.post('/api/validate-spond-token/:memberId', async (req, res) => {
+  const { memberId } = req.params;
+
+  console.log(`🔍 Validating stored Spond token for member ${memberId}`);
+
+  try {
+    // Get stored credentials
+    const result = await getOne(
+      'SELECT value FROM settings WHERE key = ?',
+      [`spond_credentials_${memberId}`]
+    );
+
+    if (!result) {
+      console.log(`❌ No stored credentials found for member ${memberId}`);
+      return res.status(404).json({
+        valid: false,
+        error: 'NO_CREDENTIALS',
+        message: 'No stored credentials found'
+      });
+    }
+
+    const credentialData = JSON.parse(result.value);
+
+    if (!credentialData.loginToken) {
+      console.log(`❌ No stored token found for member ${memberId}`);
+      return res.status(404).json({
+        valid: false,
+        error: 'NO_TOKEN',
+        message: 'No stored token found'
+      });
+    }
+
+    console.log(`🔑 Testing stored token created at: ${credentialData.tokenCreatedAt}`);
+    console.log(`⏰ Token age: ${Math.round((new Date() - new Date(credentialData.tokenCreatedAt)) / (1000 * 60 * 60 * 24))} days`);
+
+    // Test the token by making a simple API call to Spond
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    console.log('📡 Testing token with Spond groups endpoint...');
+    const response = await fetch('https://api.spond.com/core/v1/groups/', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${credentialData.loginToken}`,
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    const now = new Date().toISOString();
+    const tokenAge = Math.round((new Date() - new Date(credentialData.tokenCreatedAt)) / (1000 * 60 * 60 * 24));
+
+    // Parse existing validation history
+    let validationHistory = [];
+    try {
+      validationHistory = JSON.parse(credentialData.validationHistory || '[]');
+    } catch (e) {
+      validationHistory = [];
+    }
+
+    if (response.ok) {
+      console.log(`✅ Token validation SUCCESS - Token is still valid after ${tokenAge} days`);
+      
+      // Add successful validation to history
+      validationHistory.push({
+        timestamp: now,
+        action: 'TOKEN_VALIDATED',
+        success: true,
+        tokenAgeDays: tokenAge,
+        responseStatus: response.status,
+        notes: `Token still valid after ${tokenAge} days`
+      });
+
+      // Update last validated timestamp
+      const updatedCredentials = {
+        ...credentialData,
+        tokenLastValidated: now,
+        validationHistory: JSON.stringify(validationHistory)
+      };
+
+      await runQuery(
+        `UPDATE settings SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE key = ?`,
+        [JSON.stringify(updatedCredentials), `spond_credentials_${memberId}`]
+      );
+
+      console.log(`📊 Token lifecycle update: Still valid after ${tokenAge} days`);
+
+      return res.json({
+        valid: true,
+        tokenAgeDays: tokenAge,
+        tokenCreatedAt: credentialData.tokenCreatedAt,
+        lastValidated: now,
+        message: `Token is valid (${tokenAge} days old)`
+      });
+
+    } else {
+      console.log(`❌ Token validation FAILED - Token invalid after ${tokenAge} days (Status: ${response.status})`);
+      
+      // Calculate token lifespan
+      const tokenLifespanDays = tokenAge;
+
+      // Add failed validation to history
+      validationHistory.push({
+        timestamp: now,
+        action: 'TOKEN_INVALIDATED',
+        success: false,
+        tokenAgeDays: tokenAge,
+        responseStatus: response.status,
+        notes: `Token became invalid after ${tokenAge} days - Status: ${response.status}`
+      });
+
+      // Update credentials with invalidation info
+      const updatedCredentials = {
+        ...credentialData,
+        tokenInvalidatedAt: now,
+        tokenLifespanDays: tokenLifespanDays,
+        validationHistory: JSON.stringify(validationHistory)
+      };
+
+      await runQuery(
+        `UPDATE settings SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE key = ?`,
+        [JSON.stringify(updatedCredentials), `spond_credentials_${memberId}`]
+      );
+
+      console.log(`📊 TOKEN LIFESPAN DISCOVERED: ${tokenLifespanDays} days`);
+      console.log(`🔬 Research data: Token created ${credentialData.tokenCreatedAt}, invalidated ${now}`);
+
+      return res.status(401).json({
+        valid: false,
+        error: 'TOKEN_EXPIRED',
+        tokenAgeDays: tokenAge,
+        tokenLifespanDays: tokenLifespanDays,
+        tokenCreatedAt: credentialData.tokenCreatedAt,
+        tokenInvalidatedAt: now,
+        message: `Token expired after ${tokenLifespanDays} days`,
+        researchData: {
+          tokenCreated: credentialData.tokenCreatedAt,
+          tokenInvalidated: now,
+          lifespanDays: tokenLifespanDays,
+          validationHistory: validationHistory
+        }
+      });
+    }
+
+  } catch (error) {
+    console.error('💥 Error validating Spond token:', error);
+    
+    if (error.name === 'AbortError') {
+      return res.status(500).json({
+        valid: false,
+        error: 'TIMEOUT',
+        message: 'Token validation timed out'
+      });
+    }
+    
+    return res.status(500).json({
+      valid: false,
+      error: 'VALIDATION_ERROR',
+      message: 'Failed to validate token due to network error'
+    });
+  }
+});
+
+// Get token lifecycle research data for analysis
+app.get('/api/spond-token-research', async (req, res) => {
+  console.log('📊 Retrieving Spond token research data...');
+
+  try {
+    const allSettings = await getAll(
+      'SELECT key, value FROM settings WHERE key LIKE "spond_credentials_%"'
+    );
+
+    const researchData = allSettings.map(setting => {
+      const memberId = setting.key.replace('spond_credentials_', '');
+      const data = JSON.parse(setting.value);
+      
+      return {
+        memberId,
+        email: data.email,
+        tokenCreatedAt: data.tokenCreatedAt,
+        tokenLastValidated: data.tokenLastValidated,
+        tokenInvalidatedAt: data.tokenInvalidatedAt,
+        tokenLifespanDays: data.tokenLifespanDays,
+        authenticationCount: data.authenticationCount || 1,
+        validationHistory: JSON.parse(data.validationHistory || '[]')
+      };
+    }).filter(data => data.tokenCreatedAt); // Only include entries with tokens
+
+    console.log(`📈 Found ${researchData.length} token datasets for analysis`);
+
+    // Calculate statistics
+    const validTokens = researchData.filter(d => !d.tokenInvalidatedAt);
+    const invalidatedTokens = researchData.filter(d => d.tokenInvalidatedAt);
+    const knownLifespans = invalidatedTokens.filter(d => d.tokenLifespanDays).map(d => d.tokenLifespanDays);
+
+    const stats = {
+      totalTokens: researchData.length,
+      activeTokens: validTokens.length,
+      invalidatedTokens: invalidatedTokens.length,
+      averageLifespan: knownLifespans.length > 0 ? Math.round(knownLifespans.reduce((a, b) => a + b, 0) / knownLifespans.length) : null,
+      minLifespan: knownLifespans.length > 0 ? Math.min(...knownLifespans) : null,
+      maxLifespan: knownLifespans.length > 0 ? Math.max(...knownLifespans) : null,
+      knownLifespans: knownLifespans
+    };
+
+    res.json({
+      statistics: stats,
+      tokenData: researchData,
+      researchNotes: 'This data helps determine Spond API token validity periods'
+    });
+
+  } catch (error) {
+    console.error('❌ Error retrieving token research data:', error);
+    res.status(500).json({
+      error: 'Failed to retrieve research data'
+    });
+  }
+});
+
 // Proxy messages to Anthropic (for future use when implementing actual LLM features)
 app.post('/api/messages', async (req, res) => {
   const { apiKey, ...messageData } = req.body;

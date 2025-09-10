@@ -429,6 +429,127 @@
   animation: spin 1s linear infinite;
 }
 
+/* Spond Integration */
+.spond-integration-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.spond-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-top: 0.75rem;
+}
+
+.spond-status.loading {
+  background: rgba(103, 4, 255, 0.05);
+  border: 1px solid rgba(103, 4, 255, 0.2);
+}
+
+.spond-status.authenticated {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.spond-status.has-credentials {
+  background: rgba(255, 165, 0, 0.1);
+  border: 1px solid rgba(255, 165, 0, 0.3);
+}
+
+
+.status-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.status-text {
+  flex: 1;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.spond-status.authenticated .status-text {
+  color: #22c55e;
+}
+
+.spond-status.has-credentials .status-text {
+  color: #ffa500;
+}
+
+
+.status-details {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin-top: 0.25rem;
+  font-weight: normal;
+}
+
+.spond-form {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(103, 4, 255, 0.1);
+}
+
+
+.spond-password-input-group {
+  display: flex;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.spond-password-input-group .form-input {
+  flex: 1;
+}
+
+.test-spond-credentials-button {
+  padding: 0 1.5rem;
+  background: rgba(103, 4, 255, 0.1);
+  border: 1px solid rgba(103, 4, 255, 0.3);
+  border-radius: 5px;
+  color: #b781ff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: 100px;
+}
+
+.test-spond-credentials-button:hover:not(:disabled) {
+  background: rgba(103, 4, 255, 0.2);
+  color: #ffffff;
+}
+
+.test-spond-credentials-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spond-test-result {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.spond-test-result.success {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
+.spond-test-result.error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+
 /* Advanced Settings */
 .advanced-settings-form {
   display: flex;

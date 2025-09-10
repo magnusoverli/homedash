@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import GenericModal from './GenericModal';
 import dataService from '../services/dataService';
 import { useToast } from '../contexts/ToastContext';
+import API_ENDPOINTS from '../config/api';
 import './EditMemberModal.css';
 
 const AVATAR_COLORS = [
@@ -49,6 +50,21 @@ const EditMemberModal = ({
   const [scheduleDeleteError, setScheduleDeleteError] = useState('');
   const [showScheduleDeleteConfirm, setShowScheduleDeleteConfirm] = useState(false);
 
+  // Spond integration state
+  const [spondIntegrationEnabled, setSpondIntegrationEnabled] = useState(false);
+  const [spondEmail, setSpondEmail] = useState('');
+  const [spondPassword, setSpondPassword] = useState('');
+  const [isTestingSpondCredentials, setIsTestingSpondCredentials] = useState(false);
+  const [spondTestResult, setSpondTestResult] = useState(null);
+  const [spondAuthState, setSpondAuthState] = useState({
+    hasCredentials: false,
+    authenticated: false,
+    email: '',
+    lastAuthenticated: null,
+    userData: null
+  });
+  const [isLoadingSpondState, setIsLoadingSpondState] = useState(false);
+
   useEffect(() => {
     if (member) {
       setFormData({
@@ -68,6 +84,7 @@ const EditMemberModal = ({
     if (isOpen) {
       loadLlmSettings();
       checkForSchoolSchedule();
+      loadSpondAuthState();
     }
   }, [isOpen, member]);
 
@@ -105,6 +122,40 @@ const EditMemberModal = ({
       setHasSchoolSchedule(schoolScheduleActivities.length > 0 || schoolActivities.length > 0);
     } catch (error) {
       console.error('Error checking for school schedule:', error);
+    }
+  };
+
+  const loadSpondAuthState = async () => {
+    if (!member?.id) return;
+    
+    setIsLoadingSpondState(true);
+    console.log(`🔍 Loading Spond auth state for member ${member.id}`);
+    
+    try {
+      const response = await fetch(`${API_ENDPOINTS.SPOND_CREDENTIALS}/${member.id}`);
+      const data = await response.json();
+      
+      console.log('📥 Spond auth state loaded:', data);
+      
+      setSpondAuthState(data);
+      
+      if (data.hasCredentials) {
+        setSpondIntegrationEnabled(true);
+        setSpondEmail(data.email || '');
+        // Don't set password from stored data for security
+      }
+      
+    } catch (error) {
+      console.error('❌ Error loading Spond auth state:', error);
+      setSpondAuthState({
+        hasCredentials: false,
+        authenticated: false,
+        email: '',
+        lastAuthenticated: null,
+        userData: null
+      });
+    } finally {
+      setIsLoadingSpondState(false);
     }
   };
 
@@ -288,6 +339,162 @@ const EditMemberModal = ({
   const handleModalClose = () => {
     setShowDeleteConfirm(false);
     onClose();
+  };
+
+  // Spond integration handlers
+  const handleSpondToggle = async enabled => {
+    setSpondIntegrationEnabled(enabled);
+    if (!enabled) {
+      setSpondEmail('');
+      setSpondPassword('');
+      setSpondTestResult(null);
+      
+      // Clear stored credentials when disabling
+      if (member?.id && spondAuthState.hasCredentials) {
+        try {
+          console.log(`🗑️ Clearing Spond credentials for member ${member.id}`);
+          const response = await fetch(`${API_ENDPOINTS.SPOND_CREDENTIALS}/${member.id}`, {
+            method: 'DELETE'
+          });
+          
+          if (response.ok) {
+            console.log('✅ Spond credentials cleared successfully');
+            setSpondAuthState({
+              hasCredentials: false,
+              authenticated: false,
+              email: '',
+              lastAuthenticated: null,
+              userData: null
+            });
+          }
+        } catch (error) {
+          console.error('❌ Error clearing Spond credentials:', error);
+        }
+      }
+    }
+  };
+
+  const handleSpondCredentialsChange = (email, password) => {
+    setSpondEmail(email);
+    setSpondPassword(password);
+    setSpondTestResult(null);
+  };
+
+  const testSpondCredentials = async () => {
+    if (!spondEmail || !spondPassword) {
+      setSpondTestResult({
+        success: false,
+        message: 'Please enter both email and password.',
+      });
+      return;
+    }
+
+    setIsTestingSpondCredentials(true);
+    setSpondTestResult(null);
+
+    // Enhanced logging for Spond authentication
+    console.log('=== SPOND AUTHENTICATION TEST STARTED ===');
+    console.log(`Email: ${spondEmail}`);
+    console.log(`Password length: ${spondPassword.length} characters`);
+    console.log(`Timestamp: ${new Date().toISOString()}`);
+
+    try {
+      console.log('🔄 Making API call to backend for Spond authentication...');
+      
+      const response = await fetch(API_ENDPOINTS.TEST_SPOND_CREDENTIALS, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: spondEmail,
+          password: spondPassword
+        })
+      });
+
+      console.log(`📡 Backend response status: ${response.status}`);
+      console.log(`📡 Backend response status text: ${response.statusText}`);
+      
+      const data = await response.json();
+      console.log('📥 Backend response data:', data);
+
+      if (response.ok && data.valid) {
+        console.log('✅ Spond authentication: SUCCESS');
+        console.log('📊 Authentication details:');
+        console.log(`  - Message: ${data.message}`);
+        if (data.responseData) {
+          console.log('  - Real Spond response data:', data.responseData);
+          if (data.responseData.user) {
+            console.log('  - User data:', data.responseData.user);
+          }
+          if (data.responseData.loginToken) {
+            console.log('  - Login token received: [PRESENT]');
+          }
+        }
+        
+        setSpondTestResult({
+          success: true,
+          message: data.message || 'Spond credentials validated successfully! ✓',
+        });
+
+        // Store credentials after successful authentication
+        if (data.responseData && member?.id) {
+          console.log('💾 Storing successful Spond credentials...');
+          try {
+            const storeResponse = await fetch(`${API_ENDPOINTS.SPOND_CREDENTIALS}/${member.id}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                email: spondEmail,
+                password: spondPassword,
+                loginToken: data.responseData.loginToken,
+                userData: data.responseData.user
+              })
+            });
+
+            if (storeResponse.ok) {
+              console.log('✅ Spond credentials stored successfully');
+              // Reload auth state to reflect stored credentials
+              await loadSpondAuthState();
+            } else {
+              console.error('❌ Failed to store Spond credentials');
+            }
+          } catch (storeError) {
+            console.error('❌ Error storing Spond credentials:', storeError);
+          }
+        }
+      } else {
+        console.log('❌ Spond authentication: FAILED');
+        console.log('📊 Error details:');
+        console.log(`  - Status: ${response.status}`);
+        console.log(`  - Error type: ${data.error || 'Unknown'}`);
+        console.log(`  - Message: ${data.message || 'Unknown error'}`);
+        
+        setSpondTestResult({
+          success: false,
+          message: data.message || 'Invalid Spond credentials. Please check your email and password.',
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ Spond authentication error:', error);
+      console.log('🔍 Error details:');
+      console.log(`  - Error name: ${error.name}`);
+      console.log(`  - Error message: ${error.message}`);
+      console.log(`  - Stack trace: ${error.stack}`);
+      
+      setSpondTestResult({
+        success: false,
+        message: 'Network error while testing Spond credentials. Please try again.',
+      });
+    } finally {
+      const endTime = new Date().toISOString();
+      console.log(`⏱️ Authentication test completed at: ${endTime}`);
+      console.log('=== SPOND AUTHENTICATION TEST ENDED ===');
+      setIsTestingSpondCredentials(false);
+    }
   };
 
   if (!member) return null;
@@ -650,6 +857,109 @@ const EditMemberModal = ({
 
           {activeTab === 'advanced' && (
             <>
+              {/* Spond Integration Section */}
+              <div className="modal-section">
+                <div className="section-header">
+                  <h3 className="section-title">Spond Integration</h3>
+                  <p className="section-description">
+                    Connect with Spond to automatically sync activities from sports clubs and organizations
+                  </p>
+                </div>
+
+                <div className="spond-integration-form">
+                  <div className="toggle-container">
+                    <label htmlFor="spond-toggle" className="toggle-label">
+                      <span className="toggle-text">Enable Spond Integration</span>
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          id="spond-toggle"
+                          checked={spondIntegrationEnabled}
+                          onChange={e => handleSpondToggle(e.target.checked)}
+                        />
+                        <span className="toggle-slider"></span>
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Authentication Status Display */}
+                  {isLoadingSpondState ? (
+                    <div className="spond-status loading">
+                      <div className="status-icon">⏳</div>
+                      <div className="status-text">Loading authentication status...</div>
+                    </div>
+                  ) : spondAuthState.authenticated ? (
+                    <div className="spond-status authenticated">
+                      <div className="status-icon">✅</div>
+                      <div className="status-text">
+                        <strong>Authenticated</strong> as {spondAuthState.email}
+                        <div className="status-details">
+                          Last authenticated: {new Date(spondAuthState.lastAuthenticated).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  ) : spondAuthState.hasCredentials && (
+                    <div className="spond-status has-credentials">
+                      <div className="status-icon">🔑</div>
+                      <div className="status-text">
+                        Credentials stored for {spondAuthState.email}
+                        <div className="status-details">Authentication required</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {spondIntegrationEnabled && (
+                    <div className="spond-form">
+                      <div className="form-group">
+                        <label htmlFor="spond-email" className="form-label">
+                          Spond Email
+                        </label>
+                        <input
+                          type="email"
+                          id="spond-email"
+                          className="form-input"
+                          value={spondEmail}
+                          onChange={e => handleSpondCredentialsChange(e.target.value, spondPassword)}
+                          placeholder="Enter your Spond account email"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="spond-password" className="form-label">
+                          Spond Password
+                        </label>
+                        <div className="spond-password-input-group">
+                          <input
+                            type="password"
+                            id="spond-password"
+                            className="form-input"
+                            value={spondPassword}
+                            onChange={e => handleSpondCredentialsChange(spondEmail, e.target.value)}
+                            placeholder="Enter your Spond account password"
+                          />
+                          <button
+                            type="button"
+                            className="test-spond-credentials-button"
+                            onClick={testSpondCredentials}
+                            disabled={!spondEmail.trim() || !spondPassword.trim() || isTestingSpondCredentials}
+                          >
+                            {isTestingSpondCredentials ? 'Testing...' : 'Test Login'}
+                          </button>
+                        </div>
+                        {spondTestResult && (
+                          <div
+                            className={`spond-test-result ${spondTestResult.success ? 'success' : 'error'}`}
+                          >
+                            {spondTestResult.message}
+                          </div>
+                        )}
+                      </div>
+
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Advanced Settings Section */}
               <div className="modal-section">
                 <div className="section-header">

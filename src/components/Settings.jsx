@@ -27,6 +27,7 @@ const Settings = () => {
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const [selectedPromptVersion, setSelectedPromptVersion] = useState('original');
 
+
   // Load family members from API
   useEffect(() => {
     const loadFamilyMembers = async () => {
@@ -93,6 +94,7 @@ const Settings = () => {
         if (savedPromptVersion) {
           setSelectedPromptVersion(savedPromptVersion);
         }
+
       } finally {
         setIsLoadingSettings(false);
       }
@@ -149,6 +151,7 @@ const Settings = () => {
         });
     }
   }, [selectedPromptVersion, isLoadingSettings]);
+
 
   const fetchAvailableModels = useCallback(async () => {
     setIsLoadingModels(true);
@@ -410,6 +413,7 @@ const Settings = () => {
     }
   };
 
+
   return (
     <div className="settings-page">
       <header className="settings-header">
@@ -614,6 +618,7 @@ const Settings = () => {
               )}
             </div>
           </section>
+
         </div>
       </main>
 

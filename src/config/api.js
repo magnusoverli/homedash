@@ -32,6 +32,11 @@ export const API_ENDPOINTS = {
   // School plan endpoints
   HOMEWORK: `${API_BASE_URL}/api/homework`,
   EXTRACT_SCHOOL_PLAN: `${API_BASE_URL}/api/extract-school-plan`,
+  // Spond integration endpoints
+  TEST_SPOND_CREDENTIALS: `${API_BASE_URL}/api/test-spond-credentials`,
+  SPOND_CREDENTIALS: `${API_BASE_URL}/api/spond-credentials`,
+  VALIDATE_SPOND_TOKEN: `${API_BASE_URL}/api/validate-spond-token`,
+  SPOND_TOKEN_RESEARCH: `${API_BASE_URL}/api/spond-token-research`,
 };
 
 export default API_ENDPOINTS;
