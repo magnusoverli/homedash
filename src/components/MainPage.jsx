@@ -120,8 +120,10 @@ const MainPage = ({ currentWeek }) => {
       // Load homework for each family member
       for (const member of familyMembers) {
         const memberHomework = await dataService.getHomework({ member_id: member.id });
+        console.log(`MainPage loaded homework for ${member.name} (${member.id}):`, memberHomework);
         homeworkData[member.id] = memberHomework;
       }
+      console.log('MainPage final homework data:', homeworkData);
       setHomework(homeworkData);
       setError('');
     } catch (error) {
@@ -176,6 +178,13 @@ const MainPage = ({ currentWeek }) => {
 
   const getMemberHomework = memberId => {
     return homework[memberId] || [];
+  };
+
+  const handleHomeworkDeleted = (memberId, deletedHomeworkId) => {
+    setHomework(prevHomework => ({
+      ...prevHomework,
+      [memberId]: (prevHomework[memberId] || []).filter(hw => hw.id !== deletedHomeworkId)
+    }));
   };
 
   const handleAddActivity = activityData => {
@@ -344,6 +353,7 @@ const MainPage = ({ currentWeek }) => {
                 onDeleteActivity={activityId =>
                   handleDeleteActivity(member.id, activityId)
                 }
+                onHomeworkDeleted={handleHomeworkDeleted}
               />
             ))}
           </div>

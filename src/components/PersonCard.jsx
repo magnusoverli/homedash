@@ -8,6 +8,7 @@ const PersonCard = ({
   weekStart,
   onAddActivity,
   onDeleteActivity,
+  onHomeworkDeleted,
 }) => {
   return (
     <div className="person-card">
@@ -34,6 +35,7 @@ const PersonCard = ({
         weekStart={weekStart}
         onAddActivity={onAddActivity}
         onDeleteActivity={onDeleteActivity}
+        onHomeworkDeleted={onHomeworkDeleted}
       />
     </div>
   );

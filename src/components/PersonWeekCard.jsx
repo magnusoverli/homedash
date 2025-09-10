@@ -10,11 +10,23 @@ const PersonWeekCard = ({
   weekStart,
   onAddActivity,
   onDeleteActivity,
+  onHomeworkDeleted,
 }) => {
   const [dayColumns, setDayColumns] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [weekGridHeight, setWeekGridHeight] = useState(70); // percentage
+  
+  // Persist resize state per member in localStorage
+  const getStoredGridHeight = () => {
+    try {
+      const stored = localStorage.getItem(`weekGridHeight_${member.id}`);
+      return stored ? parseFloat(stored) : 70;
+    } catch {
+      return 70;
+    }
+  };
+  
+  const [weekGridHeight, setWeekGridHeight] = useState(getStoredGridHeight);
   const containerRef = useRef(null);
   const weekGridRef = useRef(null);
   const [dynamicPixelsPerHour, setDynamicPixelsPerHour] = useState(54);
@@ -36,6 +48,14 @@ const PersonWeekCard = ({
     }
     setDayColumns(days);
   }, [weekStart]);
+
+  // Update weekGridHeight when member changes (if component is reused)
+  useEffect(() => {
+    const storedHeight = getStoredGridHeight();
+    if (storedHeight !== weekGridHeight) {
+      setWeekGridHeight(storedHeight);
+    }
+  }, [member.id]); // Only depend on member.id to avoid infinite loops
 
   // Calculate dynamic pixels per hour based on week-grid height
   useEffect(() => {
@@ -103,6 +123,22 @@ const PersonWeekCard = ({
     });
   };
 
+  const handleDeleteHomework = async (homeworkId) => {
+    try {
+      // Import dataService dynamically to avoid circular imports
+      const { default: dataService } = await import('../services/dataService');
+      await dataService.deleteHomework(homeworkId);
+      
+      // Update the homework state directly without triggering full re-renders
+      if (onHomeworkDeleted) {
+        onHomeworkDeleted(member.id, homeworkId);
+      }
+    } catch (error) {
+      console.error('Error deleting homework:', error);
+      // Could add a toast notification here if needed
+    }
+  };
+
   const formatDayLabel = date => {
     const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
     const dayNumber = date.getDate();
@@ -161,6 +197,13 @@ const PersonWeekCard = ({
       const newWeekGridHeight = Math.min(80, Math.max(20, percentage));
       
       setWeekGridHeight(newWeekGridHeight);
+      
+      // Persist the new height to localStorage
+      try {
+        localStorage.setItem(`weekGridHeight_${member.id}`, newWeekGridHeight.toString());
+      } catch (error) {
+        console.warn('Failed to save grid height to localStorage:', error);
+      }
     };
     
     const handleMouseUp = () => {
@@ -318,10 +361,23 @@ const PersonWeekCard = ({
             <h3 className="homework-title">Homework</h3>
           </div>
           <div className="homework-content">
+            {/* Debug: Log homework data */}
+            {console.log(`PersonWeekCard ${member.name} homework:`, homework)}
             {homework && homework.length > 0 ? (
               <div className="homework-list">
                 {homework.map((item, index) => (
                   <div key={index} className="homework-item">
+                    <button 
+                      className="homework-delete-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteHomework(item.id);
+                      }}
+                      title="Remove homework"
+                      aria-label="Remove homework"
+                    >
+                      ×
+                    </button>
                     <div className="homework-subject">{item.subject}</div>
                     <div className="homework-assignment">{item.assignment}</div>
                   </div>
