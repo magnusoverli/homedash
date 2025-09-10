@@ -4,6 +4,7 @@ import './PersonCard.css';
 const PersonCard = ({
   member,
   activities,
+  homework,
   weekStart,
   onAddActivity,
   onDeleteActivity,
@@ -29,6 +30,7 @@ const PersonCard = ({
       <PersonWeekCard
         member={member}
         activities={activities}
+        homework={homework}
         weekStart={weekStart}
         onAddActivity={onAddActivity}
         onDeleteActivity={onDeleteActivity}

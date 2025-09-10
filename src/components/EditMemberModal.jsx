@@ -173,8 +173,15 @@ const EditMemberModal = ({
       checkForSchoolSchedule();
       
       // Show success message
+      const totalItems = result.savedData.schedules.length + result.savedData.activities.length;
+      const homeworkCount = result.savedData.homework?.length || 0;
+      const itemsText = totalItems > 0 ? `${totalItems} schedule items` : '';
+      const homeworkText = homeworkCount > 0 ? `${homeworkCount} homework assignments` : '';
+      const parts = [itemsText, homeworkText].filter(Boolean);
+      const detailsText = parts.length > 0 ? ` Found ${parts.join(' and ')}.` : '';
+      
       showSuccess(
-        `School plan imported successfully! Found ${result.savedData.schedules.length + result.savedData.activities.length} items.`
+        `School plan imported successfully!${detailsText}`
       );
       
     } catch (error) {
@@ -224,8 +231,17 @@ const EditMemberModal = ({
       setScheduleDeleteError('');
       
       setShowScheduleDeleteConfirm(false);
+      
+      // Create detailed success message
+      const deletionDetails = [];
+      if (result.scheduleEntries > 0) deletionDetails.push(`${result.scheduleEntries} schedule entries`);
+      if (result.activityEntries > 0) deletionDetails.push(`${result.activityEntries} activities`);
+      if (result.homeworkEntries > 0) deletionDetails.push(`${result.homeworkEntries} homework assignments`);
+      
+      const detailsText = deletionDetails.length > 0 ? ` (${deletionDetails.join(', ')})` : '';
+      
       showSuccess(
-        `School schedule deleted successfully! Removed ${result.deletedCount} entries.`
+        `School schedule and homework deleted successfully! Removed ${result.deletedCount} entries${detailsText}.`
       );
       
     } catch (error) {

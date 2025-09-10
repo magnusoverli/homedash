@@ -6,6 +6,7 @@ import './PersonWeekCard.css';
 const PersonWeekCard = ({
   member,
   activities,
+  homework,
   weekStart,
   onAddActivity,
   onDeleteActivity,
@@ -317,9 +318,20 @@ const PersonWeekCard = ({
             <h3 className="homework-title">Homework</h3>
           </div>
           <div className="homework-content">
-            <div className="homework-placeholder">
-              No homework here...
-            </div>
+            {homework && homework.length > 0 ? (
+              <div className="homework-list">
+                {homework.map((item, index) => (
+                  <div key={index} className="homework-item">
+                    <div className="homework-subject">{item.subject}</div>
+                    <div className="homework-assignment">{item.assignment}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="homework-placeholder">
+                No homework assigned yet...
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -95,9 +95,47 @@
 .homework-content {
   flex: 1;
   padding: 1rem;
+  overflow-y: auto;
+}
+
+.homework-content:has(.homework-placeholder) {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.homework-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.homework-item {
+  background: rgba(183, 129, 255, 0.08);
+  border: 1px solid rgba(183, 129, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.homework-item:hover {
+  background: rgba(183, 129, 255, 0.12);
+  border-color: rgba(183, 129, 255, 0.3);
+}
+
+.homework-subject {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #B781FF;
+  margin-bottom: 0.25rem;
+  text-transform: capitalize;
+}
+
+.homework-assignment {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.4;
+  word-wrap: break-word;
 }
 
 .homework-placeholder {

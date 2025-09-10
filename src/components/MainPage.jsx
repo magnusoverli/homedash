@@ -1,16 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import PersonCard from './PersonCard';
 import ActivityModal from './ActivityModal';
 import dataService from '../services/dataService';
 import './MainPage.css';
 
 const MainPage = ({ currentWeek }) => {
+  const location = useLocation();
   const [familyMembers, setFamilyMembers] = useState([]);
   const [activities, setActivities] = useState({});
+  const [homework, setHomework] = useState({});
   const [editingActivity, setEditingActivity] = useState(null);
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [isLoadingMembers, setIsLoadingMembers] = useState(true);
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
+  const [isLoadingHomework, setIsLoadingHomework] = useState(true);
   const [error, setError] = useState('');
 
   // Helper function to get week start
@@ -102,6 +106,60 @@ const MainPage = ({ currentWeek }) => {
     loadActivities();
   }, [currentWeek, getWeekStart]);
 
+  // Load homework for all family members
+  const loadHomework = useCallback(async () => {
+    if (familyMembers.length === 0) {
+      setIsLoadingHomework(false);
+      return;
+    }
+
+    setIsLoadingHomework(true);
+    try {
+      const homeworkData = {};
+      
+      // Load homework for each family member
+      for (const member of familyMembers) {
+        const memberHomework = await dataService.getHomework({ member_id: member.id });
+        homeworkData[member.id] = memberHomework;
+      }
+      setHomework(homeworkData);
+      setError('');
+    } catch (error) {
+      console.error('Error loading homework:', error);
+      // Don't set error state for homework failure - it's not critical
+    } finally {
+      setIsLoadingHomework(false);
+    }
+  }, [familyMembers]);
+
+  useEffect(() => {
+    loadHomework();
+  }, [loadHomework]);
+
+  // Refresh homework when navigating back to main page (e.g., from settings)
+  useEffect(() => {
+    // Only reload homework if we're on the main page and have family members
+    if (location.pathname === '/' && familyMembers.length > 0) {
+      loadHomework();
+    }
+  }, [location.pathname, loadHomework, familyMembers]);
+
+  // Also refresh homework when page regains focus (for tab switching)
+  useEffect(() => {
+    const handleFocus = () => {
+      // Only reload if we have family members and are on main page
+      if (familyMembers.length > 0 && location.pathname === '/') {
+        loadHomework();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadHomework, familyMembers, location.pathname]);
+
   const getWeekKey = date => {
     const weekStart = new Date(date);
     const day = weekStart.getDay();
@@ -114,6 +172,10 @@ const MainPage = ({ currentWeek }) => {
     const weekKey = getWeekKey(currentWeek);
     const weekActivities = activities[weekKey] || {};
     return weekActivities[memberId] || [];
+  };
+
+  const getMemberHomework = memberId => {
+    return homework[memberId] || [];
   };
 
   const handleAddActivity = activityData => {
@@ -242,7 +304,7 @@ const MainPage = ({ currentWeek }) => {
   return (
     <main className="main-page">
       <div className="container">
-        {isLoadingMembers || isLoadingActivities ? (
+        {isLoadingMembers || isLoadingActivities || isLoadingHomework ? (
           <div className="loading-state">
             <div className="loading-spinner"></div>
             <p className="loading-text">Loading your weekly schedule...</p>
@@ -274,6 +336,7 @@ const MainPage = ({ currentWeek }) => {
                 key={member.id}
                 member={member}
                 activities={getMemberActivities(member.id)}
+                homework={getMemberHomework(member.id)}
                 weekStart={getWeekStart()}
                 onAddActivity={data =>
                   handleAddActivity({ ...data, memberId: member.id })

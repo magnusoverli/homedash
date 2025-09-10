@@ -547,8 +547,14 @@ app.delete('/api/school-schedule/:memberId', async (req, res) => {
       [memberId]
     );
 
-    const totalBefore = scheduleCountResult.count + activityCountResult.count;
-    console.log(`📊 Found ${scheduleCountResult.count} school schedule entries and ${activityCountResult.count} school activity entries (${totalBefore} total)`);
+    const homeworkCountResult = await getOne(
+      `SELECT COUNT(*) as count FROM homework 
+       WHERE member_id = ?`,
+      [memberId]
+    );
+
+    const totalBefore = scheduleCountResult.count + activityCountResult.count + homeworkCountResult.count;
+    console.log(`📊 Found ${scheduleCountResult.count} school schedule entries, ${activityCountResult.count} school activity entries, and ${homeworkCountResult.count} homework assignments (${totalBefore} total)`);
 
     if (totalBefore === 0) {
       console.log(`ℹ️  No school schedule entries found for member ${memberId}`);
@@ -558,7 +564,7 @@ app.delete('/api/school-schedule/:memberId', async (req, res) => {
       });
     }
 
-    // Batch delete all school-related activities in one operation
+    // Batch delete all school-related activities and homework in one operation
     const deleteScheduleResult = await runQuery(
       `DELETE FROM activities 
        WHERE member_id = ? 
@@ -573,17 +579,25 @@ app.delete('/api/school-schedule/:memberId', async (req, res) => {
       [memberId]
     );
 
-    const totalDeleted = deleteScheduleResult.changes + deleteActivityResult.changes;
+    // Also delete all homework for this member
+    const deleteHomeworkResult = await runQuery(
+      `DELETE FROM homework 
+       WHERE member_id = ?`,
+      [memberId]
+    );
+
+    const totalDeleted = deleteScheduleResult.changes + deleteActivityResult.changes + deleteHomeworkResult.changes;
     const endTime = Date.now();
     
     console.log(`✅ Batch delete completed in ${endTime - startTime}ms`);
-    console.log(`📈 Deleted ${deleteScheduleResult.changes} schedule entries and ${deleteActivityResult.changes} activity entries (${totalDeleted} total)`);
+    console.log(`📈 Deleted ${deleteScheduleResult.changes} schedule entries, ${deleteActivityResult.changes} activity entries, and ${deleteHomeworkResult.changes} homework assignments (${totalDeleted} total)`);
 
     res.json({
-      message: 'School schedule deleted successfully',
+      message: 'School schedule and homework deleted successfully',
       deletedCount: totalDeleted,
       scheduleEntries: deleteScheduleResult.changes,
       activityEntries: deleteActivityResult.changes,
+      homeworkEntries: deleteHomeworkResult.changes,
       executionTime: endTime - startTime
     });
 
@@ -1035,8 +1049,33 @@ function parseSchoolPlanResponse(responseText) {
       datasets.school_activities = [];
     }
 
-    // Skip homework parsing for now
-    console.log('⏭️  Skipping homework parsing (focusing on schedule + activities)');
+    // Parse homework assignments
+    console.log('📚 Parsing school_homework...');
+    try {
+      const homeworkPattern = /Dataset 3[^:]*school_homework[^:]*:\s*```json\s*(\[[\s\S]*?\])\s*```/i;
+      const homeworkMatch = responseText.match(homeworkPattern);
+      
+      if (homeworkMatch) {
+        const homeworkJsonText = homeworkMatch[1].trim();
+        console.log('📋 Homework JSON text:', homeworkJsonText);
+        
+        const parsedHomework = JSON.parse(homeworkJsonText);
+        datasets.school_homework = Array.isArray(parsedHomework) ? parsedHomework : [];
+        console.log(`✅ Parsed school_homework with ${datasets.school_homework.length} assignments`);
+        
+        // Log homework subjects for debugging
+        if (datasets.school_homework.length > 0) {
+          const subjects = datasets.school_homework.map(hw => hw.subject).join(', ');
+          console.log(`📖 Homework subjects: ${subjects}`);
+        }
+      } else {
+        console.log('⚠️  No homework section found in LLM response');
+        datasets.school_homework = [];
+      }
+    } catch (homeworkError) {
+      console.error('❌ Error parsing homework:', homeworkError);
+      datasets.school_homework = [];
+    }
 
     return datasets;
   } catch (error) {
@@ -1363,8 +1402,40 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
       console.log('📝 No school activities to process');
     }
 
-    // Skip homework for now  
-    console.log('⏭️  Skipping homework (focusing on schedules + activities only)');
+    // Save homework assignments
+    if (extractedData.school_homework && extractedData.school_homework.length > 0) {
+      console.log(`📚 Processing ${extractedData.school_homework.length} homework assignments...`);
+      
+      for (const homework of extractedData.school_homework) {
+        if (homework.subject && homework.assignment) {
+          try {
+            const result = await runQuery(
+              `INSERT INTO homework (member_id, subject, assignment, extracted_from_image) 
+               VALUES (?, ?, ?, ?)`,
+              [memberId, homework.subject, homework.assignment, imageFileName]
+            );
+            
+            savedData.homework.push({
+              id: result.id,
+              subject: homework.subject,
+              assignment: homework.assignment,
+              extracted_from_image: imageFileName
+            });
+            
+            console.log(`✅ Saved homework: ${homework.subject} - ${homework.assignment.substring(0, 50)}${homework.assignment.length > 50 ? '...' : ''}`);
+          } catch (homeworkError) {
+            console.error(`❌ Error saving homework for ${homework.subject}:`, homeworkError);
+            // Continue with other homework items even if one fails
+          }
+        } else {
+          console.log(`⚠️  Skipping homework with missing data:`, homework);
+        }
+      }
+      
+      console.log(`📚 Homework processing completed: ${savedData.homework.length} assignments saved`);
+    } else {
+      console.log('📝 No homework assignments to process');
+    }
 
     console.log(`✅ Database save completed successfully`);
     return savedData;
