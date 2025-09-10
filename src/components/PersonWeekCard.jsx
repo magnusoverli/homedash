@@ -313,7 +313,14 @@ const PersonWeekCard = ({
             minHeight: '120px'
           }}
         >
-          {/* Homework content will be added here */}
+          <div className="homework-header">
+            <h3 className="homework-title">Homework</h3>
+          </div>
+          <div className="homework-content">
+            <div className="homework-placeholder">
+              No homework here...
+            </div>
+          </div>
         </div>
       </div>
 

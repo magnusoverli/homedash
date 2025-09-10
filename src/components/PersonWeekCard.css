@@ -63,10 +63,12 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(103, 4, 255, 0.2);
   border-radius: 5px;
-  padding: 1rem;
+  padding: 0;
   transition: all 0.3s ease;
   overflow: hidden;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Subtle hover effect following design manual */
@@ -74,6 +76,39 @@
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(103, 4, 255, 0.3);
   box-shadow: 0 4px 12px rgba(103, 4, 255, 0.1);
+}
+
+/* Homework Header Styles */
+.homework-header {
+  padding: 0.75rem 1rem 0.5rem 1rem;
+  border-bottom: 1px solid rgba(103, 4, 255, 0.15);
+  background: rgba(103, 4, 255, 0.05);
+}
+
+.homework-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #B781FF;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+/* Homework Content Styles */
+.homework-content {
+  flex: 1;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.homework-placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.9rem;
+  font-style: italic;
+  text-align: center;
+  font-weight: 400;
 }
 
 /* Resize Handle Styles */
