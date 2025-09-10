@@ -1,7 +1,6 @@
 /* Header Styles - Following HomeDash Design Manual */
 .header {
-  position: sticky;
-  top: 0;
+  flex-shrink: 0;
   z-index: 1000;
   background: var(--color-primary-dark);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);

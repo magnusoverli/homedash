@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import PersonWeekCard from './PersonWeekCard';
+import PersonCard from './PersonCard';
 import ActivityModal from './ActivityModal';
 import dataService from '../services/dataService';
 import './MainPage.css';
@@ -269,8 +269,8 @@ const MainPage = ({ currentWeek }) => {
           </div>
         ) : (
           <div className="calendar-grid">
-            {familyMembers.map(member => (
-              <PersonWeekCard
+            {familyMembers.slice(0, 3).map(member => (
+              <PersonCard
                 key={member.id}
                 member={member}
                 activities={getMemberActivities(member.id)}

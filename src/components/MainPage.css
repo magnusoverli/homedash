@@ -1,41 +1,52 @@
 .main-page {
-  min-height: 100vh;
+  flex: 1;
   background: linear-gradient(135deg, #10011b 0%, #190030 100%);
-  padding-top: 0.75rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .main-page .container {
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
-  padding: 0 1rem 0.75rem 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem 1rem;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(650px, 1fr));
-  gap: 0.75rem;
-  margin-top: 0;
-  width: 100%;
+  gap: 1rem;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
 }
 
-/* Progressive enhancement with :has() for modern browsers */
-@supports selector(:has(*)) {
-  /* Special handling for single card - use full width with max constraint */
-  .calendar-grid:has(.person-week-card:only-child) {
-    grid-template-columns: minmax(650px, 1000px);
-    justify-content: center;
-  }
+/* Responsive grid based on number of items */
+.calendar-grid:has(.person-card:nth-child(1):last-child) {
+  grid-template-columns: 1fr;
+}
 
-  /* For exactly 2 cards - ensure they use full width */
-  .calendar-grid:has(.person-week-card:nth-child(2):last-child) {
-    grid-template-columns: repeat(2, 1fr);
-    width: 100%;
+.calendar-grid:has(.person-card:nth-child(2):last-child) {
+  grid-template-columns: 1fr 1fr;
+}
+
+.calendar-grid:has(.person-card:nth-child(3):last-child) {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Fallback for browsers without :has() support */
+@supports not selector(:has(*)) {
+  .calendar-grid {
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   }
 }
+
 
 .empty-state {
-  min-height: calc(100vh - 160px);
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -64,44 +75,31 @@
   line-height: 1.6;
 }
 
-/* Large screens - 3+ cards */
-@media (min-width: 2000px) {
-  .calendar-grid {
-    grid-template-columns: repeat(auto-fit, minmax(650px, 1fr));
-  }
-}
-
-/* Tablet breakpoint - switch to single column */
-@media (max-width: 1400px) {
-  .calendar-grid {
+/* Tablet breakpoint - stack vertically */
+@media (max-width: 1200px) {
+  .calendar-grid:has(.person-card:nth-child(2):last-child),
+  .calendar-grid:has(.person-card:nth-child(3):last-child) {
     grid-template-columns: 1fr;
-    max-width: 1000px;
-    margin: 0 auto;
   }
-
-  /* Reset special cases on smaller screens */
-  @supports selector(:has(*)) {
-    .calendar-grid:has(.person-week-card:only-child),
-    .calendar-grid:has(.person-week-card:nth-child(2):last-child) {
+  
+  /* Fallback for browsers without :has() support */
+  @supports not selector(:has(*)) {
+    .calendar-grid {
       grid-template-columns: 1fr;
     }
   }
 }
 
-/* Smaller tablets */
+/* Mobile optimizations */
 @media (max-width: 900px) {
   .calendar-grid {
-    max-width: 700px;
+    gap: 0.75rem;
   }
 }
 
 @media (max-width: 768px) {
-  .main-page {
-    padding-top: 0.5rem;
-  }
-
-  .container {
-    padding: 0 0.5rem 0.5rem 0.5rem;
+  .main-page .container {
+    padding: 0.5rem;
   }
 
   .calendar-grid {

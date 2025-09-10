@@ -6,6 +6,7 @@ import Settings from './components/Settings';
 import { ToastProvider } from './contexts/ToastContext';
 import ToastContainer from './components/ToastContainer';
 import './styles/globals.css';
+import './App.css';
 
 function App() {
   const [currentWeek, setCurrentWeek] = useState(new Date());
@@ -18,7 +19,7 @@ function App() {
             <Route
               path="/"
               element={
-                <>
+                <div className="app-layout">
                   <Header
                     currentWeek={currentWeek}
                     onWeekChange={setCurrentWeek}
@@ -28,7 +29,7 @@ function App() {
                     currentWeek={currentWeek}
                     onWeekChange={setCurrentWeek}
                   />
-                </>
+                </div>
               }
             />
             <Route path="/settings" element={<Settings />} />

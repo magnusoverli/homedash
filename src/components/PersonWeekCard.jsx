@@ -112,19 +112,6 @@ const PersonWeekCard = ({
     <>
       <div className="person-week-card">
         <div className="card-header">
-          <div
-            className="member-avatar-small"
-            style={{ backgroundColor: member.avatarColor }}
-          >
-            <span className="member-initials-small">
-              {member.name
-                .split(' ')
-                .map(n => n[0])
-                .join('')
-                .toUpperCase()}
-            </span>
-          </div>
-          <h3 className="member-name-card">{member.name}</h3>
           <button
             className="add-activity-button"
             aria-label="Add activity"
