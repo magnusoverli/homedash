@@ -15,8 +15,6 @@
 .person-week-card:hover {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(103, 4, 255, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(103, 4, 255, 0.1);
 }
 
 .add-activity-button-overlay {
@@ -75,7 +73,6 @@
 .week-homework-card:hover {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(103, 4, 255, 0.3);
-  box-shadow: 0 4px 12px rgba(103, 4, 255, 0.1);
 }
 
 /* Homework Header Styles */
@@ -154,13 +151,15 @@
 .resize-handle-line {
   width: 24px;
   height: 1px;
-  background: rgba(103, 4, 255, 0.4);
+  background: #ffffff;
   border-radius: 1px;
+  opacity: 0.8;
 }
 
 .resize-handle:hover .resize-handle-line,
 .resize-handle.dragging .resize-handle-line {
-  background: rgba(103, 4, 255, 0.8);
+  background: #ffffff;
+  opacity: 1;
 }
 
 /* Focus state for accessibility */
@@ -178,8 +177,24 @@
 }
 
 .day-column.today {
-  background: rgba(103, 4, 255, 0.05);
-  box-shadow: 0 0 0 1px rgba(103, 4, 255, 0.2);
+  background: rgba(103, 4, 255, 0.12);
+  box-shadow: 0 0 0 2px rgba(103, 4, 255, 0.4);
+  border-radius: 3px;
+}
+
+.day-column.today .day-header {
+  background: rgba(103, 4, 255, 0.15);
+  border-bottom-color: rgba(103, 4, 255, 0.3);
+}
+
+.day-column.today .day-name {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.day-column.today .day-number {
+  color: #B781FF;
+  font-weight: 700;
 }
 
 .day-header {

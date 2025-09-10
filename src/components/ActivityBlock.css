@@ -4,18 +4,17 @@
   padding: 0.25rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.15);
   overflow: hidden;
   min-height: 20px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
 .activity-block:hover {
-  transform: translateX(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   z-index: 10;
+  border-color: rgba(16, 1, 27, 0.3);
 }
 
 .activity-block.empty-activity {
@@ -175,6 +174,15 @@
   padding: 0.15rem 0.3rem;
   border-radius: 4px;
   border: 1px solid rgba(183, 129, 255, 0.3);
+}
+
+/* Simple alternating background variations for visual distinction */
+.activity-block:nth-child(odd) {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.activity-block:nth-child(even) {
+  background-color: rgba(229, 229, 255, 0.08);
 }
 
 @media (max-width: 1200px) {
