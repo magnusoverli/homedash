@@ -31,6 +31,7 @@ const EditMemberModal = ({
     schoolPlanImage: null,
   });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [activeTab, setActiveTab] = useState('basic');
   
   // LLM extraction state
   const [isExtracting, setIsExtracting] = useState(false);
@@ -59,6 +60,7 @@ const EditMemberModal = ({
     setShowDeleteConfirm(false);
     setExtractionResult(null);
     setExtractionError('');
+    setActiveTab('basic'); // Reset to basic tab when member changes
   }, [member]);
 
   // Load LLM settings and check for school schedule when modal opens
@@ -276,11 +278,37 @@ const EditMemberModal = ({
     <GenericModal 
       isOpen={isOpen} 
       onClose={handleModalClose} 
-      title="Edit Family Member"
+      title={`Edit ${member?.name || 'Family Member'}`}
     >
       <div className="edit-member-content">
-        {/* Basic Information Section */}
-        <div className="modal-section">
+        {/* Tab Navigation */}
+        <div className="tab-navigation">
+          <button
+            className={`tab-button ${activeTab === 'basic' ? 'active' : ''}`}
+            onClick={() => setActiveTab('basic')}
+          >
+            Basic Settings
+          </button>
+          <button
+            className={`tab-button ${activeTab === 'schedule' ? 'active' : ''}`}
+            onClick={() => setActiveTab('schedule')}
+          >
+            Schedule
+          </button>
+          <button
+            className={`tab-button ${activeTab === 'advanced' ? 'active' : ''}`}
+            onClick={() => setActiveTab('advanced')}
+          >
+            Advanced
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div className="tab-content">
+          {activeTab === 'basic' && (
+            <>
+              {/* Basic Information Section */}
+              <div className="modal-section">
           <div className="section-header">
             <h3 className="section-title">Basic Information</h3>
             <p className="section-description">
@@ -330,8 +358,12 @@ const EditMemberModal = ({
             </div>
           </div>
         </div>
+            </>
+          )}
 
-        {/* School Plan Section */}
+          {activeTab === 'schedule' && (
+            <>
+              {/* School Plan Section */}
         <div className="modal-section">
           <div className="section-header">
             <h3 className="section-title">School Plan</h3>
@@ -595,6 +627,91 @@ const EditMemberModal = ({
             )}
           </div>
         )}
+            </>
+          )}
+
+          {activeTab === 'advanced' && (
+            <>
+              {/* Advanced Settings Section */}
+              <div className="modal-section">
+                <div className="section-header">
+                  <h3 className="section-title">Advanced Settings</h3>
+                  <p className="section-description">
+                    Dangerous operations that permanently affect this family member
+                  </p>
+                </div>
+
+                <div className="advanced-settings-form">
+                  <div className="danger-zone">
+                    <div className="danger-zone-header">
+                      <div className="danger-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" stroke="#ef4444" strokeWidth="2"/>
+                          <line x1="12" y1="9" x2="12" y2="13" stroke="#ef4444" strokeWidth="2"/>
+                          <circle cx="12" cy="17" r="1" fill="#ef4444"/>
+                        </svg>
+                      </div>
+                      <div className="danger-zone-text">
+                        <h4 className="danger-zone-title">Danger Zone</h4>
+                        <p className="danger-zone-subtitle">
+                          This action cannot be undone
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="danger-zone-actions">
+                      {showDeleteConfirm ? (
+                        <div className="delete-confirm-group">
+                          <span className="delete-confirm-text">
+                            Are you sure you want to delete <strong>{member?.name || 'this member'}</strong>?
+                          </span>
+                          
+                          <div className="delete-warning">
+                            <span className="delete-warning-title">This will permanently delete:</span>
+                            <ul className="delete-warning-list">
+                              <li>The family member profile</li>
+                              <li>All associated activities and schedules</li>
+                              <li>Any homework assignments</li>
+                              <li>All related data</li>
+                            </ul>
+                          </div>
+                          
+                          <div className="delete-confirm-buttons">
+                            <button
+                              className="button button-secondary-small"
+                              onClick={() => setShowDeleteConfirm(false)}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              className="button button-danger-confirm"
+                              onClick={handleDelete}
+                            >
+                              Yes, Delete
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          className="button button-danger-advanced"
+                          onClick={() => setShowDeleteConfirm(true)}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <polyline points="3,6 5,6 21,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <line x1="10" y1="11" x2="10" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <line x1="14" y1="11" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                          Delete Family Member
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Action Buttons */}
         <div className="modal-actions">
@@ -612,33 +729,6 @@ const EditMemberModal = ({
             >
               Cancel
             </button>
-          </div>
-
-          <div className="danger-actions">
-            {showDeleteConfirm ? (
-              <div className="delete-confirm-group">
-                <span className="delete-confirm-text">Are you sure?</span>
-                <button
-                  className="button button-danger-confirm"
-                  onClick={handleDelete}
-                >
-                  Yes, Delete
-                </button>
-                <button
-                  className="button button-secondary-small"
-                  onClick={() => setShowDeleteConfirm(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <button
-                className="button button-danger"
-                onClick={() => setShowDeleteConfirm(true)}
-              >
-                Delete Member
-              </button>
-            )}
           </div>
         </div>
       </div>

@@ -19,6 +19,14 @@ const db = new Database(dbPath, err => {
     console.error('Error opening database:', err.message);
   } else {
     console.log('Connected to the SQLite database.');
+    // Enable foreign key constraints
+    db.run('PRAGMA foreign_keys = ON', (pragmaErr) => {
+      if (pragmaErr) {
+        console.error('Error enabling foreign keys:', pragmaErr.message);
+      } else {
+        console.log('Foreign key constraints enabled');
+      }
+    });
   }
 });
 

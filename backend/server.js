@@ -360,12 +360,57 @@ app.delete('/api/family-members/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
-    const result = await runQuery('DELETE FROM family_members WHERE id = ?', [
-      id,
-    ]);
+    // First, check if the member exists
+    const member = await getOne('SELECT * FROM family_members WHERE id = ?', [id]);
+    if (!member) {
+      return res.status(404).json({ error: 'Family member not found' });
+    }
+
+    // Get counts of related data before deletion (for logging)
+    const activitiesCount = await getOne(
+      'SELECT COUNT(*) as count FROM activities WHERE member_id = ?', 
+      [id]
+    );
+    const homeworkCount = await getOne(
+      'SELECT COUNT(*) as count FROM homework WHERE member_id = ?', 
+      [id]
+    );
+
+    console.log(`Deleting member ${member.name} (ID: ${id})`);
+    console.log(`- Will delete ${activitiesCount.count} activities`);
+    console.log(`- Will delete ${homeworkCount.count} homework entries`);
+
+    // Delete the family member (CASCADE will handle related data)
+    const result = await runQuery('DELETE FROM family_members WHERE id = ?', [id]);
+    
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Family member not found' });
     }
+
+    // Verify cleanup was successful
+    const remainingActivities = await getOne(
+      'SELECT COUNT(*) as count FROM activities WHERE member_id = ?', 
+      [id]
+    );
+    const remainingHomework = await getOne(
+      'SELECT COUNT(*) as count FROM homework WHERE member_id = ?', 
+      [id]
+    );
+
+    console.log(`Deletion complete. Remaining orphaned data:`);
+    console.log(`- Activities: ${remainingActivities.count}`);
+    console.log(`- Homework: ${remainingHomework.count}`);
+
+    // If foreign key constraints failed, manually clean up
+    if (remainingActivities.count > 0 || remainingHomework.count > 0) {
+      console.log('Foreign key constraints may not be working. Manually cleaning up...');
+      
+      await runQuery('DELETE FROM activities WHERE member_id = ?', [id]);
+      await runQuery('DELETE FROM homework WHERE member_id = ?', [id]);
+      
+      console.log('Manual cleanup completed');
+    }
+
     res.status(204).send();
   } catch (error) {
     console.error('Error deleting family member:', error);
