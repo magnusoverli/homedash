@@ -111,22 +111,13 @@ const PersonWeekCard = ({
   return (
     <>
       <div className="person-week-card">
-        <div className="card-header">
-          <button
-            className="add-activity-button"
-            aria-label="Add activity"
-            onClick={() => setIsModalOpen(true)}
-          >
-            +
-          </button>
-        </div>
-
         <div className="week-grid">
           <div className="days-container">
             {dayColumns.map((date, index) => {
               const dayInfo = formatDayLabel(date);
               const dayActivities = getDayActivities(date);
               const overlaps = checkOverlaps(dayActivities);
+              const isLastDay = index === 6; // Sunday is the last day
 
               return (
                 <div
@@ -136,6 +127,15 @@ const PersonWeekCard = ({
                   <div className="day-header">
                     <div className="day-name">{dayInfo.dayName}</div>
                     <div className="day-number">{dayInfo.dayNumber}</div>
+                    {isLastDay && (
+                      <button
+                        className="add-activity-button-overlay"
+                        aria-label="Add activity"
+                        onClick={() => setIsModalOpen(true)}
+                      >
+                        +
+                      </button>
+                    )}
                   </div>
 
                   <div className="time-grid-column">
