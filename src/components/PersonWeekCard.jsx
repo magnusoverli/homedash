@@ -12,10 +12,15 @@ const PersonWeekCard = ({
 }) => {
   const [dayColumns, setDayColumns] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [weekGridHeight, setWeekGridHeight] = useState(70); // percentage
+  const containerRef = useRef(null);
+  const weekGridRef = useRef(null);
+  const [dynamicPixelsPerHour, setDynamicPixelsPerHour] = useState(54);
   const timeSlots = [];
   const startHour = 8;
   const endHour = 20;
-  const pixelsPerHour = 54;
+  const totalHours = endHour - startHour;
 
   for (let hour = startHour; hour <= endHour; hour++) {
     timeSlots.push(hour);
@@ -31,6 +36,36 @@ const PersonWeekCard = ({
     setDayColumns(days);
   }, [weekStart]);
 
+  // Calculate dynamic pixels per hour based on week-grid height
+  useEffect(() => {
+    const updateDynamicScaling = () => {
+      if (weekGridRef.current) {
+        const weekGridHeight = weekGridRef.current.clientHeight;
+        
+        // Reserve space for day headers (approximately 40px) and padding
+        const availableTimeGridHeight = weekGridHeight - 60;
+        
+        // Calculate pixels per hour to fit all time slots
+        const newPixelsPerHour = Math.max(20, availableTimeGridHeight / totalHours);
+        setDynamicPixelsPerHour(newPixelsPerHour);
+      }
+    };
+
+    // Update when week grid height changes
+    const timeoutId = setTimeout(updateDynamicScaling, 10);
+
+    // Also update on window resize
+    const handleResize = () => {
+      setTimeout(updateDynamicScaling, 100);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [weekGridHeight, totalHours]);
+
   const getDayActivities = date => {
     return activities.filter(activity => {
       const activityDate = new Date(activity.date);
@@ -41,7 +76,7 @@ const PersonWeekCard = ({
   const calculateTopPosition = timeString => {
     const [hours, minutes] = timeString.split(':').map(Number);
     const totalMinutes = (hours - startHour) * 60 + minutes;
-    return (totalMinutes / 60) * pixelsPerHour;
+    return (totalMinutes / 60) * dynamicPixelsPerHour;
   };
 
   const calculateHeight = (startTime, endTime) => {
@@ -49,7 +84,7 @@ const PersonWeekCard = ({
     const [endHours, endMinutes] = endTime.split(':').map(Number);
     const durationMinutes =
       endHours * 60 + endMinutes - (startHours * 60 + startMinutes);
-    return (durationMinutes / 60) * pixelsPerHour;
+    return (durationMinutes / 60) * dynamicPixelsPerHour;
   };
 
   const handleTimeSlotClick = (date, hour) => {
@@ -108,10 +143,75 @@ const PersonWeekCard = ({
     return overlaps;
   };
 
+  // Standard resizable pane implementation
+  const handleResizeStart = useCallback((e) => {
+    e.preventDefault();
+    setIsDragging(true);
+    
+    const handleMouseMove = (moveEvent) => {
+      if (!containerRef.current) return;
+      
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const clientY = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY;
+      const relativeY = clientY - containerRect.top;
+      
+      // Calculate percentage (with constraints)
+      const percentage = (relativeY / containerRect.height) * 100;
+      const newWeekGridHeight = Math.min(80, Math.max(20, percentage));
+      
+      setWeekGridHeight(newWeekGridHeight);
+    };
+    
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleMouseMove);
+      document.removeEventListener('touchend', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchmove', handleMouseMove);
+    document.addEventListener('touchend', handleMouseUp);
+  }, []);
+
+  // Prevent text selection during drag
+  useEffect(() => {
+    if (isDragging) {
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'ns-resize';
+    } else {
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    }
+    
+    return () => {
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+  }, [isDragging]);
+
   return (
     <>
-      <div className="person-week-card">
-        <div className="week-grid">
+      <div 
+        className="person-week-card" 
+        ref={containerRef}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%'
+        }}
+      >
+        <div 
+          className="week-grid"
+          ref={weekGridRef}
+          style={{
+            flex: `0 0 ${weekGridHeight}%`,
+            minHeight: '200px',
+            '--dynamic-pixels-per-hour': `${dynamicPixelsPerHour}px`
+          }}
+        >
             {dayColumns.map((date, index) => {
               const dayInfo = formatDayLabel(date);
               const dayActivities = getDayActivities(date);
@@ -137,11 +237,17 @@ const PersonWeekCard = ({
                     )}
                   </div>
 
-                  <div className="time-grid-column">
+                  <div 
+                    className="time-grid-column"
+                    style={{
+                      '--dynamic-pixels-per-hour': `${dynamicPixelsPerHour}px`
+                    }}
+                  >
                     {timeSlots.map(hour => (
                       <div
                         key={hour}
                         className="time-slot"
+                        style={{ height: `${dynamicPixelsPerHour}px` }}
                         onClick={() => handleTimeSlotClick(date, hour)}
                       />
                     ))}
@@ -184,7 +290,29 @@ const PersonWeekCard = ({
             })}
         </div>
         
-        <div className="week-homework-card">
+        {/* Resize Handle */}
+        <div 
+          className={`resize-handle ${isDragging ? 'dragging' : ''}`}
+          onMouseDown={handleResizeStart}
+          onTouchStart={handleResizeStart}
+          aria-label="Resize cards. Drag to adjust proportions"
+          role="separator"
+          tabIndex={0}
+        >
+          <div className="resize-handle-indicator">
+            <div className="resize-handle-line"></div>
+            <div className="resize-handle-line"></div>
+            <div className="resize-handle-line"></div>
+          </div>
+        </div>
+        
+        <div 
+          className="week-homework-card"
+          style={{
+            flex: '1',
+            minHeight: '120px'
+          }}
+        >
           {/* Homework content will be added here */}
         </div>
       </div>

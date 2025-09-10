@@ -5,11 +5,10 @@
   padding: 0.5rem 1rem 1rem 1rem;
   height: 100%;
   min-height: 580px;
-  display: flex;
-  flex-direction: column;
   width: 100%;
   box-sizing: border-box;
   transition: all 0.3s ease;
+  overflow: hidden;
 }
 
 /* Subtle hover effect following design manual */
@@ -53,28 +52,86 @@
 }
 
 .week-grid {
-  flex: 1;
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .week-homework-card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(103, 4, 255, 0.2);
   border-radius: 5px;
-  margin-top: 1rem;
   padding: 1rem;
-  min-height: 120px;
   transition: all 0.3s ease;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* Subtle hover effect following design manual */
 .week-homework-card:hover {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(103, 4, 255, 0.3);
-  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(103, 4, 255, 0.1);
+}
+
+/* Resize Handle Styles */
+.resize-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 16px;
+  cursor: ns-resize;
+  background: rgba(103, 4, 255, 0.05);
+  border-top: 1px solid rgba(103, 4, 255, 0.1);
+  border-bottom: 1px solid rgba(103, 4, 255, 0.1);
+  transition: all 0.2s ease;
+  user-select: none;
+  touch-action: none;
+  flex-shrink: 0;
+}
+
+.resize-handle:hover {
+  background: rgba(103, 4, 255, 0.1);
+  border-color: rgba(103, 4, 255, 0.2);
+}
+
+.resize-handle.dragging {
+  background: rgba(103, 4, 255, 0.15);
+  border-color: rgba(103, 4, 255, 0.3);
+}
+
+.resize-handle-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.resize-handle:hover .resize-handle-indicator,
+.resize-handle.dragging .resize-handle-indicator {
+  opacity: 1;
+}
+
+.resize-handle-line {
+  width: 24px;
+  height: 1px;
+  background: rgba(103, 4, 255, 0.4);
+  border-radius: 1px;
+}
+
+.resize-handle:hover .resize-handle-line,
+.resize-handle.dragging .resize-handle-line {
+  background: rgba(103, 4, 255, 0.8);
+}
+
+/* Focus state for accessibility */
+.resize-handle:focus {
+  outline: 2px solid rgba(103, 4, 255, 0.5);
+  outline-offset: 2px;
 }
 
 .day-column {
@@ -123,14 +180,14 @@
   background: repeating-linear-gradient(
     to bottom,
     transparent,
-    transparent 53px,
-    rgba(103, 4, 255, 0.05) 53px,
-    rgba(103, 4, 255, 0.05) 54px
+    transparent calc(var(--dynamic-pixels-per-hour, 54px) - 1px),
+    rgba(103, 4, 255, 0.05) calc(var(--dynamic-pixels-per-hour, 54px) - 1px),
+    rgba(103, 4, 255, 0.05) var(--dynamic-pixels-per-hour, 54px)
   );
 }
 
 .time-slot {
-  height: 54px;
+  height: var(--dynamic-pixels-per-hour, 54px);
   border-bottom: 1px solid rgba(103, 4, 255, 0.05);
   cursor: pointer;
 }
@@ -172,5 +229,38 @@
 
   .day-number {
     font-size: 0.8rem;
+  }
+
+  .resize-handle {
+    height: 20px;
+  }
+
+  .resize-handle-line {
+    width: 32px;
+    height: 2px;
+  }
+}
+
+@media (max-width: 768px) {
+  .resize-handle {
+    height: 24px;
+    background: rgba(103, 4, 255, 0.08);
+  }
+
+  .resize-handle-line {
+    width: 40px;
+    height: 2px;
+  }
+
+  .resize-handle-indicator {
+    gap: 2px;
+  }
+}
+
+/* Ensure good touch targets on mobile */
+@media (pointer: coarse) {
+  .resize-handle {
+    height: 24px;
+    padding: 4px 0;
   }
 }
