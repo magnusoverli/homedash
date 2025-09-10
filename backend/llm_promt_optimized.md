@@ -50,6 +50,8 @@ Extract daily time information from this school schedule image, organizing it in
 - **IMPORTANT**: If an activity appears in the schedule grid (like "Leksehjelp"), it's part of the school day, NOT a separate activity
 - Examples: 
   - "Foreldremøte" mentioned in notes section → EXTRACT (if after school hours)
+  - "Foresattmøte" mentioned in notes section → EXTRACT (if after school hours)
+  - "Foreldresamtale" mentioned in notes section → EXTRACT (if after school hours)
   - "Leksehjelp" in timetable grid → DO NOT EXTRACT (it's a regular subject)
   - "Gym" in timetable grid → DO NOT EXTRACT (part of school day)
 - Only extract activities that are listed OUTSIDE the regular schedule grid
@@ -60,10 +62,13 @@ Extract daily time information from this school schedule image, organizing it in
 - "exam": Tests, exams, assessments
 
 **Parent Meeting Recognition:**
-- Recognize any activity containing parent/guardian meeting terminology as "one_time" events
-- Common patterns to identify: "foreldremøte", "foresattmøte", "foreldresamtale", "foresattsamtale", "foreldrekveld", "foresattkveld"
-- Pattern matching: Any activity with "foreldre*" or "foresatt*" combined with "møte", "samtale", "kveld", "treff", or similar meeting terms
-- These should ALWAYS be classified as type: "one_time" regardless of specific wording
+- **CRITICAL**: Intelligently detect ANY parent/guardian meeting regardless of exact terminology
+- **Base patterns**: Look for activities containing "foreldre*" OR "foresatt*" (parents/guardians)
+- **Meeting terms**: Combined with "møte", "samtale", "kveld", "treff", "besøk", "time" (meeting/conversation/evening/visit/appointment)
+- **Examples to recognize**: "foreldremøte", "foresattmøte", "foreldresamtale", "foresattsamtale", "foreldrekveld", "foresattkveld", "foreldrebesøk", "foresatttime"
+- **Case insensitive**: Detect variations in capitalization (Foreldremøte, FORESATTMØTE, etc.)
+- **Always classify as**: type: "one_time" (parent meetings are typically single events)
+- **Extract rule**: Only if they occur OUTSIDE the regular timetable grid and after school hours
 
 **Exclusion Criteria:**
 - "Lekekurs", "TL", "lærer", "lærerutdanning" (teacher training)
@@ -121,7 +126,12 @@ Dataset 3 - school_homework:
 **Example 3 - Activity Classification (for activities NOT in timetable grid):**
 - After-school tutoring program → type: "recurring"
 - "Foreldremøte tirsdag" → type: "one_time"
-- "Matteprøve" (if outside grid) → type: "exam"
+- "Foresattmøte onsdag 19:00" → type: "one_time"
+- "Foreldresamtale torsdag" → type: "one_time"
+- "Foreldrekveld fredag" → type: "one_time"
+- "Foresattsamtale mandag 18:30" → type: "one_time"
+- "FORELDREMØTE torsdag" → type: "one_time"
+- "Foresattbesøk onsdag" → type: "one_time"
 
 ## ⚠️ MANDATORY VALIDATION CHECKLIST ⚠️
 
@@ -161,6 +171,7 @@ Dataset 3 - school_homework:
 3. **Next**: Look for activities OUTSIDE the timetable grid
    - Only activities mentioned outside the grid can be separate school_activities
    - Apply timing rule: must start at or after that day's end time
+   - **Special attention to parent meetings**: Look for any variations of parent meeting terminology (foreldre*, foresatt* + meeting terms)
 
 4. **Then**: Extract homework from dedicated homework section only
 

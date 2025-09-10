@@ -947,6 +947,8 @@ function parseSchoolPlanResponse(responseText) {
     
     // Look for the activities array - it should start with [ and contain "day" fields
     const activitiesPatterns = [
+      /\*\*Dataset 2 - school_activities:\*\*\s*```json\s*(\[[\s\S]*?\])\s*```/i,
+      /Dataset 2 - school_activities:\s*```json\s*(\[[\s\S]*?\])\s*```/i,
       /Dataset 2 - school_activities:\s*(\[[\s\S]*?\])/i,
       /school_activities[:\s]*(\[[\s\S]*?\])/i,
       /activities[:\s]*(\[[\s\S]*?\])/i
