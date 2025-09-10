@@ -53,12 +53,6 @@
 }
 
 .week-grid {
-  display: flex;
-  flex: 1;
-  position: relative;
-}
-
-.days-container {
   flex: 1;
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -145,7 +139,7 @@
     min-height: 500px;
   }
 
-  .days-container {
+  .week-grid {
     gap: 1px;
   }
 

@@ -112,7 +112,6 @@ const PersonWeekCard = ({
     <>
       <div className="person-week-card">
         <div className="week-grid">
-          <div className="days-container">
             {dayColumns.map((date, index) => {
               const dayInfo = formatDayLabel(date);
               const dayActivities = getDayActivities(date);
@@ -183,7 +182,6 @@ const PersonWeekCard = ({
                 </div>
               );
             })}
-          </div>
         </div>
       </div>
 
