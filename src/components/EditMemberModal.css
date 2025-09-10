@@ -370,6 +370,7 @@
 .extraction-status span {
   flex: 1;
   line-height: 1.4;
+  white-space: pre-line; /* Preserve line breaks from \n characters */
 }
 
 /* School Schedule Management - Compact */

@@ -208,9 +208,17 @@ const Settings = () => {
       }
     } catch (error) {
       console.error('Error fetching models:', error);
-      setModelsError(
-        'Failed to connect to backend. Please ensure the server is running.'
-      );
+      
+      // Enhanced error handling for better user experience
+      let errorMessage = 'Failed to connect to backend. Please ensure the server is running.';
+      
+      if (error.message?.includes('529')) {
+        errorMessage = 'Anthropic API is currently overloaded. Please try again in a few moments.';
+      } else if (error.message?.includes('Network error')) {
+        errorMessage = 'Network connection failed. Please check your internet connection.';
+      }
+      
+      setModelsError(errorMessage);
       setAvailableModels([]);
     } finally {
       setIsLoadingModels(false);
@@ -381,10 +389,21 @@ const Settings = () => {
       }
     } catch (error) {
       console.error('API key test error:', error);
+      
+      // Enhanced error handling for API key testing
+      let errorMessage = 'Failed to connect to backend. Please ensure the server is running.';
+      
+      if (error.message?.includes('529')) {
+        errorMessage = 'Anthropic API is currently overloaded. Please try again in a few moments.';
+      } else if (error.message?.includes('Network error')) {
+        errorMessage = 'Network connection failed. Please check your internet connection.';
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = 'Request timed out. Please try again.';
+      }
+      
       setApiKeyTestResult({
         success: false,
-        message:
-          'Failed to connect to backend. Please ensure the server is running.',
+        message: errorMessage,
       });
     } finally {
       setIsTestingApiKey(false);

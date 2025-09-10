@@ -36,8 +36,11 @@ Extract daily time information from this school schedule image, organizing it in
 **Notes Extraction:**
 - Extract 1-3 word notes that appear during school hours (between Start and Slutt)
 - Target special activities: "Gym", "Kroppsøving", "Uteskole", "PE", "Turdag", "Svømming", "Leksehjelp"
-- Normalize PE terms: Use "Gym" for all PE/sports activities
-- Include "Leksehjelp" as a regular subject note (it's part of the school day)
+- **Normalize terms:**
+  - PE/sports activities: Use "Gym" for any PE/sports activities
+  - Homework help: Use "Leksehjelp" when detected in the schedule
+- **Always note "Leksehjelp"**: If "Leksehjelp" appears in a day's schedule, include it in that day's notes
+- **Multiple notes format**: When multiple special activities occur on the same day, separate them with commas (e.g., "Gym, Leksehjelp")
 - Use empty string "" if no special notes found
 
 ### 2. School Activities Dataset
@@ -53,8 +56,14 @@ Extract daily time information from this school schedule image, organizing it in
 
 **Type Classification:**
 - "recurring": Weekly activities (e.g., after-school clubs, tutoring programs)
-- "one_time": Single events with keywords "Husk", "møte", "foreldremøte"
+- "one_time": Single events with keywords "Husk", "møte", or any parent meeting variations (see Parent Meeting Recognition below)
 - "exam": Tests, exams, assessments
+
+**Parent Meeting Recognition:**
+- Recognize any activity containing parent/guardian meeting terminology as "one_time" events
+- Common patterns to identify: "foreldremøte", "foresattmøte", "foreldresamtale", "foresattsamtale", "foreldrekveld", "foresattkveld"
+- Pattern matching: Any activity with "foreldre*" or "foresatt*" combined with "møte", "samtale", "kveld", "treff", or similar meeting terms
+- These should ALWAYS be classified as type: "one_time" regardless of specific wording
 
 **Exclusion Criteria:**
 - "Lekekurs", "TL", "lærer", "lærerutdanning" (teacher training)
@@ -72,11 +81,11 @@ Extract daily time information from this school schedule image, organizing it in
 Dataset 1 - school_schedule:
 ```json
 {
-  "Monday": {"start": "HH:MM", "end": "HH:MM", "notes": ""},
+  "Monday": {"start": "HH:MM", "end": "HH:MM", "notes": "Gym, Leksehjelp"},
   "Tuesday": {"start": "HH:MM", "end": "HH:MM", "notes": ""},
-  "Wednesday": {"start": "HH:MM", "end": "HH:MM", "notes": ""},
+  "Wednesday": {"start": "HH:MM", "end": "HH:MM", "notes": "Uteskole"},
   "Thursday": {"start": "HH:MM", "end": "HH:MM", "notes": ""},
-  "Friday": {"start": "HH:MM", "end": "HH:MM", "notes": ""}
+  "Friday": {"start": "HH:MM", "end": "HH:MM", "notes": "Gym"}
 }
 ```
 
@@ -96,11 +105,13 @@ Dataset 3 - school_homework:
 
 ## EXAMPLES
 
-**Example 1 - Timetable Grid Rule:**
-- Monday "Leksehjelp 14:15-15:15" appears in timetable grid → Part of school day, include in notes
-- "Foreldremøte" mentioned in information section → Potential separate activity (if after school)
-- Tuesday "Slutt 13:05" → Tuesday school ends at 13:05
-- Any subject in the grid (Matte, Norsk, Leksehjelp) → Part of regular school schedule
+**Example 1 - Notes Extraction:**
+- Monday "Leksehjelp 14:15-15:15" in timetable grid → Monday notes: "Leksehjelp"
+- Tuesday "Gym 10:00-11:00" in timetable grid → Tuesday notes: "Gym"  
+- Wednesday "Uteskole 09:00-12:00" in timetable grid → Wednesday notes: "Uteskole"
+- Thursday no special activities → Thursday notes: ""
+- **Monday with multiple activities**: "Gym 10:00-11:00" and "Leksehjelp 14:15-15:15" → Monday notes: "Gym, Leksehjelp"
+- Any special subject in the grid gets noted for that specific day
 
 **Example 2 - School End Time Logic:**
 - If schedule grid shows classes until 15:00, then school ends at 15:00 (regardless of individual "Slutt" entries)
@@ -140,7 +151,11 @@ Dataset 3 - school_homework:
 
 2. **Then**: Process timetable grid content
    - ALL activities in the timetable grid → Part of school_schedule
-   - Extract special notes for activities like "Gym", "Leksehjelp", etc.
+   - **Extract special notes for each day:**
+     - If "Leksehjelp" appears → Add "Leksehjelp" to that day's notes
+     - If "Gym"/"Kroppsøving"/"PE" appears → Add "Gym" to that day's notes
+     - If "Uteskole" appears → Add "Uteskole" to that day's notes
+     - **For multiple notes**: Separate with commas (e.g., "Gym, Leksehjelp")
    - Calculate school day duration from start to end of grid activities
 
 3. **Next**: Look for activities OUTSIDE the timetable grid

@@ -162,7 +162,8 @@ const EditMemberModal = ({
       const result = await dataService.extractSchoolPlan(
         member.id,
         formData.schoolPlanImage,
-        llmSettings.apiKey
+        llmSettings.apiKey,
+        llmSettings.selectedModel
       );
 
       setExtractionResult(result);
@@ -178,7 +179,22 @@ const EditMemberModal = ({
       
     } catch (error) {
       console.error('Error extracting school plan:', error);
-      setExtractionError(error.message || 'Failed to extract school plan');
+      
+      // Enhanced error handling with user-friendly messages
+      let userFriendlyMessage = error.message || 'Failed to extract school plan';
+      
+      // Provide helpful context based on error type
+      if (error.message?.includes('529')) {
+        userFriendlyMessage += '\n\nThis usually happens when many people are using the AI service at the same time. Try again in a few minutes.';
+      } else if (error.message?.includes('401') || error.message?.includes('Invalid API key')) {
+        userFriendlyMessage += '\n\nPlease verify your API key in the Settings.';
+      } else if (error.message?.includes('timeout') || error.message?.includes('timed out')) {
+        userFriendlyMessage += '\n\nThe request took too long to process. This can happen with large or complex images.';
+      } else if (error.message?.includes('Network error')) {
+        userFriendlyMessage += '\n\nPlease check your internet connection and try again.';
+      }
+      
+      setExtractionError(userFriendlyMessage);
     } finally {
       setIsExtracting(false);
     }

@@ -3,10 +3,30 @@ import { API_URL } from '../config/api';
 class DataService {
   async handleResponse(response) {
     if (!response.ok) {
-      const error = await response
+      const errorData = await response
         .json()
         .catch(() => ({ error: 'Network error' }));
-      throw new Error(error.error || `HTTP error! status: ${response.status}`);
+      
+      // Create a more informative error message
+      let errorMessage = errorData.error || `HTTP error! status: ${response.status}`;
+      
+      // If there's additional context in the message field, include it
+      if (errorData.message && errorData.message !== errorData.error) {
+        errorMessage += `: ${errorData.message}`;
+      }
+      
+      // For specific HTTP status codes, provide more context
+      if (response.status === 529) {
+        errorMessage = `Anthropic API is currently overloaded (Error 529). Please try again in a few moments.`;
+      } else if (response.status === 401) {
+        errorMessage = `Invalid API key. Please check your API key in Settings.`;
+      } else if (response.status === 429) {
+        errorMessage = `Rate limit exceeded. Please wait a moment before trying again.`;
+      } else if (response.status >= 500) {
+        errorMessage = `Server error (${response.status}). ${errorData.message || 'Please try again later.'}`;
+      }
+      
+      throw new Error(errorMessage);
     }
     if (response.status === 204) {
       return null;
@@ -187,11 +207,16 @@ class DataService {
   }
 
   // School Plan Extraction
-  async extractSchoolPlan(memberId, imageFile, apiKey) {
+  async extractSchoolPlan(memberId, imageFile, apiKey, selectedModel = null) {
     const formData = new FormData();
     formData.append('member_id', memberId);
     formData.append('api_key', apiKey);
     formData.append('schoolPlanImage', imageFile);
+    
+    // Pass the selected model if provided
+    if (selectedModel) {
+      formData.append('selected_model', selectedModel);
+    }
 
     const response = await fetch(`${API_URL}/api/extract-school-plan`, {
       method: 'POST',

@@ -700,7 +700,7 @@ app.delete('/api/homework/:id', async (req, res) => {
 
 // School Plan Extraction Endpoint
 app.post('/api/extract-school-plan', upload.single('schoolPlanImage'), async (req, res) => {
-  const { member_id, api_key } = req.body;
+  const { member_id, api_key, selected_model } = req.body;
   const imageFile = req.file;
 
   console.log('=== SCHOOL PLAN EXTRACTION STARTED ===');
@@ -709,6 +709,7 @@ app.post('/api/extract-school-plan', upload.single('schoolPlanImage'), async (re
   console.log(`Image size: ${imageFile ? (imageFile.size / 1024).toFixed(2) : 0} KB`);
   console.log(`Image type: ${imageFile ? imageFile.mimetype : 'none'}`);
   console.log(`API key provided: ${api_key ? 'Yes (length: ' + api_key.length + ')' : 'No'}`);
+  console.log(`Selected model: ${selected_model || 'Not specified (will use default)'}`);
 
   if (!member_id || !api_key || !imageFile) {
     console.log('❌ Validation failed - missing required fields');
@@ -737,8 +738,16 @@ app.post('/api/extract-school-plan', upload.single('schoolPlanImage'), async (re
     console.log(`📡 Sending request to Anthropic API...`);
 
     // Prepare the message for Claude with vision
+    // Determine which model to use (user selection or fallback to default)
+    const modelToUse = selected_model || 'claude-3-5-sonnet-20241022';
+    console.log(`🤖 Using model: ${modelToUse}`);
+    
+    // Note: We assume the user has selected a vision-capable model
+    // Most Claude 3+ models support vision, but if there are issues,
+    // the Anthropic API will return a clear error message
+    
     const messageData = {
-      model: 'claude-3-5-sonnet-20241022', // Using a model that supports vision
+      model: modelToUse, // Use selected model or fallback to default
       max_tokens: 4000,
       messages: [
         {
