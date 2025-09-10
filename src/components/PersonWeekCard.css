@@ -59,6 +59,24 @@
   gap: 2px;
 }
 
+.week-homework-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(103, 4, 255, 0.2);
+  border-radius: 5px;
+  margin-top: 1rem;
+  padding: 1rem;
+  min-height: 120px;
+  transition: all 0.3s ease;
+}
+
+/* Subtle hover effect following design manual */
+.week-homework-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(103, 4, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(103, 4, 255, 0.1);
+}
+
 .day-column {
   display: flex;
   flex-direction: column;

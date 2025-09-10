@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import ActivityBlock from './ActivityBlock';
 import ScheduleModal from './ScheduleModal';
 import './PersonWeekCard.css';
@@ -182,6 +182,10 @@ const PersonWeekCard = ({
                 </div>
               );
             })}
+        </div>
+        
+        <div className="week-homework-card">
+          {/* Homework content will be added here */}
         </div>
       </div>
 
