@@ -190,6 +190,17 @@ class DataService {
     return this.handleResponse(response);
   }
 
+  // School Schedule Batch Deletion
+  async deleteSchoolSchedule(memberId) {
+    const response = await fetch(`${API_URL}/api/school-schedule/${memberId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return this.handleResponse(response);
+  }
+
   // Migration helper
   async migrateFromLocalStorage() {
     try {

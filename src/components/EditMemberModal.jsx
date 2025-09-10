@@ -199,31 +199,17 @@ const EditMemberModal = ({
     setScheduleDeleteError('');
 
     try {
-      // Get all activities for this member
-      const activities = await dataService.getActivities({ memberId: member.id });
+      // Use the new batch delete endpoint for optimal performance
+      const result = await dataService.deleteSchoolSchedule(member.id);
       
-      // Find school schedule and school activity entries
-      const schoolScheduleActivities = activities.filter(activity => 
-        activity.description && activity.description.includes('[TYPE:school_schedule]')
-      );
-      
-      const schoolActivities = activities.filter(activity => 
-        activity.description && activity.description.includes('[TYPE:school_activity]')
-      );
-
-      const totalSchoolEntries = [...schoolScheduleActivities, ...schoolActivities];
-
-      // Delete each school-related activity
-      for (const activity of totalSchoolEntries) {
-        await dataService.deleteActivity(activity.id);
-      }
+      console.log(`🗑️ Batch delete completed: ${result.deletedCount} entries removed in ${result.executionTime}ms`);
 
       setHasSchoolSchedule(false);
       setScheduleDeleteError('');
       
       setShowScheduleDeleteConfirm(false);
       showSuccess(
-        `School schedule deleted successfully.`
+        `School schedule deleted successfully! Removed ${result.deletedCount} entries.`
       );
       
     } catch (error) {

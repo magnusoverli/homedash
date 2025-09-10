@@ -524,6 +524,75 @@ app.delete('/api/activities/:id', async (req, res) => {
   }
 });
 
+// Batch delete school schedule for a member
+app.delete('/api/school-schedule/:memberId', async (req, res) => {
+  const { memberId } = req.params;
+
+  try {
+    console.log(`🗑️  Starting batch delete of school schedule for member ${memberId}`);
+    const startTime = Date.now();
+
+    // Count records before deletion for logging
+    const scheduleCountResult = await getOne(
+      `SELECT COUNT(*) as count FROM activities 
+       WHERE member_id = ? 
+       AND description LIKE '%[TYPE:school_schedule]%'`,
+      [memberId]
+    );
+    
+    const activityCountResult = await getOne(
+      `SELECT COUNT(*) as count FROM activities 
+       WHERE member_id = ? 
+       AND description LIKE '%[TYPE:school_activity]%'`,
+      [memberId]
+    );
+
+    const totalBefore = scheduleCountResult.count + activityCountResult.count;
+    console.log(`📊 Found ${scheduleCountResult.count} school schedule entries and ${activityCountResult.count} school activity entries (${totalBefore} total)`);
+
+    if (totalBefore === 0) {
+      console.log(`ℹ️  No school schedule entries found for member ${memberId}`);
+      return res.json({ 
+        message: 'No school schedule found to delete',
+        deletedCount: 0
+      });
+    }
+
+    // Batch delete all school-related activities in one operation
+    const deleteScheduleResult = await runQuery(
+      `DELETE FROM activities 
+       WHERE member_id = ? 
+       AND description LIKE '%[TYPE:school_schedule]%'`,
+      [memberId]
+    );
+
+    const deleteActivityResult = await runQuery(
+      `DELETE FROM activities 
+       WHERE member_id = ? 
+       AND description LIKE '%[TYPE:school_activity]%'`,
+      [memberId]
+    );
+
+    const totalDeleted = deleteScheduleResult.changes + deleteActivityResult.changes;
+    const endTime = Date.now();
+    
+    console.log(`✅ Batch delete completed in ${endTime - startTime}ms`);
+    console.log(`📈 Deleted ${deleteScheduleResult.changes} schedule entries and ${deleteActivityResult.changes} activity entries (${totalDeleted} total)`);
+
+    res.json({
+      message: 'School schedule deleted successfully',
+      deletedCount: totalDeleted,
+      scheduleEntries: deleteScheduleResult.changes,
+      activityEntries: deleteActivityResult.changes,
+      executionTime: endTime - startTime
+    });
+
+  } catch (error) {
+    console.error('Error batch deleting school schedule:', error);
+    res.status(500).json({ error: 'Failed to delete school schedule' });
+  }
+});
+
 // Configure multer for file uploads
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -1027,7 +1096,13 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
       );
       console.log(`🗑️  Deleted ${deleteResult.changes || 0} existing school schedule entries`);
       
-      // Step 2: Generate recurring entries for each day of the week
+      // Step 2: Generate recurring entries for each day of the week (BATCH OPTIMIZED)
+      console.log(`📦 Preparing batch insert for school schedule entries...`);
+      
+      // Collect all entries first, then batch insert
+      const batchEntries = [];
+      const allDayEntries = {}; // Track entries for savedData response
+      
       for (const [day, times] of Object.entries(extractedData.school_schedule)) {
         console.log(`📅 Processing day: ${day}, times:`, times);
         if (times && times.start && times.end) {
@@ -1038,6 +1113,7 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
             // Generate entries for this day throughout the school year
             let currentWeek = new Date(importWeekStart);
             let entriesCreated = 0;
+            allDayEntries[day] = [];
             
             while (currentWeek <= schoolYearEnd) {
               // Calculate the specific date for this day of the week
@@ -1050,27 +1126,24 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
                 const dateString = targetDate.toISOString().split('T')[0];
                 const notes = times.notes || null;
                 
-                const result = await runQuery(
-                  `INSERT INTO activities (member_id, title, date, start_time, end_time, description, activity_type, recurrence_type, recurrence_end_date, notes) 
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                  [
-                    memberId, 
-                    'School', 
-                    dateString,
-                    times.start,
-                    times.end,
-                    'Regular school schedule [TYPE:school_schedule]',
-                    'school_schedule',
-                    'weekly',
-                    schoolYearEnd.toISOString().split('T')[0],
-                    notes
-                  ]
-                );
+                // Add to batch entries array instead of individual insert
+                batchEntries.push([
+                  memberId, 
+                  'School', 
+                  dateString,
+                  times.start,
+                  times.end,
+                  'Regular school schedule [TYPE:school_schedule]',
+                  'school_schedule',
+                  'weekly',
+                  schoolYearEnd.toISOString().split('T')[0],
+                  notes
+                ]);
                 entriesCreated++;
                 
-                // Only add to savedData for the first few entries (to avoid huge response)
+                // Store for savedData response (first few entries)
                 if (entriesCreated <= 10) {
-                  savedData.schedules.push({ id: result.id, day, date: dateString, ...times });
+                  allDayEntries[day].push({ day, date: dateString, ...times });
                 }
               }
               
@@ -1078,7 +1151,7 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
               currentWeek.setDate(currentWeek.getDate() + 7);
             }
             
-            console.log(`✅ Created ${entriesCreated} recurring entries for ${day}`);
+            console.log(`📋 Prepared ${entriesCreated} entries for ${day} (batch)`);
           } else {
             console.log(`⚠️  Day ${day} not recognized in dayMapping`);
           }
@@ -1086,9 +1159,37 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
           console.log(`⚠️  Missing start/end times for ${day}:`, times);
         }
       }
+      
+      // Execute batch insert for all school schedule entries
+      if (batchEntries.length > 0) {
+        console.log(`💾 Executing batch insert for ${batchEntries.length} school schedule entries...`);
+        const startTime = Date.now();
+        
+        // Create placeholders for batch insert
+        const placeholders = batchEntries.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
+        const flatParams = batchEntries.flat();
+        
+        await runQuery(
+          `INSERT INTO activities (member_id, title, date, start_time, end_time, description, activity_type, recurrence_type, recurrence_end_date, notes) 
+           VALUES ${placeholders}`,
+          flatParams
+        );
+        
+        const endTime = Date.now();
+        console.log(`✅ Batch insert completed in ${endTime - startTime}ms (${batchEntries.length} records)`);
+        
+        // Add sample entries to savedData for response (maintain original behavior)
+        for (const [day, entries] of Object.entries(allDayEntries)) {
+          for (const entry of entries) {
+            savedData.schedules.push(entry);
+          }
+        }
+      } else {
+        console.log(`ℹ️  No school schedule entries to create`);
+      }
     }
 
-    // Save school activities as recurring activities
+    // Save school activities as recurring activities (BATCH OPTIMIZED)
     if (extractedData.school_activities && extractedData.school_activities.length > 0) {
       console.log(`🎯 Processing school activities...`);
       
@@ -1102,6 +1203,10 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
         [memberId, importWeekStart.toISOString().split('T')[0]]
       );
       console.log(`🗑️  Deleted ${deleteActivitiesResult.changes || 0} existing school activity entries`);
+      
+      // Collect all activity entries for batch processing
+      const batchActivityEntries = [];
+      const activitySamples = []; // For savedData response
       
       // Process each school activity with type awareness
       for (const activity of extractedData.school_activities) {
@@ -1118,7 +1223,7 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
             
             if (activityType === 'one_time') {
               // Handle one-time activities
-              console.log(`📅 Creating one-time entry for ${activity.name} (${activity.day})`);
+              console.log(`📅 Preparing one-time entry for ${activity.name} (${activity.day})`);
               
               // One-time activities are always placed on the corresponding day of the current import week
               const targetDate = new Date(importWeekStart);
@@ -1129,24 +1234,21 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
               if (targetDate >= importWeekStart && targetDate <= schoolYearEnd) {
                 const dateString = targetDate.toISOString().split('T')[0];
                 
-                const result = await runQuery(
-                  `INSERT INTO activities (member_id, title, date, start_time, end_time, description, activity_type, recurrence_type, recurrence_end_date) 
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                  [
-                    memberId, 
-                    activity.name, 
-                    dateString,
-                    activity.start,
-                    activity.end,
-                    `School activity: ${activity.name} [TYPE:school_activity]`,
-                    'school_activity',
-                    recurrenceType,
-                    recurrenceEndDate
-                  ]
-                );
+                // Add to batch entries
+                batchActivityEntries.push([
+                  memberId, 
+                  activity.name, 
+                  dateString,
+                  activity.start,
+                  activity.end,
+                  `School activity: ${activity.name} [TYPE:school_activity]`,
+                  'school_activity',
+                  recurrenceType,
+                  recurrenceEndDate
+                ]);
                 
-                savedData.activities.push({ 
-                  id: result.id, 
+                // Add to samples for response
+                activitySamples.push({ 
                   day: activity.day, 
                   name: activity.name,
                   date: dateString, 
@@ -1155,13 +1257,13 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
                   type: activityType
                 });
                 
-                console.log(`✅ Created one-time entry for "${activity.name}" on ${dateString}`);
+                console.log(`📋 Prepared one-time entry for "${activity.name}" on ${dateString}`);
               } else {
                 console.log(`⚠️  One-time activity date ${targetDate.toISOString().split('T')[0]} is outside school year range`);
               }
             } else {
-              // Handle recurring activities (existing logic enhanced)
-              console.log(`📅 Creating recurring entries for ${activity.name} (${activity.day})`);
+              // Handle recurring activities
+              console.log(`📅 Preparing recurring entries for ${activity.name} (${activity.day})`);
               
               // Generate recurring entries for this activity throughout the school year
               let currentWeek = new Date(importWeekStart);
@@ -1177,27 +1279,23 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
                 if (targetDate >= importWeekStart && targetDate <= schoolYearEnd) {
                   const dateString = targetDate.toISOString().split('T')[0];
                   
-                  const result = await runQuery(
-                    `INSERT INTO activities (member_id, title, date, start_time, end_time, description, activity_type, recurrence_type, recurrence_end_date) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [
-                      memberId, 
-                      activity.name, 
-                      dateString,
-                      activity.start,
-                      activity.end,
-                      `School activity: ${activity.name} [TYPE:school_activity]`,
-                      'school_activity',
-                      recurrenceType,
-                      recurrenceEndDate
-                    ]
-                  );
+                  // Add to batch entries
+                  batchActivityEntries.push([
+                    memberId, 
+                    activity.name, 
+                    dateString,
+                    activity.start,
+                    activity.end,
+                    `School activity: ${activity.name} [TYPE:school_activity]`,
+                    'school_activity',
+                    recurrenceType,
+                    recurrenceEndDate
+                  ]);
                   entriesCreated++;
                   
-                  // Only add to savedData for the first few entries (to avoid huge response)
+                  // Only add to samples for the first few entries (to avoid huge response)
                   if (entriesCreated <= 5) {
-                    savedData.activities.push({ 
-                      id: result.id, 
+                    activitySamples.push({ 
                       day: activity.day, 
                       name: activity.name,
                       date: dateString, 
@@ -1212,7 +1310,7 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
                 currentWeek.setDate(currentWeek.getDate() + 7);
               }
               
-              console.log(`✅ Created ${entriesCreated} recurring entries for activity "${activity.name}"`);
+              console.log(`📋 Prepared ${entriesCreated} recurring entries for activity "${activity.name}"`);
             }
           } else {
             console.log(`⚠️  Day ${activity.day} not recognized in dayMapping`);
@@ -1220,6 +1318,30 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
         } else {
           console.log(`⚠️  Missing required fields for activity:`, activity);
         }
+      }
+      
+      // Execute batch insert for all school activity entries
+      if (batchActivityEntries.length > 0) {
+        console.log(`💾 Executing batch insert for ${batchActivityEntries.length} school activity entries...`);
+        const startTime = Date.now();
+        
+        // Create placeholders for batch insert
+        const placeholders = batchActivityEntries.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
+        const flatParams = batchActivityEntries.flat();
+        
+        await runQuery(
+          `INSERT INTO activities (member_id, title, date, start_time, end_time, description, activity_type, recurrence_type, recurrence_end_date) 
+           VALUES ${placeholders}`,
+          flatParams
+        );
+        
+        const endTime = Date.now();
+        console.log(`✅ Batch insert completed in ${endTime - startTime}ms (${batchActivityEntries.length} records)`);
+        
+        // Add sample entries to savedData for response
+        savedData.activities.push(...activitySamples);
+      } else {
+        console.log(`ℹ️  No school activity entries to create`);
       }
     } else {
       console.log('📝 No school activities to process');
