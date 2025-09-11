@@ -13,6 +13,8 @@ const PersonCard = ({
   onDeleteActivity,
   onHomeworkDeleted,
 }) => {
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+
   return (
     <div className="person-card">
       <div className="person-card-header">
@@ -29,6 +31,13 @@ const PersonCard = ({
           </span>
         </div>
         <h2 className="person-name">{member.name}</h2>
+        <button
+          className="person-settings-button"
+          onClick={() => setShowSettingsModal(true)}
+          aria-label={`Settings for ${member.name}`}
+        >
+          <SettingsIcon size={18} color="#b781ff" />
+        </button>
       </div>
       
       <PersonWeekCard
@@ -40,6 +49,16 @@ const PersonCard = ({
         onDeleteActivity={onDeleteActivity}
         onHomeworkDeleted={onHomeworkDeleted}
       />
+
+      <GenericModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        title={`${member.name} Settings`}
+      >
+        <div className="modal-content-placeholder">
+          Settings content will be added here
+        </div>
+      </GenericModal>
     </div>
   );
 };

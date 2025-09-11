@@ -50,6 +50,28 @@
   flex: 1;
 }
 
+.person-settings-button {
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
+  background: rgba(183, 129, 255, 0.1);
+  border: 1px solid rgba(183, 129, 255, 0.2);
+  color: #b781ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.person-settings-button:hover {
+  background: rgba(183, 129, 255, 0.2);
+  border-color: rgba(183, 129, 255, 0.4);
+  color: #ffffff;
+  transform: rotate(45deg);
+}
+
 /* Make sure the PersonWeekCard fills the available space within PersonCard */
 .person-card .person-week-card {
   flex: 1;
@@ -78,5 +100,10 @@
   
   .person-name {
     font-size: 1.125rem;
+  }
+  
+  .person-settings-button {
+    width: 26px;
+    height: 26px;
   }
 }
