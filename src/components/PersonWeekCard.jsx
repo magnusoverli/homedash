@@ -11,6 +11,8 @@ const PersonWeekCard = ({
   onAddActivity,
   onDeleteActivity,
   onHomeworkDeleted,
+  colorPreferences = {},
+  getDefaultColorForType = () => '#B2AEFF',
 }) => {
   const [dayColumns, setDayColumns] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -38,6 +40,34 @@ const PersonWeekCard = ({
   for (let hour = startHour; hour <= endHour; hour++) {
     timeSlots.push(hour);
   }
+
+  // Function to get custom color for an activity based on its type/source
+  const getActivityCustomColor = (activity) => {
+    // Determine activity type(s) for color lookup
+    let activityType = 'manual'; // default
+    
+    // Check source first
+    if (activity.source === 'spond') {
+      activityType = 'spond';
+    }
+    
+    // Check for school types (these take precedence over source)
+    if (activity.description) {
+      if (activity.description.includes('[TYPE:school_schedule]')) {
+        activityType = 'school_schedule';
+      } else if (activity.description.includes('[TYPE:school_activity]')) {
+        activityType = 'school_activity';
+      }
+    }
+    
+    // Check for category (these take precedence over source but not school types)
+    if (activity.category && !activity.description?.includes('[TYPE:school')) {
+      activityType = `category_${activity.category}`;
+    }
+    
+    // Return custom color if set, otherwise default for that type
+    return colorPreferences[activityType] || getDefaultColorForType(activityType);
+  };
 
   useEffect(() => {
     const days = [];
@@ -324,6 +354,7 @@ const PersonWeekCard = ({
                             overlapIndex={overlapIndex}
                             overlapCount={overlapCount}
                             onDelete={() => onDeleteActivity(activity.id)}
+                            customColor={getActivityCustomColor(activity)}
                           />
                         );
                       })}

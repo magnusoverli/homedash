@@ -31,10 +31,15 @@ const ActivityBlock = ({
   overlapIndex,
   overlapCount,
   onDelete,
+  customColor,
 }) => {
   const [showActions, setShowActions] = useState(false);
 
   const getActivityColor = () => {
+    // Use custom color if provided, otherwise fall back to category colors
+    if (customColor) {
+      return customColor;
+    }
     return CATEGORY_COLORS[activity.category] || CATEGORY_COLORS.personal;
   };
 
