@@ -870,6 +870,247 @@ app.post('/api/spond-groups/:memberId/selections', async (req, res) => {
   }
 });
 
+// Fetch Spond activities for authenticated member's selected groups
+app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
+  const { memberId } = req.params;
+  const { startDate, endDate } = req.body;
+
+  console.log(`🔍 Syncing Spond activities for member ${memberId}`);
+  console.log(`📅 Date range: ${startDate} to ${endDate}`);
+
+  try {
+    // Get stored credentials
+    const credentialsResult = await getOne(
+      'SELECT value FROM settings WHERE key = ?',
+      [`spond_credentials_${memberId}`]
+    );
+
+    if (!credentialsResult) {
+      console.log(`❌ No stored credentials found for member ${memberId}`);
+      return res.status(404).json({
+        error: 'NO_CREDENTIALS',
+        message: 'No stored credentials found'
+      });
+    }
+
+    const credentialData = JSON.parse(credentialsResult.value);
+
+    if (!credentialData.loginToken) {
+      console.log(`❌ No stored token found for member ${memberId}`);
+      return res.status(404).json({
+        error: 'NO_TOKEN',
+        message: 'No stored token found'
+      });
+    }
+
+    // Get active groups for this member
+    const activeGroups = await getAll(
+      'SELECT id, name FROM spond_groups WHERE member_id = ? AND is_active = TRUE',
+      [memberId]
+    );
+
+    if (activeGroups.length === 0) {
+      console.log(`⚠️ No active groups found for member ${memberId}`);
+      return res.json({
+        success: true,
+        message: 'No active groups to sync',
+        activitiesSynced: 0,
+        groupsSynced: 0
+      });
+    }
+
+    console.log(`📋 Found ${activeGroups.length} active groups: ${activeGroups.map(g => g.name).join(', ')}`);
+
+    let totalActivitiesSynced = 0;
+    const syncResults = [];
+
+    // Fetch activities for each active group
+    for (const group of activeGroups) {
+      console.log(`🔍 Fetching activities for group "${group.name}" (${group.id})`);
+      
+      try {
+        // Build Spond API URL with date filters
+        const apiUrl = new URL('https://api.spond.com/core/v1/events/');
+        if (startDate) apiUrl.searchParams.append('minStart', startDate);
+        if (endDate) apiUrl.searchParams.append('maxEnd', endDate);
+        apiUrl.searchParams.append('groupId', group.id);
+
+        console.log(`📡 Making API call to: ${apiUrl.toString()}`);
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+        const response = await fetch(apiUrl.toString(), {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${credentialData.loginToken}`,
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          console.error(`❌ Failed to fetch activities for group ${group.name}: ${response.status}`);
+          syncResults.push({
+            groupId: group.id,
+            groupName: group.name,
+            success: false,
+            error: `HTTP ${response.status}`,
+            activitiesCount: 0
+          });
+          continue;
+        }
+
+        const activitiesData = await response.json();
+        const activities = activitiesData || [];
+        
+        console.log(`📊 Found ${activities.length} activities for group "${group.name}"`);
+
+        let groupActivitiesSynced = 0;
+
+        // Store activities in database
+        for (const activity of activities) {
+          try {
+            // Convert Spond activity to our database format
+            await runQuery(
+              `INSERT INTO spond_activities (
+                id, group_id, member_id, title, description, 
+                start_timestamp, end_timestamp, location_name, location_address,
+                location_latitude, location_longitude, activity_type, is_cancelled,
+                max_accepted, auto_accept, response_status, organizer_name, raw_data,
+                updated_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+              ON CONFLICT(id) DO UPDATE SET
+                title = excluded.title,
+                description = excluded.description,
+                start_timestamp = excluded.start_timestamp,
+                end_timestamp = excluded.end_timestamp,
+                location_name = excluded.location_name,
+                location_address = excluded.location_address,
+                location_latitude = excluded.location_latitude,
+                location_longitude = excluded.location_longitude,
+                activity_type = excluded.activity_type,
+                is_cancelled = excluded.is_cancelled,
+                max_accepted = excluded.max_accepted,
+                auto_accept = excluded.auto_accept,
+                response_status = excluded.response_status,
+                organizer_name = excluded.organizer_name,
+                raw_data = excluded.raw_data,
+                updated_at = CURRENT_TIMESTAMP`,
+              [
+                activity.id,
+                group.id,
+                memberId,
+                activity.heading || activity.name || 'Untitled Activity',
+                activity.description || null,
+                activity.startTimestamp,
+                activity.endTimestamp,
+                activity.location?.feature?.properties?.name || null,
+                activity.location?.feature?.properties?.address || null,
+                activity.location?.feature?.geometry?.coordinates?.[1] || null, // latitude
+                activity.location?.feature?.geometry?.coordinates?.[0] || null, // longitude
+                activity.type || 'event',
+                activity.cancelled || false,
+                activity.maxAccepted || null,
+                activity.autoAccept || false,
+                activity.responses?.find(r => r.memberId === memberId)?.status || null,
+                activity.owners?.[0]?.profile?.firstName || null,
+                JSON.stringify(activity)
+              ]
+            );
+            groupActivitiesSynced++;
+          } catch (dbError) {
+            console.error(`❌ Error storing activity ${activity.id}:`, dbError);
+          }
+        }
+
+        totalActivitiesSynced += groupActivitiesSynced;
+        
+        // Update last synced timestamp for this group
+        await runQuery(
+          'UPDATE spond_groups SET last_synced_at = CURRENT_TIMESTAMP WHERE id = ? AND member_id = ?',
+          [group.id, memberId]
+        );
+
+        syncResults.push({
+          groupId: group.id,
+          groupName: group.name,
+          success: true,
+          activitiesCount: groupActivitiesSynced
+        });
+
+        console.log(`✅ Synced ${groupActivitiesSynced} activities for group "${group.name}"`);
+
+      } catch (error) {
+        console.error(`❌ Error syncing group ${group.name}:`, error);
+        syncResults.push({
+          groupId: group.id,
+          groupName: group.name,
+          success: false,
+          error: error.message,
+          activitiesCount: 0
+        });
+      }
+    }
+
+    // Log sync to sync_log table
+    try {
+      await runQuery(
+        `INSERT INTO spond_sync_log (
+          member_id, sync_type, status, activities_synced, created_at
+        ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+        [
+          memberId,
+          'activities',
+          totalActivitiesSynced > 0 ? 'success' : 'partial',
+          totalActivitiesSynced
+        ]
+      );
+    } catch (logError) {
+      console.error('❌ Error logging sync operation:', logError);
+    }
+
+    console.log(`🎯 Sync completed: ${totalActivitiesSynced} total activities synced across ${activeGroups.length} groups`);
+
+    res.json({
+      success: true,
+      message: `Synced ${totalActivitiesSynced} activities from ${activeGroups.length} groups`,
+      activitiesSynced: totalActivitiesSynced,
+      groupsSynced: activeGroups.length,
+      syncResults: syncResults
+    });
+
+  } catch (error) {
+    console.error('❌ Error syncing Spond activities:', error);
+    
+    // Log failed sync
+    try {
+      await runQuery(
+        `INSERT INTO spond_sync_log (
+          member_id, sync_type, status, error_message, created_at
+        ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+        [memberId, 'activities', 'error', error.message]
+      );
+    } catch (logError) {
+      console.error('❌ Error logging failed sync:', logError);
+    }
+
+    if (error.name === 'AbortError') {
+      return res.status(500).json({
+        error: 'TIMEOUT',
+        message: 'Request to Spond API timed out'
+      });
+    }
+
+    res.status(500).json({
+      error: 'SYNC_ERROR',
+      message: 'Failed to sync Spond activities'
+    });
+  }
+});
+
 // Get token lifecycle research data for analysis
 app.get('/api/spond-token-research', async (req, res) => {
   console.log('📊 Retrieving Spond token research data...');

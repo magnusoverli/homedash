@@ -175,109 +175,90 @@ const initDatabase = () => {
       // Create Spond tables sequentially to ensure proper order
       const createSpondTables = () => {
         return new Promise((tableResolve, tableReject) => {
-          // Drop and recreate Spond Groups Table to ensure correct defaults
-          db.run('DROP TABLE IF EXISTS spond_groups', (dropErr) => {
-            if (dropErr) {
-              console.error('❌ Error dropping spond_groups table:', dropErr);
-              return tableReject(dropErr);
-            }
-            
-            console.log('🗑️ spond_groups table dropped (if existed)');
-            
-            // Spond Groups Table
-            db.run(
-              `
-              CREATE TABLE spond_groups (
-                id TEXT PRIMARY KEY,
-                member_id INTEGER NOT NULL,
-                name TEXT NOT NULL,
-                description TEXT,
-                image_url TEXT,
-                is_active BOOLEAN DEFAULT FALSE,
-                last_synced_at DATETIME,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
-              )
-            `,
-              err => {
-                if (err) {
-                  console.error('Error creating spond_groups table:', err);
-                  return tableReject(err);
-                }
-                console.log('✅ spond_groups table created');
+          // Create Spond Groups Table (preserving existing data)
+          db.run(
+            `
+            CREATE TABLE IF NOT EXISTS spond_groups (
+              id TEXT PRIMARY KEY,
+              member_id INTEGER NOT NULL,
+              name TEXT NOT NULL,
+              description TEXT,
+              image_url TEXT,
+              is_active BOOLEAN DEFAULT FALSE,
+              last_synced_at DATETIME,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
+            )
+          `,
+            err => {
+              if (err) {
+                console.error('Error creating spond_groups table:', err);
+                return tableReject(err);
+              }
+              console.log('✅ spond_groups table created/verified');
 
                 // Spond Activities Table
                 db.run(
-                `
-                CREATE TABLE IF NOT EXISTS spond_activities (
-                  id TEXT PRIMARY KEY,
-                  group_id TEXT NOT NULL,
-                  member_id INTEGER NOT NULL,
-                  title TEXT NOT NULL,
-                  description TEXT,
-                  start_timestamp DATETIME NOT NULL,
-                  end_timestamp DATETIME NOT NULL,
-                  location_name TEXT,
-                  location_address TEXT,
-                  location_latitude REAL,
-                  location_longitude REAL,
-                  activity_type TEXT,
-                  is_cancelled BOOLEAN DEFAULT FALSE,
-                  max_accepted INTEGER,
-                  auto_accept BOOLEAN DEFAULT FALSE,
-                  response_status TEXT,
-                  response_comment TEXT,
-                  organizer_name TEXT,
-                  raw_data TEXT,
-                  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                  FOREIGN KEY (group_id) REFERENCES spond_groups (id) ON DELETE CASCADE,
-                  FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
-                )
-              `,
-                err => {
-                  if (err) {
-                    console.error('Error creating spond_activities table:', err);
-                    return tableReject(err);
-                  }
-                  console.log('✅ spond_activities table created');
-
-                  // Spond Sync Log Table - drop and recreate to ensure clean schema
-                  db.run('DROP TABLE IF EXISTS spond_sync_log', (dropErr) => {
-                    if (dropErr) {
-                      console.error('❌ Error dropping spond_sync_log table:', dropErr);
-                      return tableReject(dropErr);
+                  `
+                  CREATE TABLE IF NOT EXISTS spond_activities (
+                    id TEXT PRIMARY KEY,
+                    group_id TEXT NOT NULL,
+                    member_id INTEGER NOT NULL,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    start_timestamp DATETIME NOT NULL,
+                    end_timestamp DATETIME NOT NULL,
+                    location_name TEXT,
+                    location_address TEXT,
+                    location_latitude REAL,
+                    location_longitude REAL,
+                    activity_type TEXT,
+                    is_cancelled BOOLEAN DEFAULT FALSE,
+                    max_accepted INTEGER,
+                    auto_accept BOOLEAN DEFAULT FALSE,
+                    response_status TEXT,
+                    response_comment TEXT,
+                    organizer_name TEXT,
+                    raw_data TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (group_id) REFERENCES spond_groups (id) ON DELETE CASCADE,
+                    FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
+                  )
+                `,
+                  err => {
+                    if (err) {
+                      console.error('Error creating spond_activities table:', err);
+                      return tableReject(err);
                     }
-                    
-                    console.log('🗑️ spond_sync_log table dropped (if existed)');
-                    
-                    // Create new table with correct schema
-                    db.run(
-                      `
-                      CREATE TABLE spond_sync_log (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        member_id INTEGER NOT NULL,
-                        group_id TEXT,
-                        sync_type TEXT NOT NULL,
-                        status TEXT NOT NULL,
-                        activities_synced INTEGER DEFAULT 0,
-                        error_message TEXT,
-                        sync_duration_ms INTEGER,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
-                      )
-                    `,
-                      err => {
-                        if (err) {
-                          console.error('Error creating spond_sync_log table:', err);
-                          return tableReject(err);
-                        }
-                        console.log('✅ spond_sync_log table created');
-                        tableResolve();
+                    console.log('✅ spond_activities table created');
+
+                  // Create Spond Sync Log Table (preserving existing data)
+                  db.run(
+                    `
+                    CREATE TABLE IF NOT EXISTS spond_sync_log (
+                      id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      member_id INTEGER NOT NULL,
+                      group_id TEXT,
+                      sync_type TEXT NOT NULL,
+                      status TEXT NOT NULL,
+                      activities_synced INTEGER DEFAULT 0,
+                      error_message TEXT,
+                      sync_duration_ms INTEGER,
+                      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                      FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
+                    )
+                  `,
+                    err => {
+                      if (err) {
+                        console.error('Error creating spond_sync_log table:', err);
+                        return tableReject(err);
                       }
-                    );
-                  });
+                      console.log('✅ spond_sync_log table created/verified');
+                      tableResolve();
+                    }
+                  );
                 }
               );
             }

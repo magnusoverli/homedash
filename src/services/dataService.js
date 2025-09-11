@@ -236,6 +236,18 @@ class DataService {
     return this.handleResponse(response);
   }
 
+  // Spond Activities Sync
+  async syncSpondActivities(memberId, startDate, endDate) {
+    const response = await fetch(`${API_URL}/api/spond-activities/${memberId}/sync`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ startDate, endDate }),
+    });
+    return this.handleResponse(response);
+  }
+
   // Migration helper
   async migrateFromLocalStorage() {
     try {
