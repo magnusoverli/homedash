@@ -1003,7 +1003,7 @@ const EditMemberModal = ({
                             onClick={testSpondCredentials}
                             disabled={!spondEmail.trim() || !spondPassword.trim() || isTestingSpondCredentials}
                           >
-                            {isTestingSpondCredentials ? 'Testing...' : 'Test Login'}
+                            {isTestingSpondCredentials ? 'Authenticating...' : 'Log in'}
                           </button>
                         </div>
                         {spondTestResult && (
