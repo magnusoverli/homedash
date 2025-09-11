@@ -43,15 +43,9 @@ const PersonWeekCard = ({
 
   // Function to get custom color for an activity based on its type/source
   const getActivityCustomColor = (activity) => {
-    // Determine activity type(s) for color lookup
-    let activityType = 'manual'; // default
+    let activityType = 'manual'; // default fallback
     
-    // Check source first
-    if (activity.source === 'spond') {
-      activityType = 'spond';
-    }
-    
-    // Check for school types (these take precedence over source)
+    // Check for school types first (highest priority)
     if (activity.description) {
       if (activity.description.includes('[TYPE:school_schedule]')) {
         activityType = 'school_schedule';
@@ -59,10 +53,17 @@ const PersonWeekCard = ({
         activityType = 'school_activity';
       }
     }
-    
-    // Check for category (these take precedence over source but not school types)
-    if (activity.category && !activity.description?.includes('[TYPE:school')) {
+    // Check for category (second priority)
+    else if (activity.category) {
       activityType = `category_${activity.category}`;
+    }
+    // Finally check source (lowest priority, only if no specific type)
+    else {
+      if (activity.source === 'spond') {
+        activityType = 'spond';
+      } else {
+        activityType = 'manual';
+      }
     }
     
     // Return custom color if set, otherwise default for that type
