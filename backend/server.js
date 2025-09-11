@@ -727,13 +727,8 @@ app.get('/api/spond-groups/:memberId', async (req, res) => {
       try {
         for (const group of groupsData) {
           await runQuery(
-            `INSERT INTO spond_groups (id, member_id, name, description, image_url, updated_at)
-             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-             ON CONFLICT(id) DO UPDATE SET
-               name = excluded.name,
-               description = excluded.description,
-               image_url = excluded.image_url,
-               updated_at = CURRENT_TIMESTAMP`,
+            `INSERT OR REPLACE INTO spond_groups (id, member_id, name, description, image_url, updated_at)
+             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
             [
               group.id,
               memberId,
@@ -977,30 +972,13 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
           try {
             // Convert Spond activity to our database format (using correct field names from documentation)
             await runQuery(
-              `INSERT INTO spond_activities (
+              `INSERT OR REPLACE INTO spond_activities (
                 id, group_id, member_id, title, description, 
                 start_timestamp, end_timestamp, location_name, location_address,
                 location_latitude, location_longitude, activity_type, is_cancelled,
                 max_accepted, auto_accept, response_status, organizer_name, raw_data,
                 updated_at
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-              ON CONFLICT(id) DO UPDATE SET
-                title = excluded.title,
-                description = excluded.description,
-                start_timestamp = excluded.start_timestamp,
-                end_timestamp = excluded.end_timestamp,
-                location_name = excluded.location_name,
-                location_address = excluded.location_address,
-                location_latitude = excluded.location_latitude,
-                location_longitude = excluded.location_longitude,
-                activity_type = excluded.activity_type,
-                is_cancelled = excluded.is_cancelled,
-                max_accepted = excluded.max_accepted,
-                auto_accept = excluded.auto_accept,
-                response_status = excluded.response_status,
-                organizer_name = excluded.organizer_name,
-                raw_data = excluded.raw_data,
-                updated_at = CURRENT_TIMESTAMP`,
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
               [
                 activity.id,
                 group.id,
