@@ -175,31 +175,40 @@ const initDatabase = () => {
       // Create Spond tables sequentially to ensure proper order
       const createSpondTables = () => {
         return new Promise((tableResolve, tableReject) => {
-          // Spond Groups Table
-          db.run(
-            `
-            CREATE TABLE IF NOT EXISTS spond_groups (
-              id TEXT PRIMARY KEY,
-              member_id INTEGER NOT NULL,
-              name TEXT NOT NULL,
-              description TEXT,
-              image_url TEXT,
-              is_active BOOLEAN DEFAULT FALSE,
-              last_synced_at DATETIME,
-              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-              FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
-            )
-          `,
-            err => {
-              if (err) {
-                console.error('Error creating spond_groups table:', err);
-                return tableReject(err);
-              }
-              console.log('✅ spond_groups table created');
+          // Drop and recreate Spond Groups Table to ensure correct defaults
+          db.run('DROP TABLE IF EXISTS spond_groups', (dropErr) => {
+            if (dropErr) {
+              console.error('❌ Error dropping spond_groups table:', dropErr);
+              return tableReject(dropErr);
+            }
+            
+            console.log('🗑️ spond_groups table dropped (if existed)');
+            
+            // Spond Groups Table
+            db.run(
+              `
+              CREATE TABLE spond_groups (
+                id TEXT PRIMARY KEY,
+                member_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                description TEXT,
+                image_url TEXT,
+                is_active BOOLEAN DEFAULT FALSE,
+                last_synced_at DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
+              )
+            `,
+              err => {
+                if (err) {
+                  console.error('Error creating spond_groups table:', err);
+                  return tableReject(err);
+                }
+                console.log('✅ spond_groups table created');
 
-              // Spond Activities Table
-              db.run(
+                // Spond Activities Table
+                db.run(
                 `
                 CREATE TABLE IF NOT EXISTS spond_activities (
                   id TEXT PRIMARY KEY,
