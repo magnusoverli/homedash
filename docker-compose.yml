@@ -6,10 +6,10 @@ services:
       args: []
     container_name: homedash-app
     restart: unless-stopped
-    ports:
-      - '3000:3000'
+    network_mode: host
     environment:
       - NODE_ENV=production
+      - VITE_API_URL=http://localhost:3001
     depends_on:
       - homedash-backend
     healthcheck:
@@ -26,8 +26,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    networks:
-      - homedash-network
 
   homedash-backend:
     build:
@@ -35,8 +33,7 @@ services:
       dockerfile: Dockerfile
     container_name: homedash-backend
     restart: unless-stopped
-    ports:
-      - '3001:3001'
+    network_mode: host
     environment:
       - NODE_ENV=production
       - PORT=3001
@@ -56,12 +53,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
-    networks:
-      - homedash-network
-
-networks:
-  homedash-network:
-    driver: bridge
 
 volumes:
   homedash-data:
