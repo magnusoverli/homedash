@@ -188,7 +188,7 @@ const initDatabase = () => {
             // Create Spond Groups Table (preserve existing data)
             db.run(
               `CREATE TABLE IF NOT EXISTS spond_groups (
-                      id TEXT PRIMARY KEY,
+                      id TEXT NOT NULL,
                       member_id INTEGER NOT NULL,
                       name TEXT NOT NULL,
                       description TEXT,
@@ -197,6 +197,7 @@ const initDatabase = () => {
                       last_synced_at DATETIME,
                       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                      PRIMARY KEY (id, member_id),
                       FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
                     )`,
                     err => {
@@ -230,7 +231,7 @@ const initDatabase = () => {
                           raw_data TEXT,
                           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                          FOREIGN KEY (group_id) REFERENCES spond_groups (id) ON DELETE CASCADE,
+                          FOREIGN KEY (group_id, member_id) REFERENCES spond_groups (id, member_id) ON DELETE CASCADE,
                           FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
                         )`,
                         err => {

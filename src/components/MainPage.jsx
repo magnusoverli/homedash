@@ -104,11 +104,60 @@ const MainPage = ({ currentWeek }) => {
 
         // Sync Spond activities for each family member (in background)
         if (familyMembers.length > 0) {
-          for (const member of familyMembers) {
-            // Sync in background without waiting (activities already loaded from API)
-            dataService.syncSpondActivities(member.id, startDateStr, endDateStr)
-              .catch(error => console.warn(`Background sync failed for ${member.name}:`, error));
-          }
+          const syncPromises = familyMembers.map(async (member) => {
+            try {
+              await dataService.syncSpondActivities(member.id, startDateStr, endDateStr);
+              console.log(`✅ Background sync completed for ${member.name}`);
+            } catch (error) {
+              console.warn(`Background sync failed for ${member.name}:`, error);
+            }
+          });
+          
+          // After all syncs complete, refresh activities to show new Spond data
+          Promise.all(syncPromises).then(async () => {
+            try {
+              console.log('🔄 Refreshing activities after Spond sync...');
+              const refreshedActivitiesData = await dataService.getActivities({
+                startDate: startDateStr,
+                endDate: endDateStr,
+              });
+
+              // Convert flat API data to nested structure for compatibility
+              const refreshedStructuredActivities = {};
+              const weekKey = getWeekKey(currentWeek);
+              refreshedStructuredActivities[weekKey] = {};
+
+              // Add all activities (preserving source and Spond-specific data)
+              refreshedActivitiesData.forEach(activity => {
+                if (!refreshedStructuredActivities[weekKey][activity.member_id]) {
+                  refreshedStructuredActivities[weekKey][activity.member_id] = [];
+                }
+                refreshedStructuredActivities[weekKey][activity.member_id].push({
+                  id: activity.id,
+                  memberId: activity.member_id,
+                  title: activity.title,
+                  date: activity.date,
+                  startTime: activity.start_time,
+                  endTime: activity.end_time,
+                  description: activity.description,
+                  notes: activity.notes,
+                  source: activity.source || 'manual', // Preserve original source
+                  // Include Spond-specific fields
+                  location_name: activity.location_name,
+                  location_address: activity.location_address,
+                  raw_data: activity.raw_data,
+                  activity_type: activity.activity_type,
+                  is_cancelled: activity.is_cancelled,
+                  organizer_name: activity.organizer_name
+                });
+              });
+
+              setActivities(refreshedStructuredActivities);
+              console.log('✅ Activities refreshed after Spond sync');
+            } catch (error) {
+              console.error('❌ Error refreshing activities after sync:', error);
+            }
+          });
         }
 
         setActivities(structuredActivities);

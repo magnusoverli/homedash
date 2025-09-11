@@ -364,13 +364,17 @@ const EditMemberModal = ({
       if (response.ok) {
         const data = await response.json();
         console.log(`✅ Groups fetch successful:`, data);
+        console.log(`📋 Full groups data from API:`, data.groups?.map(g => ({ id: g.id, name: g.name, is_active: g.is_active })));
+        
         setGroupsData(data.groups || []);
         setGroupsError(null);
         
-        // Set initial selected groups based on is_active status
-        const activeGroups = (data.groups || []).filter(g => g.is_active).map(g => g.id);
+        // Set selected groups based on is_active status from database
+        // Handle both boolean true and integer 1 from SQLite
+        const activeGroups = (data.groups || []).filter(g => Boolean(g.is_active)).map(g => g.id);
         setSelectedGroups(activeGroups);
-        console.log(`📋 Found ${data.groups.length} groups, ${activeGroups.length} active:`, data.groups.map(g => g.name).join(', '));
+        console.log(`📋 Found ${data.groups.length} groups, ${activeGroups.length} active groups:`, activeGroups);
+        console.log(`📋 Active group names:`, (data.groups || []).filter(g => Boolean(g.is_active)).map(g => g.name).join(', '));
         
         if (data.groups?.length === 0) {
           console.log(`⚠️ No groups found for this member`);
@@ -385,11 +389,13 @@ const EditMemberModal = ({
           setGroupsError(errorData.message || `Failed to fetch groups (Status: ${response.status})`);
         }
         setGroupsData([]);
+        setSelectedGroups([]); // Clear selections on error
       }
     } catch (error) {
       console.error('💥 Error fetching groups:', error);
       setGroupsError('Network error while fetching groups');
       setGroupsData([]);
+      setSelectedGroups([]); // Clear selections on error
     } finally {
       setIsLoadingGroups(false);
       console.log(`🏁 Groups fetch completed`);
@@ -1023,6 +1029,8 @@ const EditMemberModal = ({
                           className="groups-button"
                           onClick={() => {
                             setShowGroupsModal(true);
+                            // Only reset error state, keep existing data until fetch completes
+                            setGroupsError(null);
                             fetchSpondGroups();
                           }}
                         >
@@ -1140,7 +1148,13 @@ const EditMemberModal = ({
       {/* Groups Selection Modal */}
       <GenericModal
         isOpen={showGroupsModal}
-        onClose={() => setShowGroupsModal(false)}
+        onClose={() => {
+          setShowGroupsModal(false);
+          // Reset selections when closing via X button (don't save partial changes)
+          setSelectedGroups([]);
+          setGroupsData([]);
+          setGroupsError(null);
+        }}
         title="Select Groups"
       >
         <div className="groups-modal-content">
@@ -1208,7 +1222,13 @@ const EditMemberModal = ({
             <div className="groups-modal-actions">
               <button 
                 className="button button-secondary"
-                onClick={() => setShowGroupsModal(false)}
+                onClick={() => {
+                  setShowGroupsModal(false);
+                  // Reset selections when canceling (don't save partial changes)
+                  setSelectedGroups([]);
+                  setGroupsData([]);
+                  setGroupsError(null);
+                }}
               >
                 Cancel
               </button>
@@ -1233,6 +1253,10 @@ const EditMemberModal = ({
                       console.log('✅ Group selections saved successfully:', data);
                       showSuccess(`Saved selections for ${selectedGroups.length} groups`);
                       setShowGroupsModal(false);
+                      // Clear state after successful save
+                      setSelectedGroups([]);
+                      setGroupsData([]);
+                      setGroupsError(null);
                     } else {
                       const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
                       console.error('❌ Failed to save group selections:', errorData);

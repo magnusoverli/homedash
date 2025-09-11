@@ -726,17 +726,40 @@ app.get('/api/spond-groups/:memberId', async (req, res) => {
       
       try {
         for (const group of groupsData) {
-          await runQuery(
-            `INSERT OR REPLACE INTO spond_groups (id, member_id, name, description, image_url, updated_at)
-             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-            [
-              group.id,
-              memberId,
-              group.name,
-              group.description || null,
-              group.imageUrl || null
-            ]
+          // Check if group already exists to preserve is_active state
+          const existingGroup = await getOne(
+            'SELECT is_active FROM spond_groups WHERE id = ? AND member_id = ?',
+            [group.id, memberId]
           );
+          
+          if (existingGroup) {
+            // Update only metadata fields, preserve is_active
+            await runQuery(
+              `UPDATE spond_groups 
+               SET name = ?, description = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP
+               WHERE id = ? AND member_id = ?`,
+              [
+                group.name,
+                group.description || null,
+                group.imageUrl || null,
+                group.id,
+                memberId
+              ]
+            );
+          } else {
+            // Insert new group with default is_active = FALSE
+            await runQuery(
+              `INSERT INTO spond_groups (id, member_id, name, description, image_url, is_active, updated_at)
+               VALUES (?, ?, ?, ?, ?, FALSE, CURRENT_TIMESTAMP)`,
+              [
+                group.id,
+                memberId,
+                group.name,
+                group.description || null,
+                group.imageUrl || null
+              ]
+            );
+          }
         }
         console.log(`✅ Successfully stored ${groupsData.length} groups in database`);
       } catch (dbError) {
@@ -847,13 +870,33 @@ app.post('/api/spond-groups/:memberId/selections', async (req, res) => {
       );
     }
 
+    // Clean up activities from deselected groups
+    // Due to the foreign key constraint, activities from inactive groups will be automatically excluded
+    // from queries, but we can optionally delete them to keep the database clean
+    console.log(`🧹 Cleaning up activities from deselected groups for member ${memberId}`);
+    
+    const cleanupResult = await runQuery(
+      `DELETE FROM spond_activities 
+       WHERE member_id = ? 
+       AND NOT EXISTS (
+         SELECT 1 FROM spond_groups 
+         WHERE spond_groups.id = spond_activities.group_id 
+         AND spond_groups.member_id = spond_activities.member_id 
+         AND spond_groups.is_active = TRUE
+       )`,
+      [memberId]
+    );
+    
+    console.log(`🗑️ Cleaned up ${cleanupResult.changes} activities from deselected groups`);
+
     console.log(`✅ Successfully updated group selections for member ${memberId}`);
     console.log(`📊 Active groups: ${selectedGroupIds.length}, Inactive groups: ${await getOne('SELECT COUNT(*) as count FROM spond_groups WHERE member_id = ? AND is_active = FALSE', [memberId])?.count || 0}`);
 
     res.json({
       success: true,
       message: `Updated selections for ${selectedGroupIds.length} groups`,
-      activeGroups: selectedGroupIds.length
+      activeGroups: selectedGroupIds.length,
+      activitiesCleanedUp: cleanupResult.changes
     });
 
   } catch (error) {
@@ -1348,26 +1391,30 @@ app.get('/api/activities', async (req, res) => {
     const regularActivities = await getAll(regularSql, regularParams);
     console.log(`📋 Found ${regularActivities.length} regular activities`);
 
-    // Fetch Spond activities
-    let spondSql = 'SELECT *, DATE(start_timestamp) as date, TIME(start_timestamp) as start_time, TIME(end_timestamp) as end_time FROM spond_activities WHERE 1=1';
+    // Fetch Spond activities (only from active groups)
+    let spondSql = `
+      SELECT sa.*, DATE(sa.start_timestamp) as date, TIME(sa.start_timestamp) as start_time, TIME(sa.end_timestamp) as end_time 
+      FROM spond_activities sa
+      INNER JOIN spond_groups sg ON sa.group_id = sg.id AND sa.member_id = sg.member_id
+      WHERE sg.is_active = TRUE`;
     const spondParams = [];
 
     if (member_id) {
-      spondSql += ' AND member_id = ?';
+      spondSql += ' AND sa.member_id = ?';
       spondParams.push(member_id);
     }
 
     if (date) {
-      spondSql += ' AND DATE(start_timestamp) = ?';
+      spondSql += ' AND DATE(sa.start_timestamp) = ?';
       spondParams.push(date);
     }
 
     if (start_date && end_date) {
-      spondSql += ' AND DATE(start_timestamp) >= ? AND DATE(start_timestamp) <= ?';
+      spondSql += ' AND DATE(sa.start_timestamp) >= ? AND DATE(sa.start_timestamp) <= ?';
       spondParams.push(start_date, end_date);
     }
 
-    spondSql += ' ORDER BY start_timestamp';
+    spondSql += ' ORDER BY sa.start_timestamp';
 
     const spondActivities = await getAll(spondSql, spondParams);
     console.log(`⚽ Found ${spondActivities.length} Spond activities`);
