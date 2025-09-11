@@ -46,24 +46,22 @@ const PersonWeekCard = ({
     let activityType = 'manual'; // default fallback
     
     // Check for school types first (highest priority)
-    if (activity.description) {
-      if (activity.description.includes('[TYPE:school_schedule]')) {
-        activityType = 'school_schedule';
-      } else if (activity.description.includes('[TYPE:school_activity]')) {
-        activityType = 'school_activity';
-      }
+    if (activity.description && activity.description.includes('[TYPE:school_schedule]')) {
+      activityType = 'school_schedule';
+    } else if (activity.description && activity.description.includes('[TYPE:school_activity]')) {
+      activityType = 'school_activity';
     }
     // Check for category (second priority)
     else if (activity.category) {
       activityType = `category_${activity.category}`;
     }
-    // Finally check source (lowest priority, only if no specific type)
+    // Check source (third priority)
+    else if (activity.source === 'spond') {
+      activityType = 'spond';
+    }
+    // Default to manual if no specific type found
     else {
-      if (activity.source === 'spond') {
-        activityType = 'spond';
-      } else {
-        activityType = 'manual';
-      }
+      activityType = 'manual';
     }
     
     // Return custom color if set, otherwise default for that type

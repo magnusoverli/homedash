@@ -41,31 +41,27 @@ const PersonCard = ({
       let hasSpecificType = false;
       
       // Check for school types first (highest priority)
-      if (activity.description) {
-        if (activity.description.includes('[TYPE:school_schedule]')) {
-          typesPresent.add('school_schedule');
-          hasSpecificType = true;
-        } else if (activity.description.includes('[TYPE:school_activity]')) {
-          typesPresent.add('school_activity');
-          hasSpecificType = true;
-        }
+      if (activity.description && activity.description.includes('[TYPE:school_schedule]')) {
+        typesPresent.add('school_schedule');
+        hasSpecificType = true;
+      } else if (activity.description && activity.description.includes('[TYPE:school_activity]')) {
+        typesPresent.add('school_activity');
+        hasSpecificType = true;
       }
-      
       // Check for category (second priority)
-      if (activity.category && !hasSpecificType) {
+      else if (activity.category) {
         typesPresent.add(`category_${activity.category}`);
         hasSpecificType = true;
       }
-      
-      // Only classify by source if no specific type was found
-      if (!hasSpecificType) {
-        if (activity.source === 'spond') {
-          typesPresent.add('spond');
-        } else {
-          // Only add 'manual' if it's truly a user-created activity
-          // (not school schedule or other imported activities)
-          typesPresent.add('manual');
-        }
+      // Check source (third priority)
+      else if (activity.source === 'spond') {
+        typesPresent.add('spond');
+        hasSpecificType = true;
+      }
+      // Default to manual
+      else {
+        typesPresent.add('manual');
+        hasSpecificType = true;
       }
     });
     
