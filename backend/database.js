@@ -172,21 +172,177 @@ const initDatabase = () => {
         ON homework(member_id)
       `);
 
-      db.run(
-        `
+      // Create Spond tables sequentially to ensure proper order
+      const createSpondTables = () => {
+        return new Promise((tableResolve, tableReject) => {
+          // Spond Groups Table
+          db.run(
+            `
+            CREATE TABLE IF NOT EXISTS spond_groups (
+              id TEXT PRIMARY KEY,
+              member_id INTEGER NOT NULL,
+              name TEXT NOT NULL,
+              description TEXT,
+              image_url TEXT,
+              is_active BOOLEAN DEFAULT TRUE,
+              last_synced_at DATETIME,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
+            )
+          `,
+            err => {
+              if (err) {
+                console.error('Error creating spond_groups table:', err);
+                return tableReject(err);
+              }
+              console.log('✅ spond_groups table created');
+
+              // Spond Activities Table
+              db.run(
+                `
+                CREATE TABLE IF NOT EXISTS spond_activities (
+                  id TEXT PRIMARY KEY,
+                  group_id TEXT NOT NULL,
+                  member_id INTEGER NOT NULL,
+                  title TEXT NOT NULL,
+                  description TEXT,
+                  start_timestamp DATETIME NOT NULL,
+                  end_timestamp DATETIME NOT NULL,
+                  location_name TEXT,
+                  location_address TEXT,
+                  location_latitude REAL,
+                  location_longitude REAL,
+                  activity_type TEXT,
+                  is_cancelled BOOLEAN DEFAULT FALSE,
+                  max_accepted INTEGER,
+                  auto_accept BOOLEAN DEFAULT FALSE,
+                  response_status TEXT,
+                  response_comment TEXT,
+                  organizer_name TEXT,
+                  raw_data TEXT,
+                  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                  FOREIGN KEY (group_id) REFERENCES spond_groups (id) ON DELETE CASCADE,
+                  FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
+                )
+              `,
+                err => {
+                  if (err) {
+                    console.error('Error creating spond_activities table:', err);
+                    return tableReject(err);
+                  }
+                  console.log('✅ spond_activities table created');
+
+                  // Spond Sync Log Table
+                  db.run(
+                    `
+                    CREATE TABLE IF NOT EXISTS spond_sync_log (
+                      id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      member_id INTEGER NOT NULL,
+                      group_id TEXT,
+                      sync_type TEXT NOT NULL,
+                      status TEXT NOT NULL,
+                      activities_synced INTEGER DEFAULT 0,
+                      error_message TEXT,
+                      sync_duration_ms INTEGER,
+                      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                      FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
+                    )
+                  `,
+                    err => {
+                      if (err) {
+                        console.error('Error creating spond_sync_log table:', err);
+                        return tableReject(err);
+                      }
+                      console.log('✅ spond_sync_log table created');
+                      tableResolve();
+                    }
+                  );
+                }
+              );
+            }
+          );
+        });
+      };
+
+      db.run(`
         CREATE INDEX IF NOT EXISTS idx_homework_due_date 
         ON homework(due_date)
-      `,
-        err => {
-          if (err) {
-            console.error('Error creating indexes:', err);
-            return reject(err);
-          }
-          
+      `);
+
+      // Create all Spond-related indexes after tables are created
+      const createSpondIndexes = () => {
+        return new Promise((indexResolve, indexReject) => {
+          db.run(`
+            CREATE INDEX IF NOT EXISTS idx_spond_groups_member 
+            ON spond_groups(member_id)
+          `, (err) => {
+            if (err) {
+              console.error('Error creating idx_spond_groups_member:', err);
+              return indexReject(err);
+            }
+
+            db.run(`
+              CREATE INDEX IF NOT EXISTS idx_spond_groups_active 
+              ON spond_groups(member_id, is_active)
+            `, (err) => {
+              if (err) {
+                console.error('Error creating idx_spond_groups_active:', err);
+                return indexReject(err);
+              }
+
+              db.run(`
+                CREATE INDEX IF NOT EXISTS idx_spond_activities_member_time 
+                ON spond_activities(member_id, start_timestamp)
+              `, (err) => {
+                if (err) {
+                  console.error('Error creating idx_spond_activities_member_time:', err);
+                  return indexReject(err);
+                }
+
+                db.run(`
+                  CREATE INDEX IF NOT EXISTS idx_spond_activities_group 
+                  ON spond_activities(group_id)
+                `, (err) => {
+                  if (err) {
+                    console.error('Error creating idx_spond_activities_group:', err);
+                    return indexReject(err);
+                  }
+
+                  db.run(`
+                    CREATE INDEX IF NOT EXISTS idx_spond_sync_log_member 
+                    ON spond_sync_log(member_id)
+                  `, (err) => {
+                    if (err) {
+                      console.error('Error creating idx_spond_sync_log_member:', err);
+                      return indexReject(err);
+                    }
+                    
+                    console.log('All Spond indexes created successfully');
+                    indexResolve();
+                  });
+                });
+              });
+            });
+          });
+        });
+      };
+
+      // Create Spond tables first, then indexes
+      createSpondTables()
+        .then(() => {
+          console.log('✅ All Spond tables created, now creating indexes...');
+          return createSpondIndexes();
+        })
+        .then(() => {
           console.log('Database initialized successfully');
           resolve();
-        }
-      );
+        })
+        .catch((err) => {
+          console.error('Error creating Spond tables or indexes:', err);
+          return reject(err);
+        });
     });
   });
 };

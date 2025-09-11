@@ -659,6 +659,217 @@ app.post('/api/validate-spond-token/:memberId', async (req, res) => {
   }
 });
 
+// Fetch Spond groups for authenticated member
+app.get('/api/spond-groups/:memberId', async (req, res) => {
+  const { memberId } = req.params;
+
+  console.log(`🔍 Fetching Spond groups for member ${memberId}`);
+
+  try {
+    // Get stored credentials
+    const result = await getOne(
+      'SELECT value FROM settings WHERE key = ?',
+      [`spond_credentials_${memberId}`]
+    );
+
+    if (!result) {
+      console.log(`❌ No stored credentials found for member ${memberId}`);
+      return res.status(404).json({
+        error: 'NO_CREDENTIALS',
+        message: 'No stored credentials found'
+      });
+    }
+
+    const credentialData = JSON.parse(result.value);
+
+    if (!credentialData.loginToken) {
+      console.log(`❌ No stored token found for member ${memberId}`);
+      return res.status(404).json({
+        error: 'NO_TOKEN',
+        message: 'No stored token found'
+      });
+    }
+
+    console.log(`🔑 Using stored token to fetch groups`);
+    console.log(`📡 Making API call to: https://api.spond.com/core/v1/groups/`);
+
+    // Fetch groups from Spond API
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    const response = await fetch('https://api.spond.com/core/v1/groups/', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${credentialData.loginToken}`,
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    console.log(`📊 Spond groups API response status: ${response.status}`);
+
+    if (response.ok) {
+      const groupsData = await response.json();
+      console.log(`✅ Successfully fetched ${groupsData.length} groups`);
+      
+      // Log group names for debugging
+      if (groupsData.length > 0) {
+        console.log(`📋 Groups found:`, groupsData.map(g => `"${g.name}" (${g.id})`).join(', '));
+      } else {
+        console.log(`⚠️ No groups found for this user`);
+      }
+
+      // Store/update groups in spond_groups table
+      console.log(`💾 Storing groups in database for member ${memberId}`);
+      
+      try {
+        for (const group of groupsData) {
+          await runQuery(
+            `INSERT INTO spond_groups (id, member_id, name, description, image_url, updated_at)
+             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+             ON CONFLICT(id) DO UPDATE SET
+               name = excluded.name,
+               description = excluded.description,
+               image_url = excluded.image_url,
+               updated_at = CURRENT_TIMESTAMP`,
+            [
+              group.id,
+              memberId,
+              group.name,
+              group.description || null,
+              group.imageUrl || null
+            ]
+          );
+        }
+        console.log(`✅ Successfully stored ${groupsData.length} groups in database`);
+      } catch (dbError) {
+        console.error('❌ Error storing groups in database:', dbError);
+        // Continue with API response even if database storage fails
+      }
+
+      // Get groups with their current selection status from database
+      try {
+        const storedGroups = await getAll(
+          `SELECT id, name, description, image_url, is_active, last_synced_at 
+           FROM spond_groups 
+           WHERE member_id = ? 
+           ORDER BY name`,
+          [memberId]
+        );
+
+        return res.json({
+          success: true,
+          groups: storedGroups,
+          message: `Found ${storedGroups.length} groups`
+        });
+      } catch (dbError) {
+        console.error('❌ Error retrieving stored groups:', dbError);
+        // Fallback to API data
+        return res.json({
+          success: true,
+          groups: groupsData.map(g => ({
+            id: g.id,
+            name: g.name,
+            description: g.description,
+            image_url: g.imageUrl,
+            is_active: true,
+            last_synced_at: null
+          })),
+          message: `Found ${groupsData.length} groups`
+        });
+      }
+
+    } else {
+      console.log(`❌ Groups fetch failed with status: ${response.status}`);
+      
+      if (response.status === 401) {
+        console.log(`🔒 Token appears to be expired - authentication required`);
+        return res.status(401).json({
+          error: 'TOKEN_EXPIRED',
+          message: 'Authentication token has expired'
+        });
+      }
+
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      console.log(`💥 Error response:`, errorData);
+
+      return res.status(response.status).json({
+        error: 'GROUPS_FETCH_FAILED',
+        message: `Failed to fetch groups: ${errorData.error || 'Unknown error'}`,
+        statusCode: response.status
+      });
+    }
+
+  } catch (error) {
+    console.error('💥 Error fetching Spond groups:', error);
+    
+    if (error.name === 'AbortError') {
+      console.log(`⏱️ Groups fetch timed out after 15 seconds`);
+      return res.status(500).json({
+        error: 'TIMEOUT',
+        message: 'Groups fetch timed out'
+      });
+    }
+    
+    return res.status(500).json({
+      error: 'FETCH_ERROR',
+      message: 'Failed to fetch groups due to network error'
+    });
+  }
+});
+
+// Save selected Spond groups for a member
+app.post('/api/spond-groups/:memberId/selections', async (req, res) => {
+  const { memberId } = req.params;
+  const { selectedGroupIds } = req.body;
+
+  console.log(`💾 Saving group selections for member ${memberId}:`, selectedGroupIds);
+
+  if (!Array.isArray(selectedGroupIds)) {
+    return res.status(400).json({
+      error: 'INVALID_INPUT',
+      message: 'selectedGroupIds must be an array'
+    });
+  }
+
+  try {
+    // First, set all groups for this member to inactive
+    await runQuery(
+      'UPDATE spond_groups SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE member_id = ?',
+      [memberId]
+    );
+
+    // Then, set selected groups to active
+    if (selectedGroupIds.length > 0) {
+      const placeholders = selectedGroupIds.map(() => '?').join(',');
+      await runQuery(
+        `UPDATE spond_groups 
+         SET is_active = TRUE, updated_at = CURRENT_TIMESTAMP 
+         WHERE member_id = ? AND id IN (${placeholders})`,
+        [memberId, ...selectedGroupIds]
+      );
+    }
+
+    console.log(`✅ Successfully updated group selections for member ${memberId}`);
+    console.log(`📊 Active groups: ${selectedGroupIds.length}, Inactive groups: ${await getOne('SELECT COUNT(*) as count FROM spond_groups WHERE member_id = ? AND is_active = FALSE', [memberId])?.count || 0}`);
+
+    res.json({
+      success: true,
+      message: `Updated selections for ${selectedGroupIds.length} groups`,
+      activeGroups: selectedGroupIds.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error saving group selections:', error);
+    res.status(500).json({
+      error: 'SAVE_ERROR',
+      message: 'Failed to save group selections'
+    });
+  }
+});
+
 // Get token lifecycle research data for analysis
 app.get('/api/spond-token-research', async (req, res) => {
   console.log('📊 Retrieving Spond token research data...');

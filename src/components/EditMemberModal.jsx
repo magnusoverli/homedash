@@ -64,6 +64,11 @@ const EditMemberModal = ({
     userData: null
   });
   const [isLoadingSpondState, setIsLoadingSpondState] = useState(false);
+  const [showGroupsModal, setShowGroupsModal] = useState(false);
+  const [groupsData, setGroupsData] = useState([]);
+  const [isLoadingGroups, setIsLoadingGroups] = useState(false);
+  const [groupsError, setGroupsError] = useState(null);
+  const [selectedGroups, setSelectedGroups] = useState([]);
 
   useEffect(() => {
     if (member) {
@@ -334,6 +339,61 @@ const EditMemberModal = ({
       return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
     }
     return name.slice(0, 2).toUpperCase();
+  };
+
+  const fetchSpondGroups = async () => {
+    if (!member?.id) {
+      console.error('❌ No member ID available for groups fetch');
+      return;
+    }
+
+    setIsLoadingGroups(true);
+    setGroupsError(null);
+    console.log(`🔍 Fetching Spond groups for member ${member.id}`);
+
+    try {
+      const response = await fetch(`${API_ENDPOINTS.SPOND_GROUPS}/${member.id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log(`📊 Groups fetch response status: ${response.status}`);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`✅ Groups fetch successful:`, data);
+        setGroupsData(data.groups || []);
+        setGroupsError(null);
+        
+        // Set initial selected groups based on is_active status
+        const activeGroups = (data.groups || []).filter(g => g.is_active).map(g => g.id);
+        setSelectedGroups(activeGroups);
+        console.log(`📋 Found ${data.groups.length} groups, ${activeGroups.length} active:`, data.groups.map(g => g.name).join(', '));
+        
+        if (data.groups?.length === 0) {
+          console.log(`⚠️ No groups found for this member`);
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error(`❌ Groups fetch failed:`, errorData);
+        
+        if (response.status === 401) {
+          setGroupsError('Authentication token has expired. Please re-authenticate.');
+        } else {
+          setGroupsError(errorData.message || `Failed to fetch groups (Status: ${response.status})`);
+        }
+        setGroupsData([]);
+      }
+    } catch (error) {
+      console.error('💥 Error fetching groups:', error);
+      setGroupsError('Network error while fetching groups');
+      setGroupsData([]);
+    } finally {
+      setIsLoadingGroups(false);
+      console.log(`🏁 Groups fetch completed`);
+    }
   };
 
   const handleModalClose = () => {
@@ -955,6 +1015,22 @@ const EditMemberModal = ({
                         )}
                       </div>
 
+                      {/* Groups Selection Button */}
+                      {spondAuthState.authenticated && (
+                        <div className="spond-groups-section">
+                        <button
+                          type="button"
+                          className="groups-button"
+                          onClick={() => {
+                            setShowGroupsModal(true);
+                            fetchSpondGroups();
+                          }}
+                        >
+                          Select groups
+                        </button>
+                        </div>
+                      )}
+
                     </div>
                   )}
                 </div>
@@ -1060,6 +1136,121 @@ const EditMemberModal = ({
           </div>
         </div>
       </div>
+
+      {/* Groups Selection Modal */}
+      <GenericModal
+        isOpen={showGroupsModal}
+        onClose={() => setShowGroupsModal(false)}
+        title="Select Groups"
+      >
+        <div className="groups-modal-content">
+          <div className="modal-section">
+            <div className="section-header">
+              <p className="section-description">
+                Select the groups you want this family member to subscribe to
+              </p>
+            </div>
+
+            <div className="groups-list">
+              {isLoadingGroups ? (
+                <div className="groups-loading">
+                  <div className="loading-message">
+                    <span className="loading-icon">⏳</span>
+                    Loading groups...
+                  </div>
+                </div>
+              ) : groupsError ? (
+                <div className="groups-error">
+                  <div className="error-message">
+                    <span className="error-icon">❌</span>
+                    {groupsError}
+                  </div>
+                </div>
+              ) : groupsData.length === 0 ? (
+                <div className="groups-empty">
+                  <div className="empty-message">
+                    <span className="empty-icon">📭</span>
+                    No groups found for this account
+                  </div>
+                </div>
+              ) : (
+                groupsData.map(group => (
+                  <div key={group.id} className="group-item">
+                    <div className="group-info">
+                      <span className="group-name">{group.name}</span>
+                      {group.description && (
+                        <span className="group-description">{group.description}</span>
+                      )}
+                    </div>
+                    <div className="group-actions">
+                      <label htmlFor={`group-${group.id}`} className="group-checkbox">
+                        <input
+                          type="checkbox"
+                          id={`group-${group.id}`}
+                          checked={selectedGroups.includes(group.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedGroups([...selectedGroups, group.id]);
+                            } else {
+                              setSelectedGroups(selectedGroups.filter(id => id !== group.id));
+                            }
+                          }}
+                        />
+                        <span className="checkbox-custom"></span>
+                        <span className="checkbox-label">Select</span>
+                      </label>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="groups-modal-actions">
+              <button 
+                className="button button-secondary"
+                onClick={() => setShowGroupsModal(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="button button-primary"
+                onClick={async () => {
+                  console.log('💾 Saving selected groups:', selectedGroups);
+                  
+                  try {
+                    const response = await fetch(`${API_ENDPOINTS.SPOND_GROUP_SELECTIONS}/${member.id}/selections`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({
+                        selectedGroupIds: selectedGroups
+                      })
+                    });
+
+                    if (response.ok) {
+                      const data = await response.json();
+                      console.log('✅ Group selections saved successfully:', data);
+                      showSuccess(`Saved selections for ${selectedGroups.length} groups`);
+                      setShowGroupsModal(false);
+                    } else {
+                      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                      console.error('❌ Failed to save group selections:', errorData);
+                      showError(`Failed to save selections: ${errorData.message}`);
+                    }
+                  } catch (error) {
+                    console.error('💥 Error saving group selections:', error);
+                    showError('Network error while saving group selections');
+                  }
+                }}
+                disabled={false}
+              >
+                Save Selection ({selectedGroups.length})
+              </button>
+            </div>
+          </div>
+        </div>
+      </GenericModal>
     </GenericModal>
   );
 };

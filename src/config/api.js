@@ -37,6 +37,8 @@ export const API_ENDPOINTS = {
   SPOND_CREDENTIALS: `${API_BASE_URL}/api/spond-credentials`,
   VALIDATE_SPOND_TOKEN: `${API_BASE_URL}/api/validate-spond-token`,
   SPOND_TOKEN_RESEARCH: `${API_BASE_URL}/api/spond-token-research`,
+  SPOND_GROUPS: `${API_BASE_URL}/api/spond-groups`,
+  SPOND_GROUP_SELECTIONS: `${API_BASE_URL}/api/spond-groups`,
 };
 
 export default API_ENDPOINTS;
