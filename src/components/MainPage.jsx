@@ -63,9 +63,13 @@ const MainPage = ({ currentWeek }) => {
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekEnd.getDate() + 6);
 
+        const startDateStr = weekStart.toISOString().split('T')[0];
+        const endDateStr = weekEnd.toISOString().split('T')[0];
+
+        // Load regular activities
         const activitiesData = await dataService.getActivities({
-          startDate: weekStart.toISOString().split('T')[0],
-          endDate: weekEnd.toISOString().split('T')[0],
+          startDate: startDateStr,
+          endDate: endDateStr,
         });
 
         // Convert flat API data to nested structure for compatibility
@@ -73,6 +77,7 @@ const MainPage = ({ currentWeek }) => {
         const weekKey = getWeekKey(currentWeek);
         structuredActivities[weekKey] = {};
 
+        // Add regular activities
         activitiesData.forEach(activity => {
           if (!structuredActivities[weekKey][activity.member_id]) {
             structuredActivities[weekKey][activity.member_id] = [];
@@ -86,8 +91,35 @@ const MainPage = ({ currentWeek }) => {
             endTime: activity.end_time,
             description: activity.description,
             notes: activity.notes,
+            source: 'manual'
           });
         });
+
+        // Sync and load Spond activities for each family member
+        if (familyMembers.length > 0) {
+          console.log('🔄 Syncing Spond activities for current week...');
+          
+          for (const member of familyMembers) {
+            try {
+              // First, sync Spond activities for this member
+              console.log(`🔄 Syncing Spond activities for ${member.name} (${member.id})`);
+              const syncResult = await dataService.syncSpondActivities(
+                member.id, 
+                startDateStr, 
+                endDateStr
+              );
+              console.log(`✅ Sync result for ${member.name}:`, syncResult);
+              
+              // Note: The sync endpoint stores activities in spond_activities table
+              // We would need a separate endpoint to fetch and combine them
+              // For now, this ensures activities are synced to the database
+              
+            } catch (syncError) {
+              console.error(`⚠️ Failed to sync Spond activities for ${member.name}:`, syncError);
+              // Continue with other members even if one fails
+            }
+          }
+        }
 
         setActivities(structuredActivities);
         setError('');
@@ -104,7 +136,7 @@ const MainPage = ({ currentWeek }) => {
     };
 
     loadActivities();
-  }, [currentWeek, getWeekStart]);
+  }, [currentWeek, getWeekStart, familyMembers]);
 
   // Load homework for all family members
   const loadHomework = useCallback(async () => {

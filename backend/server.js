@@ -929,11 +929,13 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
       console.log(`🔍 Fetching activities for group "${group.name}" (${group.id})`);
       
       try {
-        // Build Spond API URL with date filters
-        const apiUrl = new URL('https://api.spond.com/core/v1/events/');
-        if (startDate) apiUrl.searchParams.append('minStart', startDate);
-        if (endDate) apiUrl.searchParams.append('maxEnd', endDate);
+        // Build Spond API URL with date filters (correct endpoint from documentation)
+        const apiUrl = new URL('https://api.spond.com/core/v1/sponds/');
+        if (startDate) apiUrl.searchParams.append('minStartTimestamp', `${startDate}T00:00:00.000Z`);
+        if (endDate) apiUrl.searchParams.append('maxEndTimestamp', `${endDate}T23:59:59.999Z`);
         apiUrl.searchParams.append('groupId', group.id);
+        apiUrl.searchParams.append('max', '100');
+        apiUrl.searchParams.append('scheduled', 'true');
 
         console.log(`📡 Making API call to: ${apiUrl.toString()}`);
 
@@ -973,7 +975,7 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
         // Store activities in database
         for (const activity of activities) {
           try {
-            // Convert Spond activity to our database format
+            // Convert Spond activity to our database format (using correct field names from documentation)
             await runQuery(
               `INSERT INTO spond_activities (
                 id, group_id, member_id, title, description, 
@@ -1003,20 +1005,20 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
                 activity.id,
                 group.id,
                 memberId,
-                activity.heading || activity.name || 'Untitled Activity',
+                activity.heading || activity.title || 'Untitled Activity',
                 activity.description || null,
                 activity.startTimestamp,
                 activity.endTimestamp,
-                activity.location?.feature?.properties?.name || null,
-                activity.location?.feature?.properties?.address || null,
-                activity.location?.feature?.geometry?.coordinates?.[1] || null, // latitude
-                activity.location?.feature?.geometry?.coordinates?.[0] || null, // longitude
-                activity.type || 'event',
+                activity.location?.address || activity.location?.feature?.properties?.name || null,
+                activity.location?.feature?.properties?.address || activity.location?.address || null,
+                activity.location?.latitude || activity.location?.feature?.geometry?.coordinates?.[1] || null,
+                activity.location?.longitude || activity.location?.feature?.geometry?.coordinates?.[0] || null,
+                activity.type || 'EVENT',
                 activity.cancelled || false,
                 activity.maxAccepted || null,
                 activity.autoAccept || false,
-                activity.responses?.find(r => r.memberId === memberId)?.status || null,
-                activity.owners?.[0]?.profile?.firstName || null,
+                activity.responses?.[memberId]?.accepted ? 'accepted' : activity.responses?.[memberId]?.responded ? 'declined' : null,
+                activity.organizer?.firstName || activity.owners?.[0]?.profile?.firstName || null,
                 JSON.stringify(activity)
               ]
             );
@@ -1339,33 +1341,81 @@ app.delete('/api/family-members/:id', async (req, res) => {
   }
 });
 
-// Activities Endpoints
+// Activities Endpoints - Fetch regular and Spond activities separately
 app.get('/api/activities', async (req, res) => {
   const { member_id, date, start_date, end_date } = req.query;
 
   try {
-    let sql = 'SELECT * FROM activities WHERE 1=1';
-    const params = [];
+    // Fetch regular activities
+    let regularSql = 'SELECT * FROM activities WHERE 1=1';
+    const regularParams = [];
 
     if (member_id) {
-      sql += ' AND member_id = ?';
-      params.push(member_id);
+      regularSql += ' AND member_id = ?';
+      regularParams.push(member_id);
     }
 
     if (date) {
-      sql += ' AND date = ?';
-      params.push(date);
+      regularSql += ' AND date = ?';
+      regularParams.push(date);
     }
 
     if (start_date && end_date) {
-      sql += ' AND date >= ? AND date <= ?';
-      params.push(start_date, end_date);
+      regularSql += ' AND date >= ? AND date <= ?';
+      regularParams.push(start_date, end_date);
     }
 
-    sql += ' ORDER BY date, start_time';
+    regularSql += ' ORDER BY date, start_time';
 
-    const activities = await getAll(sql, params);
-    res.json(activities);
+    const regularActivities = await getAll(regularSql, regularParams);
+    console.log(`📋 Found ${regularActivities.length} regular activities`);
+
+    // Fetch Spond activities
+    let spondSql = 'SELECT *, DATE(start_timestamp) as date, TIME(start_timestamp) as start_time, TIME(end_timestamp) as end_time FROM spond_activities WHERE 1=1';
+    const spondParams = [];
+
+    if (member_id) {
+      spondSql += ' AND member_id = ?';
+      spondParams.push(member_id);
+    }
+
+    if (date) {
+      spondSql += ' AND DATE(start_timestamp) = ?';
+      spondParams.push(date);
+    }
+
+    if (start_date && end_date) {
+      spondSql += ' AND DATE(start_timestamp) >= ? AND DATE(start_timestamp) <= ?';
+      spondParams.push(start_date, end_date);
+    }
+
+    spondSql += ' ORDER BY start_timestamp';
+
+    const spondActivities = await getAll(spondSql, spondParams);
+    console.log(`⚽ Found ${spondActivities.length} Spond activities`);
+
+    // Combine and normalize the activities
+    const combinedActivities = [
+      ...regularActivities.map(activity => ({
+        ...activity,
+        source: 'manual'
+      })),
+      ...spondActivities.map(activity => ({
+        ...activity,
+        source: 'spond'
+      }))
+    ];
+
+    // Sort by date and time
+    combinedActivities.sort((a, b) => {
+      const dateA = new Date(`${a.date}T${a.start_time || '00:00'}`);
+      const dateB = new Date(`${b.date}T${b.start_time || '00:00'}`);
+      return dateA - dateB;
+    });
+
+    console.log(`✅ Combined ${combinedActivities.length} total activities (${regularActivities.length} regular + ${spondActivities.length} Spond)`);
+    res.json(combinedActivities);
+
   } catch (error) {
     console.error('Error fetching activities:', error);
     res.status(500).json({ error: 'Failed to fetch activities' });
