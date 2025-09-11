@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import PersonWeekCard from './PersonWeekCard';
+import GenericModal from './GenericModal';
+import SettingsIcon from './SettingsIcon';
 import './PersonCard.css';
 
 const PersonCard = ({

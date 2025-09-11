@@ -61,9 +61,61 @@ const ActivityBlock = ({
     return isSchoolScheduleActivity() || isSchoolActivity();
   };
 
+  const isSpondActivity = () => {
+    return activity.source === 'spond';
+  };
+
+  const getSpondMatchInfo = () => {
+    if (!isSpondActivity() || !activity.raw_data) return null;
+    
+    try {
+      const rawData = JSON.parse(activity.raw_data);
+      return rawData.matchInfo || null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  // Debug log for Spond activities
+  if (isSpondActivity()) {
+    console.log('🎯 Spond activity detected:', {
+      title: activity.title,
+      source: activity.source,
+      hasRawData: !!activity.raw_data,
+      matchInfo: getSpondMatchInfo()
+    });
+  }
+
+  const getHomeAwayIndicator = () => {
+    const matchInfo = getSpondMatchInfo();
+    if (!matchInfo || !matchInfo.type) return null;
+    
+    return matchInfo.type === 'HOME' ? '🏠' : '✈️';
+  };
+
   const getAbbreviatedTitle = title => {
     if (!title) return 'New Activity';
 
+    // For Spond activities, allow full title to span multiple lines
+    if (isSpondActivity()) {
+      if (height < 30) {
+        return getActivityIcon();
+      } else if (height < 50) {
+        // For very small heights, still abbreviate
+        const words = title.split(' ');
+        if (words.length > 1) {
+          return words
+            .map(w => w[0])
+            .join('')
+            .toUpperCase();
+        }
+        return title.substring(0, 12);
+      }
+      // For heights >= 50, return full title (will wrap with CSS)
+      return title;
+    }
+
+    // Original logic for manual activities
     if (height < 30) {
       return getActivityIcon();
     } else if (height < 50) {
@@ -165,6 +217,7 @@ const ActivityBlock = ({
       onClick={handleClick}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
+      data-source={activity.source || 'manual'}
     >
       <div className="activity-content">
         {height >= 40 && (
@@ -189,6 +242,13 @@ const ActivityBlock = ({
         </div>
       )}
 
+      {/* Home/Away indicator for Spond match activities */}
+      {isSpondActivity() && getHomeAwayIndicator() && height >= 40 && (
+        <div className="spond-match-indicator">
+          {getHomeAwayIndicator()}
+        </div>
+      )}
+
       {showActions && activity.title && (
         <div className="activity-actions">
           <button
@@ -201,20 +261,10 @@ const ActivityBlock = ({
         </div>
       )}
 
+      {/* Tooltip - empty for now */}
       {activity.title && height > 30 && (
         <div className="activity-tooltip">
-          <div className="tooltip-title">{activity.title}</div>
-          <div className="tooltip-time">
-            {formatTime(activity.startTime)} - {formatTime(activity.endTime)}
-          </div>
-          {activity.description && (
-            <div className="tooltip-description">{activity.description}</div>
-          )}
-          {activity.notes && (
-            <div className="tooltip-notes">
-              Notes: {parseNotes(activity.notes).join(', ')}
-            </div>
-          )}
+          {/* Tooltip content will be added later */}
         </div>
       )}
     </div>

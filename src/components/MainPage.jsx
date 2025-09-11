@@ -66,7 +66,7 @@ const MainPage = ({ currentWeek }) => {
         const startDateStr = weekStart.toISOString().split('T')[0];
         const endDateStr = weekEnd.toISOString().split('T')[0];
 
-        // Load regular activities
+        // Load all activities (regular and Spond combined)
         const activitiesData = await dataService.getActivities({
           startDate: startDateStr,
           endDate: endDateStr,
@@ -77,7 +77,7 @@ const MainPage = ({ currentWeek }) => {
         const weekKey = getWeekKey(currentWeek);
         structuredActivities[weekKey] = {};
 
-        // Add regular activities
+        // Add all activities (preserving source and Spond-specific data)
         activitiesData.forEach(activity => {
           if (!structuredActivities[weekKey][activity.member_id]) {
             structuredActivities[weekKey][activity.member_id] = [];
@@ -91,33 +91,23 @@ const MainPage = ({ currentWeek }) => {
             endTime: activity.end_time,
             description: activity.description,
             notes: activity.notes,
-            source: 'manual'
+            source: activity.source || 'manual', // Preserve original source
+            // Include Spond-specific fields
+            location_name: activity.location_name,
+            location_address: activity.location_address,
+            raw_data: activity.raw_data,
+            activity_type: activity.activity_type,
+            is_cancelled: activity.is_cancelled,
+            organizer_name: activity.organizer_name
           });
         });
 
-        // Sync and load Spond activities for each family member
+        // Sync Spond activities for each family member (in background)
         if (familyMembers.length > 0) {
-          console.log('🔄 Syncing Spond activities for current week...');
-          
           for (const member of familyMembers) {
-            try {
-              // First, sync Spond activities for this member
-              console.log(`🔄 Syncing Spond activities for ${member.name} (${member.id})`);
-              const syncResult = await dataService.syncSpondActivities(
-                member.id, 
-                startDateStr, 
-                endDateStr
-              );
-              console.log(`✅ Sync result for ${member.name}:`, syncResult);
-              
-              // Note: The sync endpoint stores activities in spond_activities table
-              // We would need a separate endpoint to fetch and combine them
-              // For now, this ensures activities are synced to the database
-              
-            } catch (syncError) {
-              console.error(`⚠️ Failed to sync Spond activities for ${member.name}:`, syncError);
-              // Continue with other members even if one fails
-            }
+            // Sync in background without waiting (activities already loaded from API)
+            dataService.syncSpondActivities(member.id, startDateStr, endDateStr)
+              .catch(error => console.warn(`Background sync failed for ${member.name}:`, error));
           }
         }
 
