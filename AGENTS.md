@@ -11,6 +11,7 @@
 ## Build & Test Commands
 
 **Primary Commands (Use Docker Compose):**
+
 - `docker-compose up` - Start all services in development mode
 - `docker-compose up -d` - Start all services in detached mode (production)
 - `docker-compose up --build` - Rebuild and start all services
@@ -18,6 +19,7 @@
 - `docker-compose logs -f` - View live logs from all services
 
 **Individual Service Commands (Only for isolated development):**
+
 - `npm run dev` - Start development server with Vite (frontend only)
 - `npm run build` - Production build (frontend only)
 - `npm run lint` - Run ESLint checks
@@ -48,11 +50,13 @@
 All Anthropic API integration must follow the official documentation. Key requirements:
 
 ### Authentication
+
 - **Header Required**: `x-api-key` with your API key
 - **Content Type**: `application/json` for all requests
 - **API Version**: `anthropic-version: 2023-06-01` (current stable version)
 
 ### API Endpoints Used
+
 1. **Messages API**: `POST https://api.anthropic.com/v1/messages`
    - Primary endpoint for Claude conversations
    - Used for API key validation and actual LLM interactions
@@ -62,18 +66,22 @@ All Anthropic API integration must follow the official documentation. Key requir
    - Returns current model list with capabilities
 
 ### Request Size Limits
+
 - **Standard endpoints** (Messages, Models): 32 MB maximum
 - **Files API**: 500 MB maximum
 - **Batch API**: 256 MB maximum
 
 ### Current Claude Models (Examples)
+
 Based on official documentation, current models include:
+
 - `claude-opus-4-1-20250805` - Most capable model
 - `claude-sonnet-4-20250514` - Balanced performance
 - `claude-3-5-sonnet-20241022` - High-level capabilities
 - `claude-3-5-haiku-20241022` - Fastest response times
 
 ### API Integration Best Practices
+
 - **Always use timeouts**: 10s for validation, 30s for messages
 - **Handle all HTTP status codes**: 401 (auth), 400 (bad request), 500 (server error)
 - **No fallback data**: API failures should surface as errors, not masked with cached data
@@ -209,23 +217,27 @@ If the frontend cannot connect to the backend:
 Common LLM integration problems and solutions:
 
 1. **API Key Validation Fails**:
+
    ```bash
    # Test API key validation
    curl -X POST http://localhost:3001/api/test-key \
      -H "Content-Type: application/json" \
      -d '{"apiKey":"your-api-key-here"}'
    ```
+
    - Check for `ETIMEDOUT` errors indicating network issues
    - Verify API key format (should start with `sk-ant-`)
    - Ensure no proxy/firewall blocking `api.anthropic.com`
 
 2. **Models Not Loading**:
+
    ```bash
    # Test model fetching
    curl -X POST http://localhost:3001/api/models \
      -H "Content-Type: application/json" \
      -d '{"apiKey":"your-api-key-here"}'
    ```
+
    - Should return `{ models: [...] }` with no fallback data
    - If fails, check Anthropic API status and network connectivity
 
@@ -284,4 +296,65 @@ docker-compose down
 
 # Remove all including volumes
 docker-compose down -v
+```
+
+## Git Commit Guidelines
+
+### Default Commit Behavior
+
+**IMPORTANT**: When asked to "commit changes" or similar, you MUST commit ALL changes in the repository, not just the ones worked on in the current session, unless explicitly told otherwise by the user.
+
+### Commit Process
+
+1. **Always check status first**:
+
+   ```bash
+   git status
+   git diff --stat  # Review all changes
+   ```
+
+2. **Stage ALL changes by default**:
+
+   ```bash
+   git add -A  # Stages all changes (new, modified, deleted files)
+   ```
+
+3. **Write descriptive commit messages**:
+   - First line: brief summary (50 chars or less)
+   - Blank line
+   - Detailed explanation of changes if needed
+   - Use conventional commit format (feat:, fix:, docs:, etc.)
+
+4. **Example commit workflow**:
+
+   ```bash
+   # Check what has changed
+   git status
+   git diff --stat
+
+   # Stage everything
+   git add -A
+
+   # Commit with descriptive message
+   git commit -m "feat: add feature X and update configurations
+
+   - Added new component for feature X
+   - Updated Docker configuration for better networking
+   - Fixed bug in existing component Y
+   - Updated documentation"
+   ```
+
+### Exceptions
+
+Only commit partial changes when the user explicitly requests it, such as:
+
+- "Commit only the homework changes"
+- "Don't include the Docker files in the commit"
+- "Stage and commit just the frontend changes"
+
+In these cases, use selective staging:
+
+```bash
+git add [specific files or directories]
+git commit -m "message"
 ```
