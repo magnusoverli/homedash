@@ -9,30 +9,35 @@ HomeDash is a modern React-based family dashboard that helps families manage sch
 ## ✨ Key Features
 
 ### 📅 Family Activity Management
+
 - **Multi-member support**: Add and manage multiple family members with color-coded organization
 - **Activity scheduling**: Create, edit, and manage activities for each family member
 - **Week-based navigation**: Intuitive week selector for viewing family schedules
 - **Activity types**: Support for manual activities, school schedules, and sports events
 
 ### 🤖 AI-Powered School Schedule Extraction
+
 - **Image-to-schedule conversion**: Upload school timetable images and extract structured schedule data
 - **Anthropic Claude integration**: Advanced AI vision capabilities for accurate text extraction
 - **Bulk schedule import**: Automatically create recurring school activities for the entire academic year
 - **Homework extraction**: Extract homework assignments from school plan images
 
 ### ⚽ Sports Team Integration (Spond)
+
 - **Spond API integration**: Connect to sports teams and automatically sync activities
 - **Group management**: Select which sports groups to sync for each family member
 - **Event synchronization**: Import training sessions, matches, and team events
 - **Authentication management**: Secure credential storage with token lifecycle tracking
 
 ### 🎨 Design System
+
 - **HomeDash Design Manual compliance**: Consistent purple-based color palette (#6704FF)
 - **Responsive design**: Mobile-first approach with elegant desktop layouts
 - **Grid-based layout**: 48×48px base grid with 5px corner radius system
 - **Accessibility**: WCAG compliant with proper focus states and keyboard navigation
 
 ### 🔧 Technical Features
+
 - **React 19**: Latest React features with modern development practices
 - **TypeScript/JSDoc**: Type safety and enhanced development experience
 - **Vite**: Lightning-fast development and optimized production builds
@@ -49,35 +54,39 @@ HomeDash is a modern React-based family dashboard that helps families manage sch
    - Docker Compose
 
 2. **Portable Deployment** (Works on any system)
+
    ```bash
    # Clone the repository
    git clone <repository-url>
    cd homedash2
-   
+
    # Start the application (automatically detects your system's IP/hostname)
    docker-compose up -d
-   
+
    # Access the application
    # Local: http://localhost:3000
    # Network: http://<your-system-ip>:3000
    ```
-   
+
    **The application automatically detects your hostname/IP** - no configuration needed!
 
 3. **Advanced Deployment Options**
-   
+
    **Standard deployment (automatic hostname detection):**
+
    ```bash
    docker-compose up -d
    ```
-   
+
    **Custom API URL (for reverse proxies, custom domains):**
+
    ```bash
    # Edit docker-compose.custom.yml to set your custom VITE_API_URL
    docker-compose -f docker-compose.yml -f docker-compose.custom.yml up -d
    ```
-   
+
    **Production deployment:**
+
    ```bash
    docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
    ```
@@ -89,7 +98,7 @@ HomeDash is a modern React-based family dashboard that helps families manage sch
 The application is designed for **zero-configuration deployment**:
 
 - **Local access**: `http://localhost:3000`
-- **Network access**: `http://<server-ip>:3000` 
+- **Network access**: `http://<server-ip>:3000`
 - **Domain access**: `http://yourdomain.com:3000`
 
 The frontend automatically detects the hostname you're using and configures the API calls accordingly. This means:
@@ -101,15 +110,16 @@ The frontend automatically detects the hostname you're using and configures the 
 
 ### Deployment Examples
 
-| Scenario | Access URL | Configuration |
-|----------|------------|---------------|
-| Local development | `http://localhost:3000` | `docker-compose up -d` |
-| Home server | `http://192.168.1.100:3000` | `docker-compose up -d` |
-| Cloud server | `http://your-server-ip:3000` | `docker-compose up -d` |
-| Custom domain | `http://homedash.yourdomain.com:3000` | `docker-compose up -d` |
-| Reverse proxy | `https://homedash.yourdomain.com` | Use `docker-compose.custom.yml` |
+| Scenario          | Access URL                            | Configuration                   |
+| ----------------- | ------------------------------------- | ------------------------------- |
+| Local development | `http://localhost:3000`               | `docker-compose up -d`          |
+| Home server       | `http://192.168.1.100:3000`           | `docker-compose up -d`          |
+| Cloud server      | `http://your-server-ip:3000`          | `docker-compose up -d`          |
+| Custom domain     | `http://homedash.yourdomain.com:3000` | `docker-compose up -d`          |
+| Reverse proxy     | `https://homedash.yourdomain.com`     | Use `docker-compose.custom.yml` |
 
 2. **Legacy: Deploy the application**
+
    ```bash
    # Clone the repository
    git clone <repository-url>
@@ -137,12 +147,14 @@ npm run dev:all
 ```
 
 **Development URLs:**
+
 - Frontend (Vite): `http://localhost:5173`
 - Backend API: `http://localhost:3001`
 
 ## 🏗️ Architecture
 
 ### Frontend (React 19 + Vite)
+
 ```
 src/
 ├── components/              # React components
@@ -162,6 +174,7 @@ src/
 ```
 
 ### Backend (Express.js + SQLite)
+
 ```
 backend/
 ├── server.js              # Main Express server
@@ -171,6 +184,7 @@ backend/
 ```
 
 ### Docker Architecture
+
 - **homedash-app**: Frontend React application (port 3000)
 - **homedash-backend**: Express.js API server (port 3001)
 - **homedash-network**: Bridge network for service communication
@@ -179,17 +193,20 @@ backend/
 ## 🔧 Core Components
 
 ### Family Member Management
+
 - Add, edit, and delete family members
 - Color-coded organization for easy identification
 - Individual settings and preferences per member
 
 ### Activity Management
+
 - Manual activity creation and editing
 - Time-based scheduling with start/end times
 - Activity types: manual, school_schedule, school_activity, spond
 - Recurring activity support
 
 ### School Schedule Integration
+
 1. **Upload school timetable images** through the Schedule Modal
 2. **AI extraction** using Anthropic Claude vision models
 3. **Automatic parsing** of schedule data into structured format
@@ -197,6 +214,7 @@ backend/
 5. **Homework extraction** from uploaded images
 
 ### Spond Sports Integration
+
 1. **Credential management** - securely store Spond login credentials
 2. **Group selection** - choose which sports teams to sync
 3. **Activity synchronization** - automatically import team events
@@ -205,12 +223,14 @@ backend/
 ## 🤖 AI Configuration
 
 ### Anthropic Claude Integration
+
 - **Vision-capable models**: Support for image analysis and text extraction
 - **Model selection**: Choose from available Claude models (Sonnet, Haiku, etc.)
 - **API key validation**: Real-time validation of Anthropic API credentials
 - **Prompt optimization**: Two prompt versions (original and optimized) for extraction
 
 ### Supported Models
+
 - `claude-3-5-sonnet-20241022` (recommended for vision tasks)
 - `claude-3-5-haiku-20241022` (faster processing)
 - Additional models fetched dynamically from Anthropic API
@@ -218,12 +238,14 @@ backend/
 ## 🔒 Security & Privacy
 
 ### Data Protection
+
 - **Encrypted credential storage**: Spond credentials secured in database
 - **API key proxy**: Anthropic API keys never stored on server
 - **Local database**: All family data stored locally in SQLite
 - **GDPR compliance**: User consent and data deletion capabilities
 
 ### Authentication Flow
+
 - **Spond integration**: Username/password authentication with token management
 - **Anthropic API**: API key validation without permanent storage
 - **Session management**: Secure token lifecycle with automatic refresh
@@ -231,12 +253,14 @@ backend/
 ## 📱 Usage Guide
 
 ### Getting Started
+
 1. **Add family members** using the "+" button in the main interface
 2. **Configure AI settings** in the Settings panel with your Anthropic API key
 3. **Upload school schedules** using the Schedule Modal for automatic extraction
 4. **Connect Spond accounts** in Settings for sports activity synchronization
 
 ### School Schedule Extraction
+
 1. Navigate to Settings and configure your Anthropic API key
 2. Click the "School Schedule" button on a family member card
 3. Upload a clear image of the school timetable
@@ -244,6 +268,7 @@ backend/
 5. Activities are automatically created for the entire school year
 
 ### Spond Integration
+
 1. Go to Settings and find the Spond Integration section
 2. Enter Spond credentials for each family member
 3. Select which sports groups to synchronize
@@ -252,6 +277,7 @@ backend/
 ## 🧪 Development & Testing
 
 ### Available Scripts
+
 ```bash
 # Development
 npm run dev                 # Start frontend development server
@@ -275,6 +301,7 @@ npm run typecheck          # Run TypeScript type checking
 ```
 
 ### Testing Strategy
+
 - **Unit tests**: React Testing Library for component testing
 - **Integration tests**: Full application workflow testing
 - **API testing**: Backend endpoint validation
@@ -283,6 +310,7 @@ npm run typecheck          # Run TypeScript type checking
 ## 🐳 Docker Deployment
 
 ### Production Deployment
+
 ```bash
 # Start production environment
 docker-compose up -d
@@ -298,6 +326,7 @@ docker-compose up --build -d
 ```
 
 ### Development with Docker
+
 ```bash
 # Use override configuration for development
 docker-compose -f docker-compose.yml -f docker-compose.override.yml up
@@ -307,29 +336,74 @@ docker-compose logs -f homedash-backend
 ```
 
 ### Environment Configuration
-Create a `.env` file in the root directory:
+
+#### API Configuration
+
+Create a `.env` file in the root directory (optional - defaults work automatically):
+
 ```env
 # Frontend configuration
-VITE_API_URL=http://localhost:3001
+VITE_API_URL=http://localhost:3001  # Optional - auto-detects by default
 
 # Backend configuration
 NODE_ENV=production
 PORT=3001
 ```
 
+#### Timezone Configuration
+
+The containers are timezone-aware and default to `Europe/Oslo`. To change the timezone:
+
+1. **For development** - Edit `docker-compose.override.yml`:
+
+```yaml
+services:
+  homedash-app:
+    environment:
+      - TZ=America/New_York # Change to your timezone
+  homedash-backend:
+    environment:
+      - TZ=America/New_York # Change to your timezone
+```
+
+2. **For production** - Edit `docker-compose.prod.yml`:
+
+```yaml
+services:
+  homedash-app:
+    environment:
+      - TZ=Europe/London # Change to your timezone
+  homedash-backend:
+    environment:
+      - TZ=Europe/London # Change to your timezone
+```
+
+**Common timezones:**
+
+- `Europe/Oslo`, `Europe/London`, `Europe/Berlin`
+- `America/New_York`, `America/Los_Angeles`, `America/Chicago`
+- `Asia/Tokyo`, `Asia/Singapore`, `Asia/Shanghai`
+- `Australia/Sydney`, `Australia/Melbourne`
+- `UTC` (for universal time)
+
+Find your timezone: [List of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+
 ## 🎨 Design System
 
 ### Color Palette
+
 - **Primary Purple**: `#6704FF` - Main brand color for buttons and accents
 - **Purple Variants**: Light (`#B781FF`), Dark (`#4D04B1`), Extra Dark (`#310268`)
 - **Pastell Colors**: 9 avatar colors for family member identification
 - **Neutral Colors**: White, light gray, gray, dark gray for backgrounds and text
 
 ### Typography
+
 - **Sans Display Family**: Light (100), Regular (400), Medium (500), SemiBold (600), Bold (700)
 - **Sans Condensed**: For compact layouts and data-heavy interfaces
 
 ### Layout System
+
 - **48×48px grid**: Base grid system for consistent spacing
 - **5px corner radius**: Consistent rounded corners throughout
 - **Card-based design**: Content organized in visually distinct cards
@@ -340,26 +414,31 @@ PORT=3001
 ### Backend Endpoints
 
 #### Family Members
+
 - `GET /api/family-members` - List all family members
 - `POST /api/family-members` - Create new family member
 - `PUT /api/family-members/:id` - Update family member
 - `DELETE /api/family-members/:id` - Delete family member
 
 #### Activities
+
 - `GET /api/activities` - List activities (supports filtering)
 - `POST /api/activities` - Create new activity
 - `PUT /api/activities/:id` - Update activity
 - `DELETE /api/activities/:id` - Delete activity
 
 #### School Schedule Extraction
+
 - `POST /api/extract-school-plan` - Extract schedule from uploaded image
 
 #### Spond Integration
+
 - `POST /api/test-spond-credentials` - Validate Spond credentials
 - `GET /api/spond-groups/:memberId` - Fetch available sports groups
 - `POST /api/spond-activities/:memberId/sync` - Synchronize activities
 
 #### Anthropic API Proxy
+
 - `POST /api/test-key` - Validate Anthropic API key
 - `POST /api/models` - Fetch available Claude models
 - `POST /api/messages` - Proxy messages to Anthropic API
@@ -367,12 +446,14 @@ PORT=3001
 ## 🤝 Contributing
 
 ### Development Workflow
+
 1. Follow the HomeDash Design Manual for all UI changes
 2. Use Docker Compose for testing and deployment
 3. Maintain test coverage for new features
 4. Follow React 19 best practices and functional components
 
 ### Code Style
+
 - **ESLint + Prettier**: Automated code formatting
 - **Single quotes**: Consistent string formatting
 - **2-space indentation**: Clean, readable code
@@ -387,6 +468,7 @@ This project follows all design specifications from the HomeDash Design Manual a
 ### Common Issues
 
 **Docker startup issues:**
+
 ```bash
 # Check service status
 docker-compose ps
@@ -399,16 +481,19 @@ docker-compose restart
 ```
 
 **API connection issues:**
+
 - Verify backend is running on port 3001
 - Check Docker network configuration
 - Ensure environment variables are set correctly
 
 **Spond integration issues:**
+
 - Verify credentials are correct
 - Check token expiration status
 - Review sync logs in backend console
 
 **AI extraction issues:**
+
 - Confirm Anthropic API key is valid
 - Ensure uploaded images are clear and readable
 - Check selected model supports vision capabilities

@@ -1643,8 +1643,13 @@ app.get('/api/activities', async (req, res) => {
     console.log(`📋 Found ${regularActivities.length} regular activities`);
 
     // Fetch Spond activities (only from active groups)
+    // IMPORTANT: Spond stores timestamps in UTC. We convert them to the container's local timezone
+    // using SQLite's 'localtime' modifier. The container timezone is set via TZ environment variable.
     let spondSql = `
-      SELECT sa.*, DATE(sa.start_timestamp) as date, TIME(sa.start_timestamp) as start_time, TIME(sa.end_timestamp) as end_time 
+      SELECT sa.*, 
+        DATE(sa.start_timestamp, 'localtime') as date, 
+        TIME(sa.start_timestamp, 'localtime') as start_time, 
+        TIME(sa.end_timestamp, 'localtime') as end_time 
       FROM spond_activities sa
       INNER JOIN spond_groups sg ON sa.group_id = sg.id AND sa.member_id = sg.member_id
       WHERE sg.is_active = TRUE`;
@@ -1656,13 +1661,13 @@ app.get('/api/activities', async (req, res) => {
     }
 
     if (date) {
-      spondSql += ' AND DATE(sa.start_timestamp) = ?';
+      spondSql += " AND DATE(sa.start_timestamp, 'localtime') = ?";
       spondParams.push(date);
     }
 
     if (start_date && end_date) {
       spondSql +=
-        ' AND DATE(sa.start_timestamp) >= ? AND DATE(sa.start_timestamp) <= ?';
+        " AND DATE(sa.start_timestamp, 'localtime') >= ? AND DATE(sa.start_timestamp, 'localtime') <= ?";
       spondParams.push(start_date, end_date);
     }
 

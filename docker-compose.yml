@@ -7,11 +7,12 @@ services:
     container_name: homedash-app
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - '3000:3000'
     networks:
       - homedash-network
     environment:
       - NODE_ENV=production
+      - TZ=Europe/Oslo
       # Removed VITE_API_URL to enable dynamic detection based on hostname
     depends_on:
       - homedash-backend
@@ -37,12 +38,13 @@ services:
     container_name: homedash-backend
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - '3001:3001'
     networks:
       - homedash-network
     environment:
       - NODE_ENV=production
       - PORT=3001
+      - TZ=Europe/Oslo
     volumes:
       - homedash-data:/app/data
     healthcheck:

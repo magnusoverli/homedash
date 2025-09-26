@@ -2,6 +2,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Install timezone data
+RUN apk add --no-cache tzdata
+
 # Copy package files
 COPY package*.json ./
 

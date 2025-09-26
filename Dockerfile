@@ -20,8 +20,9 @@ FROM node:20-alpine AS production
 
 WORKDIR /app
 
-# Install serve to serve the static files
-RUN npm install -g serve
+# Install timezone data and serve to serve the static files
+RUN apk add --no-cache tzdata && \
+    npm install -g serve
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
