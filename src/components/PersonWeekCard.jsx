@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import ActivityBlock from './ActivityBlock';
-import ScheduleModal from './ScheduleModal';
 import './PersonWeekCard.css';
 
 const PersonWeekCard = ({
@@ -15,9 +14,9 @@ const PersonWeekCard = ({
   getDefaultColorForType = () => '#B2AEFF',
 }) => {
   const [dayColumns, setDayColumns] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const [isDragging, setIsDragging] = useState(false);
-  
+
   // Persist resize state per member in localStorage
   const getStoredGridHeight = () => {
     try {
@@ -27,7 +26,7 @@ const PersonWeekCard = ({
       return 70;
     }
   };
-  
+
   const [weekGridHeight, setWeekGridHeight] = useState(getStoredGridHeight);
   const containerRef = useRef(null);
   const weekGridRef = useRef(null);
@@ -42,13 +41,19 @@ const PersonWeekCard = ({
   }
 
   // Function to get custom color for an activity based on its type/source
-  const getActivityCustomColor = (activity) => {
+  const getActivityCustomColor = activity => {
     let activityType = 'manual'; // default fallback
-    
+
     // Check for school types first (highest priority)
-    if (activity.description && activity.description.includes('[TYPE:school_schedule]')) {
+    if (
+      activity.description &&
+      activity.description.includes('[TYPE:school_schedule]')
+    ) {
       activityType = 'school_schedule';
-    } else if (activity.description && activity.description.includes('[TYPE:school_activity]')) {
+    } else if (
+      activity.description &&
+      activity.description.includes('[TYPE:school_activity]')
+    ) {
       activityType = 'school_activity';
     }
     // Check for category (second priority)
@@ -63,9 +68,11 @@ const PersonWeekCard = ({
     else {
       activityType = 'manual';
     }
-    
+
     // Return custom color if set, otherwise default for that type
-    return colorPreferences[activityType] || getDefaultColorForType(activityType);
+    return (
+      colorPreferences[activityType] || getDefaultColorForType(activityType)
+    );
   };
 
   useEffect(() => {
@@ -91,12 +98,15 @@ const PersonWeekCard = ({
     const updateDynamicScaling = () => {
       if (weekGridRef.current) {
         const weekGridHeight = weekGridRef.current.clientHeight;
-        
+
         // Reserve space for day headers (approximately 40px) and padding
         const availableTimeGridHeight = weekGridHeight - 60;
-        
+
         // Calculate pixels per hour to fit all time slots
-        const newPixelsPerHour = Math.max(20, availableTimeGridHeight / totalHours);
+        const newPixelsPerHour = Math.max(
+          20,
+          availableTimeGridHeight / totalHours
+        );
         setDynamicPixelsPerHour(newPixelsPerHour);
       }
     };
@@ -152,12 +162,12 @@ const PersonWeekCard = ({
     });
   };
 
-  const handleDeleteHomework = async (homeworkId) => {
+  const handleDeleteHomework = async homeworkId => {
     try {
       // Import dataService dynamically to avoid circular imports
       const { default: dataService } = await import('../services/dataService');
       await dataService.deleteHomework(homeworkId);
-      
+
       // Update the homework state directly without triggering full re-renders
       if (onHomeworkDeleted) {
         onHomeworkDeleted(member.id, homeworkId);
@@ -210,31 +220,36 @@ const PersonWeekCard = ({
   };
 
   // Standard resizable pane implementation
-  const handleResizeStart = useCallback((e) => {
+  const handleResizeStart = useCallback(e => {
     e.preventDefault();
     setIsDragging(true);
-    
-    const handleMouseMove = (moveEvent) => {
+
+    const handleMouseMove = moveEvent => {
       if (!containerRef.current) return;
-      
+
       const containerRect = containerRef.current.getBoundingClientRect();
-      const clientY = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY;
+      const clientY = moveEvent.touches
+        ? moveEvent.touches[0].clientY
+        : moveEvent.clientY;
       const relativeY = clientY - containerRect.top;
-      
+
       // Calculate percentage (with constraints)
       const percentage = (relativeY / containerRect.height) * 100;
       const newWeekGridHeight = Math.min(80, Math.max(20, percentage));
-      
+
       setWeekGridHeight(newWeekGridHeight);
-      
+
       // Persist the new height to localStorage
       try {
-        localStorage.setItem(`weekGridHeight_${member.id}`, newWeekGridHeight.toString());
+        localStorage.setItem(
+          `weekGridHeight_${member.id}`,
+          newWeekGridHeight.toString()
+        );
       } catch (error) {
         console.warn('Failed to save grid height to localStorage:', error);
       }
     };
-    
+
     const handleMouseUp = () => {
       setIsDragging(false);
       document.removeEventListener('mousemove', handleMouseMove);
@@ -242,7 +257,7 @@ const PersonWeekCard = ({
       document.removeEventListener('touchmove', handleMouseMove);
       document.removeEventListener('touchend', handleMouseUp);
     };
-    
+
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
     document.addEventListener('touchmove', handleMouseMove);
@@ -258,7 +273,7 @@ const PersonWeekCard = ({
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
     }
-    
+
     return () => {
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
@@ -267,105 +282,94 @@ const PersonWeekCard = ({
 
   return (
     <>
-      <div 
-        className="person-week-card" 
+      <div
+        className="person-week-card"
         ref={containerRef}
         style={{
           display: 'flex',
           flexDirection: 'column',
-          height: '100%'
+          height: '100%',
         }}
       >
-        <div 
+        <div
           className="week-grid"
           ref={weekGridRef}
           style={{
             flex: `0 0 ${weekGridHeight}%`,
             minHeight: '200px',
-            '--dynamic-pixels-per-hour': `${dynamicPixelsPerHour}px`
+            '--dynamic-pixels-per-hour': `${dynamicPixelsPerHour}px`,
           }}
         >
-            {dayColumns.map((date, index) => {
-              const dayInfo = formatDayLabel(date);
-              const dayActivities = getDayActivities(date);
-              const overlaps = checkOverlaps(dayActivities);
-              const isLastDay = index === 6; // Sunday is the last day
+          {dayColumns.map((date, index) => {
+            const dayInfo = formatDayLabel(date);
+            const dayActivities = getDayActivities(date);
+            const overlaps = checkOverlaps(dayActivities);
+            return (
+              <div
+                key={index}
+                className={`day-column ${isToday(date) ? 'today' : ''}`}
+              >
+                <div className="day-header">
+                  <div className="day-name">{dayInfo.dayName}</div>
+                  <div className="day-number">{dayInfo.dayNumber}</div>
+                </div>
 
-              return (
                 <div
-                  key={index}
-                  className={`day-column ${isToday(date) ? 'today' : ''}`}
+                  className="time-grid-column"
+                  style={{
+                    '--dynamic-pixels-per-hour': `${dynamicPixelsPerHour}px`,
+                  }}
                 >
-                  <div className="day-header">
-                    <div className="day-name">{dayInfo.dayName}</div>
-                    <div className="day-number">{dayInfo.dayNumber}</div>
-                    {isLastDay && (
-                      <button
-                        className="add-activity-button-overlay"
-                        aria-label="Add activity"
-                        onClick={() => setIsModalOpen(true)}
-                      >
-                        +
-                      </button>
-                    )}
-                  </div>
+                  {timeSlots.map(hour => (
+                    <div
+                      key={hour}
+                      className="time-slot"
+                      style={{ height: `${dynamicPixelsPerHour}px` }}
+                      onClick={() => handleTimeSlotClick(date, hour)}
+                    />
+                  ))}
 
-                  <div 
-                    className="time-grid-column"
-                    style={{
-                      '--dynamic-pixels-per-hour': `${dynamicPixelsPerHour}px`
-                    }}
-                  >
-                    {timeSlots.map(hour => (
-                      <div
-                        key={hour}
-                        className="time-slot"
-                        style={{ height: `${dynamicPixelsPerHour}px` }}
-                        onClick={() => handleTimeSlotClick(date, hour)}
-                      />
-                    ))}
+                  <div className="activities-layer">
+                    {dayActivities.map((activity, actIndex) => {
+                      const isOverlapping = overlaps.some(group =>
+                        group.includes(activity)
+                      );
+                      const overlapIndex = isOverlapping
+                        ? overlaps
+                            .find(group => group.includes(activity))
+                            .indexOf(activity)
+                        : 0;
+                      const overlapCount = isOverlapping
+                        ? overlaps.find(group => group.includes(activity))
+                            .length
+                        : 1;
 
-                    <div className="activities-layer">
-                      {dayActivities.map((activity, actIndex) => {
-                        const isOverlapping = overlaps.some(group =>
-                          group.includes(activity)
-                        );
-                        const overlapIndex = isOverlapping
-                          ? overlaps
-                              .find(group => group.includes(activity))
-                              .indexOf(activity)
-                          : 0;
-                        const overlapCount = isOverlapping
-                          ? overlaps.find(group => group.includes(activity))
-                              .length
-                          : 1;
-
-                        return (
-                          <ActivityBlock
-                            key={activity.id || actIndex}
-                            activity={activity}
-                            top={calculateTopPosition(activity.startTime)}
-                            height={calculateHeight(
-                              activity.startTime,
-                              activity.endTime
-                            )}
-                            isOverlapping={isOverlapping}
-                            overlapIndex={overlapIndex}
-                            overlapCount={overlapCount}
-                            onDelete={() => onDeleteActivity(activity.id)}
-                            customColor={getActivityCustomColor(activity)}
-                          />
-                        );
-                      })}
-                    </div>
+                      return (
+                        <ActivityBlock
+                          key={activity.id || actIndex}
+                          activity={activity}
+                          top={calculateTopPosition(activity.startTime)}
+                          height={calculateHeight(
+                            activity.startTime,
+                            activity.endTime
+                          )}
+                          isOverlapping={isOverlapping}
+                          overlapIndex={overlapIndex}
+                          overlapCount={overlapCount}
+                          onDelete={() => onDeleteActivity(activity.id)}
+                          customColor={getActivityCustomColor(activity)}
+                        />
+                      );
+                    })}
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            );
+          })}
         </div>
-        
+
         {/* Resize Handle */}
-        <div 
+        <div
           className={`resize-handle ${isDragging ? 'dragging' : ''}`}
           onMouseDown={handleResizeStart}
           onTouchStart={handleResizeStart}
@@ -379,12 +383,12 @@ const PersonWeekCard = ({
             <div className="resize-handle-line"></div>
           </div>
         </div>
-        
-        <div 
+
+        <div
           className="week-homework-card"
           style={{
             flex: '1',
-            minHeight: '120px'
+            minHeight: '120px',
           }}
         >
           <div className="homework-header">
@@ -397,9 +401,9 @@ const PersonWeekCard = ({
               <div className="homework-list">
                 {homework.map((item, index) => (
                   <div key={index} className="homework-item">
-                    <button 
+                    <button
                       className="homework-delete-btn"
-                      onClick={(e) => {
+                      onClick={e => {
                         e.stopPropagation();
                         handleDeleteHomework(item.id);
                       }}
@@ -421,14 +425,6 @@ const PersonWeekCard = ({
           </div>
         </div>
       </div>
-
-      <ScheduleModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={`${member.name}'s Schedule`}
-      >
-        {/* Content for schedule management will go here */}
-      </ScheduleModal>
     </>
   );
 };
