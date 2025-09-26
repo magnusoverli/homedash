@@ -2720,6 +2720,29 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
         `📅 Assigning homework to week starting: ${homeworkWeekStart}`
       );
 
+      // Step 1: Clean up existing extracted homework for this week
+      // This prevents duplicates when re-importing a school plan for the same week
+      // Only deletes homework that was extracted from images, preserving any manual entries
+      console.log(
+        `🧹 Cleaning up existing extracted homework for week ${homeworkWeekStart}...`
+      );
+      try {
+        const deleteHomeworkResult = await runQuery(
+          `DELETE FROM homework 
+           WHERE member_id = ? 
+           AND week_start_date = ?
+           AND extracted_from_image IS NOT NULL`,
+          [memberId, homeworkWeekStart]
+        );
+        console.log(
+          `🗑️  Deleted ${deleteHomeworkResult.changes || 0} existing extracted homework entries`
+        );
+      } catch (deleteError) {
+        console.error('⚠️  Error cleaning up existing homework:', deleteError);
+        // Continue anyway - better to have duplicates than to fail the entire import
+      }
+
+      // Step 2: Insert new homework entries
       for (const homework of extractedData.school_homework) {
         if (homework.subject && homework.assignment) {
           try {
