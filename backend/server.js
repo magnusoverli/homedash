@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import fetch from 'node-fetch';
 import multer from 'multer';
+import ical from 'node-ical';
+import axios from 'axios';
 import { initDatabase, runQuery, getAll, getOne } from './database.js';
 
 dotenv.config();
@@ -1452,6 +1454,162 @@ app.delete('/api/family-members/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting family member:', error);
     res.status(500).json({ error: 'Failed to delete family member' });
+  }
+});
+
+// Calendar Import Endpoint
+app.post('/api/family-members/:id/import-calendar', async (req, res) => {
+  const { id } = req.params;
+  const { calendarUrl } = req.body;
+
+  if (!calendarUrl) {
+    return res.status(400).json({ error: 'Calendar URL is required' });
+  }
+
+  try {
+    // Update member with calendar URL
+    await runQuery(
+      'UPDATE family_members SET calendar_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [calendarUrl, id]
+    );
+
+    // Convert webcal to https if needed
+    let fetchUrl = calendarUrl;
+    if (fetchUrl.startsWith('webcal://')) {
+      fetchUrl = fetchUrl.replace('webcal://', 'https://');
+    }
+
+    console.log(`Fetching calendar from: ${fetchUrl}`);
+
+    // Fetch the calendar data
+    const response = await axios.get(fetchUrl, {
+      timeout: 30000,
+      responseType: 'text',
+      headers: {
+        'User-Agent': 'HomeDash/1.0',
+      },
+    });
+
+    // Parse the iCal data
+    const parsedData = ical.parseICS(response.data);
+
+    // Delete existing municipal calendar events for this member
+    await runQuery(
+      'DELETE FROM activities WHERE member_id = ? AND source = ?',
+      [id, 'municipal_calendar']
+    );
+
+    let importedCount = 0;
+    const events = [];
+
+    // Process each calendar event
+    for (const key in parsedData) {
+      const event = parsedData[key];
+
+      // Only process VEVENT type entries
+      if (event.type === 'VEVENT') {
+        const startDate = event.start;
+        const endDate = event.end;
+
+        if (startDate) {
+          // Format dates for database
+          const dateStr = startDate.toISOString
+            ? startDate.toISOString().split('T')[0]
+            : new Date(startDate).toISOString().split('T')[0];
+
+          // Extract key information from summary
+          const summary = event.summary || 'School Event';
+          const description = event.description || '';
+
+          // Determine activity type based on summary
+          let activityType = 'school_event';
+          if (summary.toLowerCase().includes('ferie')) {
+            activityType = 'vacation';
+          } else if (summary.toLowerCase().includes('planleggingsdag')) {
+            activityType = 'planning_day';
+          } else if (summary.toLowerCase().includes('fridag')) {
+            activityType = 'holiday';
+          }
+
+          // Extract which services are affected
+          let affectsServices = [];
+          if (
+            description.toLowerCase().includes('skole stengt') ||
+            summary.toLowerCase().includes('(skole)')
+          ) {
+            affectsServices.push('school');
+          }
+          if (
+            description.toLowerCase().includes('sfo stengt') ||
+            summary.toLowerCase().includes('(sfo)')
+          ) {
+            affectsServices.push('sfo');
+          }
+          if (
+            description.toLowerCase().includes('barnehage stengt') ||
+            summary.toLowerCase().includes('(barnehage)')
+          ) {
+            affectsServices.push('kindergarten');
+          }
+
+          // Default to affecting school if no specific mention
+          if (affectsServices.length === 0 && !summary.includes('SFO-')) {
+            affectsServices.push('school');
+          }
+
+          // Create activity entry
+          await runQuery(
+            `INSERT INTO activities 
+             (member_id, title, date, start_time, end_time, description, 
+              activity_type, source, notes) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              id,
+              summary,
+              dateStr,
+              '00:00',
+              '23:59',
+              description,
+              activityType,
+              'municipal_calendar',
+              JSON.stringify({
+                affectsServices,
+                originalEvent: event.uid,
+              }),
+            ]
+          );
+
+          importedCount++;
+          events.push({
+            title: summary,
+            date: dateStr,
+            type: activityType,
+            affects: affectsServices,
+          });
+        }
+      }
+    }
+
+    // Update member with sync info
+    await runQuery(
+      'UPDATE family_members SET calendar_last_synced = CURRENT_TIMESTAMP, calendar_event_count = ? WHERE id = ?',
+      [importedCount, id]
+    );
+
+    console.log(`Imported ${importedCount} calendar events for member ${id}`);
+
+    res.json({
+      success: true,
+      message: `Successfully imported ${importedCount} events`,
+      eventsImported: importedCount,
+      events: events.slice(0, 10), // Return first 10 as preview
+    });
+  } catch (error) {
+    console.error('Error importing calendar:', error);
+    res.status(500).json({
+      error: 'Failed to import calendar',
+      details: error.message,
+    });
   }
 });
 

@@ -55,11 +55,17 @@ const ActivityBlock = ({
   };
 
   const isSchoolScheduleActivity = () => {
-    return activity.description && activity.description.includes('[TYPE:school_schedule]');
+    return (
+      activity.description &&
+      activity.description.includes('[TYPE:school_schedule]')
+    );
   };
 
   const isSchoolActivity = () => {
-    return activity.description && activity.description.includes('[TYPE:school_activity]');
+    return (
+      activity.description &&
+      activity.description.includes('[TYPE:school_activity]')
+    );
   };
 
   const isSchoolRelated = () => {
@@ -70,9 +76,47 @@ const ActivityBlock = ({
     return activity.source === 'spond';
   };
 
+  const isMunicipalCalendarActivity = () => {
+    return activity.source === 'municipal_calendar';
+  };
+
+  const getMunicipalEventType = () => {
+    if (!isMunicipalCalendarActivity()) return null;
+
+    // Check activity_type field for specific event types
+    if (activity.activity_type === 'vacation') return 'vacation';
+    if (activity.activity_type === 'planning_day') return 'planning_day';
+    if (activity.activity_type === 'holiday') return 'holiday';
+    if (activity.activity_type === 'school_event') return 'school_event';
+
+    // Fallback to checking title
+    const title = (activity.title || '').toLowerCase();
+    if (title.includes('ferie')) return 'vacation';
+    if (title.includes('planleggingsdag')) return 'planning_day';
+    if (title.includes('fridag')) return 'holiday';
+
+    return 'school_event';
+  };
+
+  const getMunicipalEventIcon = () => {
+    const eventType = getMunicipalEventType();
+    switch (eventType) {
+      case 'vacation':
+        return '🏖️';
+      case 'planning_day':
+        return '📋';
+      case 'holiday':
+        return '🎉';
+      case 'school_event':
+        return '🏫';
+      default:
+        return '📅';
+    }
+  };
+
   const getSpondMatchInfo = () => {
     if (!isSpondActivity() || !activity.raw_data) return null;
-    
+
     try {
       const rawData = JSON.parse(activity.raw_data);
       return rawData.matchInfo || null;
@@ -87,14 +131,14 @@ const ActivityBlock = ({
       title: activity.title,
       source: activity.source,
       hasRawData: !!activity.raw_data,
-      matchInfo: getSpondMatchInfo()
+      matchInfo: getSpondMatchInfo(),
     });
   }
 
   const getHomeAwayIndicator = () => {
     const matchInfo = getSpondMatchInfo();
     if (!matchInfo || !matchInfo.type) return null;
-    
+
     return matchInfo.type === 'HOME' ? '🏠' : '✈️';
   };
 
@@ -155,39 +199,49 @@ const ActivityBlock = ({
 
   const normalizeNote = note => {
     if (!note) return note;
-    
+
     const lowerNote = note.toLowerCase();
-    
+
     // Normalize PE-related terms to "Gym"
-    if (lowerNote.includes('kropps') || 
-        lowerNote.includes('gym') || 
-        lowerNote.includes('pe')) {
+    if (
+      lowerNote.includes('kropps') ||
+      lowerNote.includes('gym') ||
+      lowerNote.includes('pe')
+    ) {
       return 'Gym';
     }
-    
+
     // Filter out regular school subjects that shouldn't be notes
-    const regularSubjects = ['krle', 'matte', 'matematikk', 'norsk', 'engelsk', 'naturfag', 'samfunnsfag'];
+    const regularSubjects = [
+      'krle',
+      'matte',
+      'matematikk',
+      'norsk',
+      'engelsk',
+      'naturfag',
+      'samfunnsfag',
+    ];
     if (regularSubjects.includes(lowerNote)) {
       return null; // Return null to filter out
     }
-    
+
     // Add other normalizations as needed in the future
     // e.g., swimming, outdoor school, etc.
-    
+
     return note;
   };
 
   const parseNotes = notes => {
     if (!notes) return [];
-    
+
     // Handle special cases first before splitting
     const lowerNotes = notes.toLowerCase();
-    
+
     // Special handling for "gym/krle" - should only return "Gym"
     if (lowerNotes === 'gym/krle') {
       return ['Gym'];
     }
-    
+
     // Split notes by common separators and normalize each
     const noteList = notes
       .split(/[,/&+]/) // Split by comma, slash, ampersand, or plus
@@ -195,7 +249,7 @@ const ActivityBlock = ({
       .filter(note => note.length > 0)
       .map(note => normalizeNote(note))
       .filter(note => note !== null); // Remove filtered out subjects
-    
+
     return noteList;
   };
 
@@ -209,7 +263,6 @@ const ActivityBlock = ({
     }
   };
 
-
   const handleDelete = e => {
     e.stopPropagation();
     onDelete();
@@ -217,7 +270,7 @@ const ActivityBlock = ({
 
   return (
     <div
-      className={`activity-block ${!activity.title ? 'empty-activity' : ''}`}
+      className={`activity-block ${!activity.title ? 'empty-activity' : ''} ${isMunicipalCalendarActivity() ? 'municipal-calendar-event' : ''} ${isMunicipalCalendarActivity() ? `municipal-${getMunicipalEventType()}` : ''}`}
       style={calculatePosition()}
       onClick={handleClick}
       onMouseEnter={() => setShowActions(true)}
@@ -232,7 +285,9 @@ const ActivityBlock = ({
           {getAbbreviatedTitle(activity.title)}
         </div>
         {isSchoolScheduleActivity() && height >= 60 && (
-          <div className="activity-end-time">{formatTime(activity.endTime)}</div>
+          <div className="activity-end-time">
+            {formatTime(activity.endTime)}
+          </div>
         )}
       </div>
 
@@ -249,8 +304,16 @@ const ActivityBlock = ({
 
       {/* Home/Away indicator for Spond match activities */}
       {isSpondActivity() && getHomeAwayIndicator() && height >= 40 && (
-        <div className="spond-match-indicator">
-          {getHomeAwayIndicator()}
+        <div className="spond-match-indicator">{getHomeAwayIndicator()}</div>
+      )}
+
+      {/* Municipal calendar event indicator */}
+      {isMunicipalCalendarActivity() && height >= 40 && (
+        <div className="municipal-event-indicator">
+          <span className="municipal-icon">{getMunicipalEventIcon()}</span>
+          <span className="municipal-type">
+            {getMunicipalEventType()?.replace('_', ' ')}
+          </span>
         </div>
       )}
 

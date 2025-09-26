@@ -216,3 +216,64 @@
     font-size: 0.68rem;
   }
 }
+
+
+/* Municipal Calendar Event Styles */
+.activity-block.municipal-calendar-event {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  border: 2px solid #f59e0b;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.activity-block.municipal-vacation {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border: 2px solid #10b981;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.activity-block.municipal-planning_day {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
+  border: 2px solid #8b5cf6;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+.activity-block.municipal-holiday {
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%) !important;
+  border: 2px solid #ec4899;
+  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.3);
+}
+
+.municipal-event-indicator {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #1f2937;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.municipal-icon {
+  font-size: 0.9rem;
+}
+
+.municipal-type {
+  text-transform: capitalize;
+  font-size: 0.65rem;
+}
+
+.activity-block.municipal-calendar-event .activity-title {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.activity-block.municipal-calendar-event .activity-time,
+.activity-block.municipal-calendar-event .activity-end-time {
+  color: rgba(255, 255, 255, 0.9);
+}

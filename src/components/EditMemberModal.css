@@ -1219,3 +1219,114 @@
   border-top: 1px solid rgba(103, 4, 255, 0.1);
   margin-top: 1.5rem;
 }
+
+
+/* School Calendar Import Styles */
+.calendar-import-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.calendar-url-input-group {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.calendar-url-input-group .form-input {
+  flex: 1;
+}
+
+.import-calendar-button {
+  padding: 0.625rem 1.25rem;
+  background: linear-gradient(135deg, #6704ff 0%, #4d04b1 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.import-calendar-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7915ff 0%, #5505c4 100%);
+  box-shadow: 0 4px 12px rgba(103, 4, 255, 0.3);
+}
+
+.import-calendar-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.calendar-status-info {
+  padding: 0.75rem 1rem;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.calendar-status-info .status-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #22c55e;
+}
+
+.calendar-status-info .status-text {
+  font-size: 0.9rem;
+}
+
+.calendar-import-result {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.calendar-import-result.success {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.calendar-import-result.error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.calendar-import-result .import-count {
+  font-weight: 600;
+}
+
+.calendar-help-text {
+  padding: 0.75rem 1rem;
+  background: rgba(103, 4, 255, 0.05);
+  border: 1px solid rgba(103, 4, 255, 0.1);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #b781ff;
+}
+
+.calendar-help-text p {
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
+.calendar-help-text ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.calendar-help-text li {
+  margin-bottom: 0.25rem;
+  word-break: break-all;
+}

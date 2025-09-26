@@ -39,6 +39,9 @@ const initDatabase = () => {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL,
           color TEXT NOT NULL,
+          calendar_url TEXT,
+          calendar_last_synced DATETIME,
+          calendar_event_count INTEGER DEFAULT 0,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -114,6 +117,41 @@ const initDatabase = () => {
           console.error('Error adding notes column:', err);
         }
       });
+
+      // Add calendar-related columns to family_members table
+      db.run(`ALTER TABLE family_members ADD COLUMN calendar_url TEXT`, err => {
+        if (err && !err.message.includes('duplicate column name')) {
+          console.error('Error adding calendar_url column:', err);
+        }
+      });
+
+      db.run(
+        `ALTER TABLE family_members ADD COLUMN calendar_last_synced DATETIME`,
+        err => {
+          if (err && !err.message.includes('duplicate column name')) {
+            console.error('Error adding calendar_last_synced column:', err);
+          }
+        }
+      );
+
+      db.run(
+        `ALTER TABLE family_members ADD COLUMN calendar_event_count INTEGER DEFAULT 0`,
+        err => {
+          if (err && !err.message.includes('duplicate column name')) {
+            console.error('Error adding calendar_event_count column:', err);
+          }
+        }
+      );
+
+      // Add source column to activities to track municipal calendar events
+      db.run(
+        `ALTER TABLE activities ADD COLUMN source TEXT DEFAULT 'manual'`,
+        err => {
+          if (err && !err.message.includes('duplicate column name')) {
+            console.error('Error adding source column:', err);
+          }
+        }
+      );
 
       db.run(
         `
