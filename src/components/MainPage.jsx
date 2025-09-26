@@ -98,21 +98,25 @@ const MainPage = ({ currentWeek }) => {
             raw_data: activity.raw_data,
             activity_type: activity.activity_type,
             is_cancelled: activity.is_cancelled,
-            organizer_name: activity.organizer_name
+            organizer_name: activity.organizer_name,
           });
         });
 
         // Sync Spond activities for each family member (in background)
         if (familyMembers.length > 0) {
-          const syncPromises = familyMembers.map(async (member) => {
+          const syncPromises = familyMembers.map(async member => {
             try {
-              await dataService.syncSpondActivities(member.id, startDateStr, endDateStr);
+              await dataService.syncSpondActivities(
+                member.id,
+                startDateStr,
+                endDateStr
+              );
               console.log(`✅ Background sync completed for ${member.name}`);
             } catch (error) {
               console.warn(`Background sync failed for ${member.name}:`, error);
             }
           });
-          
+
           // After all syncs complete, refresh activities to show new Spond data
           Promise.all(syncPromises).then(async () => {
             try {
@@ -129,33 +133,41 @@ const MainPage = ({ currentWeek }) => {
 
               // Add all activities (preserving source and Spond-specific data)
               refreshedActivitiesData.forEach(activity => {
-                if (!refreshedStructuredActivities[weekKey][activity.member_id]) {
-                  refreshedStructuredActivities[weekKey][activity.member_id] = [];
+                if (
+                  !refreshedStructuredActivities[weekKey][activity.member_id]
+                ) {
+                  refreshedStructuredActivities[weekKey][activity.member_id] =
+                    [];
                 }
-                refreshedStructuredActivities[weekKey][activity.member_id].push({
-                  id: activity.id,
-                  memberId: activity.member_id,
-                  title: activity.title,
-                  date: activity.date,
-                  startTime: activity.start_time,
-                  endTime: activity.end_time,
-                  description: activity.description,
-                  notes: activity.notes,
-                  source: activity.source || 'manual', // Preserve original source
-                  // Include Spond-specific fields
-                  location_name: activity.location_name,
-                  location_address: activity.location_address,
-                  raw_data: activity.raw_data,
-                  activity_type: activity.activity_type,
-                  is_cancelled: activity.is_cancelled,
-                  organizer_name: activity.organizer_name
-                });
+                refreshedStructuredActivities[weekKey][activity.member_id].push(
+                  {
+                    id: activity.id,
+                    memberId: activity.member_id,
+                    title: activity.title,
+                    date: activity.date,
+                    startTime: activity.start_time,
+                    endTime: activity.end_time,
+                    description: activity.description,
+                    notes: activity.notes,
+                    source: activity.source || 'manual', // Preserve original source
+                    // Include Spond-specific fields
+                    location_name: activity.location_name,
+                    location_address: activity.location_address,
+                    raw_data: activity.raw_data,
+                    activity_type: activity.activity_type,
+                    is_cancelled: activity.is_cancelled,
+                    organizer_name: activity.organizer_name,
+                  }
+                );
               });
 
               setActivities(refreshedStructuredActivities);
               console.log('✅ Activities refreshed after Spond sync');
             } catch (error) {
-              console.error('❌ Error refreshing activities after sync:', error);
+              console.error(
+                '❌ Error refreshing activities after sync:',
+                error
+              );
             }
           });
         }
@@ -186,15 +198,25 @@ const MainPage = ({ currentWeek }) => {
 
     setIsLoadingHomework(true);
     try {
+      // Calculate week start date for homework filtering
+      const weekStart = getWeekStart();
+      const weekStartStr = weekStart.toISOString().split('T')[0];
+
       const homeworkData = {};
-      
-      // Load homework for each family member
+
+      // Load homework for each family member for the current week
       for (const member of familyMembers) {
-        const memberHomework = await dataService.getHomework({ member_id: member.id });
-        console.log(`MainPage loaded homework for ${member.name} (${member.id}):`, memberHomework);
+        const memberHomework = await dataService.getHomework({
+          member_id: member.id,
+          week_start_date: weekStartStr,
+        });
+        console.log(
+          `MainPage loaded homework for ${member.name} (${member.id}) week ${weekStartStr}:`,
+          memberHomework
+        );
         homeworkData[member.id] = memberHomework;
       }
-      console.log('MainPage final homework data:', homeworkData);
+      console.log('MainPage final homework data for week:', homeworkData);
       setHomework(homeworkData);
       setError('');
     } catch (error) {
@@ -203,11 +225,11 @@ const MainPage = ({ currentWeek }) => {
     } finally {
       setIsLoadingHomework(false);
     }
-  }, [familyMembers]);
+  }, [familyMembers, getWeekStart]);
 
   useEffect(() => {
     loadHomework();
-  }, [loadHomework]);
+  }, [loadHomework, currentWeek]); // Reload when week changes
 
   // Refresh homework when navigating back to main page (e.g., from settings)
   useEffect(() => {
@@ -254,7 +276,9 @@ const MainPage = ({ currentWeek }) => {
   const handleHomeworkDeleted = (memberId, deletedHomeworkId) => {
     setHomework(prevHomework => ({
       ...prevHomework,
-      [memberId]: (prevHomework[memberId] || []).filter(hw => hw.id !== deletedHomeworkId)
+      [memberId]: (prevHomework[memberId] || []).filter(
+        hw => hw.id !== deletedHomeworkId
+      ),
     }));
   };
 
@@ -262,7 +286,6 @@ const MainPage = ({ currentWeek }) => {
     setEditingActivity(activityData);
     setShowActivityModal(true);
   };
-
 
   const handleDeleteActivity = async (memberId, activityId) => {
     try {

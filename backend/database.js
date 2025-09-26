@@ -20,7 +20,7 @@ const db = new Database(dbPath, err => {
   } else {
     console.log('Connected to the SQLite database.');
     // Enable foreign key constraints
-    db.run('PRAGMA foreign_keys = ON', (pragmaErr) => {
+    db.run('PRAGMA foreign_keys = ON', pragmaErr => {
       if (pragmaErr) {
         console.error('Error enabling foreign keys:', pragmaErr.message);
       } else {
@@ -108,15 +108,12 @@ const initDatabase = () => {
         }
       );
 
-      db.run(
-        `ALTER TABLE activities ADD COLUMN notes TEXT`,
-        err => {
-          // Ignore error if column already exists
-          if (err && !err.message.includes('duplicate column name')) {
-            console.error('Error adding notes column:', err);
-          }
+      db.run(`ALTER TABLE activities ADD COLUMN notes TEXT`, err => {
+        // Ignore error if column already exists
+        if (err && !err.message.includes('duplicate column name')) {
+          console.error('Error adding notes column:', err);
         }
-      );
+      });
 
       db.run(
         `
@@ -125,7 +122,7 @@ const initDatabase = () => {
           member_id INTEGER NOT NULL,
           subject TEXT NOT NULL,
           assignment TEXT NOT NULL,
-          due_date TEXT,
+          week_start_date TEXT NOT NULL,
           completed BOOLEAN DEFAULT FALSE,
           extracted_from_image TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -172,19 +169,26 @@ const initDatabase = () => {
         ON homework(member_id)
       `);
 
+      db.run(`
+        CREATE INDEX IF NOT EXISTS idx_homework_week 
+        ON homework(member_id, week_start_date)
+      `);
+
       // Create Spond tables sequentially - temporarily disable foreign keys for creation
       const createSpondTables = () => {
         return new Promise((tableResolve, tableReject) => {
           console.log('🔨 Creating/verifying Spond tables...');
-          
+
           // Temporarily disable foreign key constraints during table creation
-          db.run('PRAGMA foreign_keys = OFF', (pragmaErr) => {
+          db.run('PRAGMA foreign_keys = OFF', pragmaErr => {
             if (pragmaErr) {
               console.error('❌ Error disabling foreign keys:', pragmaErr);
               return tableReject(pragmaErr);
             }
-            console.log('🔧 Temporarily disabled foreign keys for table creation');
-            
+            console.log(
+              '🔧 Temporarily disabled foreign keys for table creation'
+            );
+
             // Create Spond Groups Table (preserve existing data)
             db.run(
               `CREATE TABLE IF NOT EXISTS spond_groups (
@@ -200,16 +204,16 @@ const initDatabase = () => {
                       PRIMARY KEY (id, member_id),
                       FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
                     )`,
-                    err => {
-                      if (err) {
-                        console.error('❌ Error creating spond_groups table:', err);
-                        return tableReject(err);
-                      }
-                      console.log('✅ spond_groups table created/verified');
+              err => {
+                if (err) {
+                  console.error('❌ Error creating spond_groups table:', err);
+                  return tableReject(err);
+                }
+                console.log('✅ spond_groups table created/verified');
 
-                      // Create Spond Activities Table (preserve existing data)
-                      db.run(
-                        `CREATE TABLE IF NOT EXISTS spond_activities (
+                // Create Spond Activities Table (preserve existing data)
+                db.run(
+                  `CREATE TABLE IF NOT EXISTS spond_activities (
                           id TEXT PRIMARY KEY,
                           group_id TEXT NOT NULL,
                           member_id INTEGER NOT NULL,
@@ -234,16 +238,19 @@ const initDatabase = () => {
                           FOREIGN KEY (group_id, member_id) REFERENCES spond_groups (id, member_id) ON DELETE CASCADE,
                           FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
                         )`,
-                        err => {
-                          if (err) {
-                            console.error('❌ Error creating spond_activities table:', err);
-                            return tableReject(err);
-                          }
-                          console.log('✅ spond_activities table created/verified');
+                  err => {
+                    if (err) {
+                      console.error(
+                        '❌ Error creating spond_activities table:',
+                        err
+                      );
+                      return tableReject(err);
+                    }
+                    console.log('✅ spond_activities table created/verified');
 
-                          // Create Spond Sync Log Table (preserve existing data)
-                          db.run(
-                            `CREATE TABLE IF NOT EXISTS spond_sync_log (
+                    // Create Spond Sync Log Table (preserve existing data)
+                    db.run(
+                      `CREATE TABLE IF NOT EXISTS spond_sync_log (
                               id INTEGER PRIMARY KEY AUTOINCREMENT,
                               member_id INTEGER NOT NULL,
                               group_id TEXT,
@@ -255,93 +262,125 @@ const initDatabase = () => {
                               created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                               FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
                             )`,
+                      err => {
+                        if (err) {
+                          console.error(
+                            '❌ Error creating spond_sync_log table:',
+                            err
+                          );
+                          return tableReject(err);
+                        }
+                        console.log('✅ spond_sync_log table created/verified');
+
+                        // Re-enable foreign key constraints
+                        db.run('PRAGMA foreign_keys = ON', pragmaErr2 => {
+                          if (pragmaErr2) {
+                            console.error(
+                              '❌ Error re-enabling foreign keys:',
+                              pragmaErr2
+                            );
+                            return tableReject(pragmaErr2);
+                          }
+                          console.log('🔧 Re-enabled foreign key constraints');
+                          console.log(
+                            '🎉 All Spond tables created/verified successfully'
+                          );
+                          tableResolve();
+                        });
+                      }
+                    );
+                  }
+                );
+              }
+            );
+          });
+        });
+      };
+
+      // Create all Spond-related indexes after tables are created
+      const createSpondIndexes = () => {
+        return new Promise((indexResolve, indexReject) => {
+          db.run(
+            `
+            CREATE INDEX IF NOT EXISTS idx_spond_groups_member 
+            ON spond_groups(member_id)
+          `,
+            err => {
+              if (err) {
+                console.error('Error creating idx_spond_groups_member:', err);
+                return indexReject(err);
+              }
+
+              db.run(
+                `
+              CREATE INDEX IF NOT EXISTS idx_spond_groups_active 
+              ON spond_groups(member_id, is_active)
+            `,
+                err => {
+                  if (err) {
+                    console.error(
+                      'Error creating idx_spond_groups_active:',
+                      err
+                    );
+                    return indexReject(err);
+                  }
+
+                  db.run(
+                    `
+                CREATE INDEX IF NOT EXISTS idx_spond_activities_member_time 
+                ON spond_activities(member_id, start_timestamp)
+              `,
+                    err => {
+                      if (err) {
+                        console.error(
+                          'Error creating idx_spond_activities_member_time:',
+                          err
+                        );
+                        return indexReject(err);
+                      }
+
+                      db.run(
+                        `
+                  CREATE INDEX IF NOT EXISTS idx_spond_activities_group 
+                  ON spond_activities(group_id)
+                `,
+                        err => {
+                          if (err) {
+                            console.error(
+                              'Error creating idx_spond_activities_group:',
+                              err
+                            );
+                            return indexReject(err);
+                          }
+
+                          db.run(
+                            `
+                    CREATE INDEX IF NOT EXISTS idx_spond_sync_log_member 
+                    ON spond_sync_log(member_id)
+                  `,
                             err => {
                               if (err) {
-                                console.error('❌ Error creating spond_sync_log table:', err);
-                                return tableReject(err);
+                                console.error(
+                                  'Error creating idx_spond_sync_log_member:',
+                                  err
+                                );
+                                return indexReject(err);
                               }
-                              console.log('✅ spond_sync_log table created/verified');
-                              
-                              // Re-enable foreign key constraints
-                              db.run('PRAGMA foreign_keys = ON', (pragmaErr2) => {
-                                if (pragmaErr2) {
-                                  console.error('❌ Error re-enabling foreign keys:', pragmaErr2);
-                                  return tableReject(pragmaErr2);
-                                }
-                                console.log('🔧 Re-enabled foreign key constraints');
-                                console.log('🎉 All Spond tables created/verified successfully');
-                                tableResolve();
-                              });
+
+                              console.log(
+                                'All Spond indexes created successfully'
+                              );
+                              indexResolve();
                             }
                           );
                         }
                       );
                     }
                   );
-          });
-        });
-      };
-
-      db.run(`
-        CREATE INDEX IF NOT EXISTS idx_homework_due_date 
-        ON homework(due_date)
-      `);
-
-      // Create all Spond-related indexes after tables are created
-      const createSpondIndexes = () => {
-        return new Promise((indexResolve, indexReject) => {
-          db.run(`
-            CREATE INDEX IF NOT EXISTS idx_spond_groups_member 
-            ON spond_groups(member_id)
-          `, (err) => {
-            if (err) {
-              console.error('Error creating idx_spond_groups_member:', err);
-              return indexReject(err);
-            }
-
-            db.run(`
-              CREATE INDEX IF NOT EXISTS idx_spond_groups_active 
-              ON spond_groups(member_id, is_active)
-            `, (err) => {
-              if (err) {
-                console.error('Error creating idx_spond_groups_active:', err);
-                return indexReject(err);
-              }
-
-              db.run(`
-                CREATE INDEX IF NOT EXISTS idx_spond_activities_member_time 
-                ON spond_activities(member_id, start_timestamp)
-              `, (err) => {
-                if (err) {
-                  console.error('Error creating idx_spond_activities_member_time:', err);
-                  return indexReject(err);
                 }
-
-                db.run(`
-                  CREATE INDEX IF NOT EXISTS idx_spond_activities_group 
-                  ON spond_activities(group_id)
-                `, (err) => {
-                  if (err) {
-                    console.error('Error creating idx_spond_activities_group:', err);
-                    return indexReject(err);
-                  }
-
-                  db.run(`
-                    CREATE INDEX IF NOT EXISTS idx_spond_sync_log_member 
-                    ON spond_sync_log(member_id)
-                  `, (err) => {
-                    if (err) {
-                      console.error('Error creating idx_spond_sync_log_member:', err);
-                      return indexReject(err);
-                    }
-                    
-                    console.log('All Spond indexes created successfully');
-                    indexResolve();
-                  });
-                });
-              });
-            });
-          });
+              );
+            }
+          );
         });
       };
 
@@ -355,7 +394,7 @@ const initDatabase = () => {
           console.log('Database initialized successfully');
           resolve();
         })
-        .catch((err) => {
+        .catch(err => {
           console.error('Error creating Spond tables or indexes:', err);
           return reject(err);
         });

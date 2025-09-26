@@ -6,15 +6,16 @@ class DataService {
       const errorData = await response
         .json()
         .catch(() => ({ error: 'Network error' }));
-      
+
       // Create a more informative error message
-      let errorMessage = errorData.error || `HTTP error! status: ${response.status}`;
-      
+      let errorMessage =
+        errorData.error || `HTTP error! status: ${response.status}`;
+
       // If there's additional context in the message field, include it
       if (errorData.message && errorData.message !== errorData.error) {
         errorMessage += `: ${errorData.message}`;
       }
-      
+
       // For specific HTTP status codes, provide more context
       if (response.status === 529) {
         errorMessage = `Anthropic API is currently overloaded (Error 529). Please try again in a few moments.`;
@@ -25,7 +26,7 @@ class DataService {
       } else if (response.status >= 500) {
         errorMessage = `Server error (${response.status}). ${errorData.message || 'Please try again later.'}`;
       }
-      
+
       throw new Error(errorMessage);
     }
     if (response.status === 204) {
@@ -163,6 +164,8 @@ class DataService {
   async getHomework(filters = {}) {
     const params = new URLSearchParams();
     if (filters.member_id) params.append('member_id', filters.member_id);
+    if (filters.week_start_date)
+      params.append('week_start_date', filters.week_start_date);
 
     const url = `${API_URL}/api/homework${params.toString() ? '?' + params.toString() : ''}`;
     const response = await fetch(url, {
@@ -212,7 +215,7 @@ class DataService {
     formData.append('member_id', memberId);
     formData.append('api_key', apiKey);
     formData.append('schoolPlanImage', imageFile);
-    
+
     // Pass the selected model if provided
     if (selectedModel) {
       formData.append('selected_model', selectedModel);
@@ -238,13 +241,16 @@ class DataService {
 
   // Spond Activities Sync
   async syncSpondActivities(memberId, startDate, endDate) {
-    const response = await fetch(`${API_URL}/api/spond-activities/${memberId}/sync`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ startDate, endDate }),
-    });
+    const response = await fetch(
+      `${API_URL}/api/spond-activities/${memberId}/sync`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ startDate, endDate }),
+      }
+    );
     return this.handleResponse(response);
   }
 

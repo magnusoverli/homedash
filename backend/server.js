@@ -88,9 +88,9 @@ app.post('/api/test-key', async (req, res) => {
       body: JSON.stringify({
         model: 'claude-3-haiku-20240307',
         max_tokens: 1,
-        messages: [{ role: 'user', content: 'Hi' }]
+        messages: [{ role: 'user', content: 'Hi' }],
       }),
-      signal: controller.signal
+      signal: controller.signal,
     });
 
     clearTimeout(timeoutId);
@@ -114,15 +114,18 @@ app.post('/api/test-key', async (req, res) => {
       });
     } else {
       // Try fallback with models endpoint
-      const modelsResponse = await fetch('https://api.anthropic.com/v1/models', {
-        method: 'GET',
-        headers: {
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'Content-Type': 'application/json',
-        },
-        signal: controller.signal
-      });
+      const modelsResponse = await fetch(
+        'https://api.anthropic.com/v1/models',
+        {
+          method: 'GET',
+          headers: {
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
+        }
+      );
 
       if (modelsResponse.status === 401) {
         return res.json({
@@ -145,19 +148,21 @@ app.post('/api/test-key', async (req, res) => {
     }
   } catch (error) {
     console.error('Error testing API key:', error);
-    
+
     // Check if it's a timeout error
     if (error.name === 'AbortError') {
       return res.status(500).json({
         valid: false,
-        message: 'Request timed out - please check your network connection and try again',
+        message:
+          'Request timed out - please check your network connection and try again',
         error: 'TIMEOUT',
       });
     }
-    
+
     return res.status(500).json({
       valid: false,
-      message: 'Failed to validate API key - please check your network connection',
+      message:
+        'Failed to validate API key - please check your network connection',
       error: error.message,
     });
   }
@@ -186,7 +191,7 @@ app.post('/api/models', async (req, res) => {
         'anthropic-version': '2023-06-01',
         'Content-Type': 'application/json',
       },
-      signal: controller.signal
+      signal: controller.signal,
     });
 
     clearTimeout(timeoutId);
@@ -200,7 +205,7 @@ app.post('/api/models', async (req, res) => {
 
     if (modelsResponse.ok) {
       const modelsData = await modelsResponse.json();
-      
+
       // Transform the response to match our frontend format
       const models = modelsData.data.map(model => ({
         id: model.id,
@@ -208,10 +213,15 @@ app.post('/api/models', async (req, res) => {
         created_at: model.created_at,
       }));
 
-      console.log(`Successfully fetched ${models.length} models from Anthropic API`);
+      console.log(
+        `Successfully fetched ${models.length} models from Anthropic API`
+      );
       res.json({ models });
     } else {
-      console.error('Anthropic API returned non-200 status:', modelsResponse.status);
+      console.error(
+        'Anthropic API returned non-200 status:',
+        modelsResponse.status
+      );
       return res.status(modelsResponse.status).json({
         error: `Failed to fetch models from Anthropic API (${modelsResponse.status})`,
         models: [],
@@ -219,16 +229,17 @@ app.post('/api/models', async (req, res) => {
     }
   } catch (error) {
     console.error('Error fetching models from API:', error);
-    
+
     // Check if it's a timeout error
     if (error.name === 'AbortError') {
       return res.status(500).json({
         error: 'Request timed out while fetching models',
-        message: 'The request to Anthropic API timed out. Please check your network connection.',
+        message:
+          'The request to Anthropic API timed out. Please check your network connection.',
         models: [],
       });
     }
-    
+
     // Check if it's an auth error vs network error
     if (error.message && error.message.includes('401')) {
       return res.status(401).json({
@@ -236,7 +247,7 @@ app.post('/api/models', async (req, res) => {
         models: [],
       });
     }
-    
+
     // For other network errors, return error
     res.status(500).json({
       error: 'Failed to fetch models from Anthropic API',
@@ -260,17 +271,19 @@ app.post('/api/test-spond-credentials', async (req, res) => {
     return res.status(400).json({
       valid: false,
       message: 'Email and password are required',
-      error: 'MISSING_CREDENTIALS'
+      error: 'MISSING_CREDENTIALS',
     });
   }
 
   try {
     console.log('🚀 Starting REAL Spond API authentication...');
-    
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
-    console.log('📡 Making actual API call to: https://api.spond.com/core/v1/login');
+    console.log(
+      '📡 Making actual API call to: https://api.spond.com/core/v1/login'
+    );
     console.log('📤 Request headers: Content-Type: application/json');
     console.log('📤 Request body: { email: "***", password: "***" }');
 
@@ -282,15 +295,17 @@ app.post('/api/test-spond-credentials', async (req, res) => {
       },
       body: JSON.stringify({
         email: email,
-        password: password
+        password: password,
       }),
-      signal: controller.signal
+      signal: controller.signal,
     });
 
     clearTimeout(timeoutId);
 
     console.log(`📥 Real Spond API response status: ${response.status}`);
-    console.log(`📥 Real Spond API response status text: ${response.statusText}`);
+    console.log(
+      `📥 Real Spond API response status text: ${response.statusText}`
+    );
 
     if (response.ok) {
       const responseData = await response.json();
@@ -301,15 +316,17 @@ app.post('/api/test-spond-credentials', async (req, res) => {
       return res.json({
         valid: true,
         message: 'Spond credentials validated successfully! ✓',
-        responseData: responseData
+        responseData: responseData,
       });
     } else {
-      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: 'Unknown error' }));
       console.log('❌ Spond API authentication: FAILED');
       console.log(`📥 Real error response status: ${response.status}`);
       console.log('📥 Real error response body:');
       console.log(JSON.stringify(errorData, null, 2));
-      
+
       let errorMessage = 'Invalid Spond credentials';
       if (response.status === 401) {
         errorMessage = 'Invalid email or password';
@@ -323,31 +340,31 @@ app.post('/api/test-spond-credentials', async (req, res) => {
         valid: false,
         message: errorMessage,
         error: errorData.error || 'AUTHENTICATION_FAILED',
-        statusCode: response.status
+        statusCode: response.status,
       });
     }
-
   } catch (error) {
     console.error('💥 Spond credentials test error:', error);
     console.log('🔍 Error analysis:');
     console.log(`  - Type: ${error.constructor.name}`);
     console.log(`  - Message: ${error.message}`);
     console.log(`  - Code: ${error.code || 'N/A'}`);
-    
+
     if (error.name === 'AbortError') {
       console.log('⏰ Request timed out');
       return res.status(500).json({
         valid: false,
-        message: 'Request timed out while connecting to Spond. Please try again.',
-        error: 'TIMEOUT'
+        message:
+          'Request timed out while connecting to Spond. Please try again.',
+        error: 'TIMEOUT',
       });
     }
-    
+
     return res.status(500).json({
       valid: false,
       message: 'Failed to validate Spond credentials due to network error',
       error: 'NETWORK_ERROR',
-      details: error.message
+      details: error.message,
     });
   } finally {
     console.log('🏁 Spond credentials test completed');
@@ -366,7 +383,7 @@ app.post('/api/spond-credentials/:memberId', async (req, res) => {
 
   if (!email || !password) {
     return res.status(400).json({
-      error: 'Email and password are required'
+      error: 'Email and password are required',
     });
   }
 
@@ -385,31 +402,36 @@ app.post('/api/spond-credentials/:memberId', async (req, res) => {
       lastAuthenticated: new Date().toISOString(),
       authenticationCount: 1, // Track how many times user has authenticated
       // Token validation history
-      validationHistory: JSON.stringify([{
-        timestamp: new Date().toISOString(),
-        action: 'TOKEN_CREATED',
-        success: true,
-        notes: 'Initial authentication and token creation'
-      }])
+      validationHistory: JSON.stringify([
+        {
+          timestamp: new Date().toISOString(),
+          action: 'TOKEN_CREATED',
+          success: true,
+          notes: 'Initial authentication and token creation',
+        },
+      ]),
     };
 
     await runQuery(
       `INSERT INTO settings (key, value) VALUES (?, ?)
        ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP`,
-      [`spond_credentials_${memberId}`, JSON.stringify(credentialData), JSON.stringify(credentialData)]
+      [
+        `spond_credentials_${memberId}`,
+        JSON.stringify(credentialData),
+        JSON.stringify(credentialData),
+      ]
     );
 
     console.log(`✅ Spond credentials stored for member ${memberId}`);
-    
+
     res.json({
       success: true,
-      message: 'Spond credentials stored successfully'
+      message: 'Spond credentials stored successfully',
     });
-
   } catch (error) {
     console.error('❌ Error storing Spond credentials:', error);
     res.status(500).json({
-      error: 'Failed to store Spond credentials'
+      error: 'Failed to store Spond credentials',
     });
   }
 });
@@ -421,23 +443,24 @@ app.get('/api/spond-credentials/:memberId', async (req, res) => {
   console.log(`🔍 Retrieving Spond credentials for member ${memberId}`);
 
   try {
-    const result = await getOne(
-      'SELECT value FROM settings WHERE key = ?',
-      [`spond_credentials_${memberId}`]
-    );
+    const result = await getOne('SELECT value FROM settings WHERE key = ?', [
+      `spond_credentials_${memberId}`,
+    ]);
 
     if (!result) {
       console.log(`❌ No Spond credentials found for member ${memberId}`);
       return res.json({
         hasCredentials: false,
-        authenticated: false
+        authenticated: false,
       });
     }
 
     const credentialData = JSON.parse(result.value);
     console.log(`✅ Found Spond credentials for member ${memberId}`);
     console.log(`📧 Email: ${credentialData.email}`);
-    console.log(`🔑 Has login token: ${credentialData.loginToken ? 'Yes' : 'No'}`);
+    console.log(
+      `🔑 Has login token: ${credentialData.loginToken ? 'Yes' : 'No'}`
+    );
     console.log(`⏰ Last authenticated: ${credentialData.lastAuthenticated}`);
 
     // Return credential info without exposing password
@@ -446,15 +469,16 @@ app.get('/api/spond-credentials/:memberId', async (req, res) => {
       authenticated: !!credentialData.loginToken,
       email: credentialData.email,
       lastAuthenticated: credentialData.lastAuthenticated,
-      userData: credentialData.userData ? JSON.parse(credentialData.userData) : null
+      userData: credentialData.userData
+        ? JSON.parse(credentialData.userData)
+        : null,
     });
-
   } catch (error) {
     console.error('❌ Error retrieving Spond credentials:', error);
     res.status(500).json({
       error: 'Failed to retrieve Spond credentials',
       hasCredentials: false,
-      authenticated: false
+      authenticated: false,
     });
   }
 });
@@ -466,29 +490,29 @@ app.delete('/api/spond-credentials/:memberId', async (req, res) => {
   console.log(`🗑️ Deleting Spond credentials for member ${memberId}`);
 
   try {
-    const result = await runQuery(
-      'DELETE FROM settings WHERE key = ?',
-      [`spond_credentials_${memberId}`]
-    );
+    const result = await runQuery('DELETE FROM settings WHERE key = ?', [
+      `spond_credentials_${memberId}`,
+    ]);
 
     if (result.changes === 0) {
-      console.log(`❌ No Spond credentials found to delete for member ${memberId}`);
+      console.log(
+        `❌ No Spond credentials found to delete for member ${memberId}`
+      );
       return res.status(404).json({
-        error: 'No Spond credentials found for this member'
+        error: 'No Spond credentials found for this member',
       });
     }
 
     console.log(`✅ Spond credentials deleted for member ${memberId}`);
-    
+
     res.json({
       success: true,
-      message: 'Spond credentials deleted successfully'
+      message: 'Spond credentials deleted successfully',
     });
-
   } catch (error) {
     console.error('❌ Error deleting Spond credentials:', error);
     res.status(500).json({
-      error: 'Failed to delete Spond credentials'
+      error: 'Failed to delete Spond credentials',
     });
   }
 });
@@ -501,17 +525,16 @@ app.post('/api/validate-spond-token/:memberId', async (req, res) => {
 
   try {
     // Get stored credentials
-    const result = await getOne(
-      'SELECT value FROM settings WHERE key = ?',
-      [`spond_credentials_${memberId}`]
-    );
+    const result = await getOne('SELECT value FROM settings WHERE key = ?', [
+      `spond_credentials_${memberId}`,
+    ]);
 
     if (!result) {
       console.log(`❌ No stored credentials found for member ${memberId}`);
       return res.status(404).json({
         valid: false,
         error: 'NO_CREDENTIALS',
-        message: 'No stored credentials found'
+        message: 'No stored credentials found',
       });
     }
 
@@ -522,12 +545,16 @@ app.post('/api/validate-spond-token/:memberId', async (req, res) => {
       return res.status(404).json({
         valid: false,
         error: 'NO_TOKEN',
-        message: 'No stored token found'
+        message: 'No stored token found',
       });
     }
 
-    console.log(`🔑 Testing stored token created at: ${credentialData.tokenCreatedAt}`);
-    console.log(`⏰ Token age: ${Math.round((new Date() - new Date(credentialData.tokenCreatedAt)) / (1000 * 60 * 60 * 24))} days`);
+    console.log(
+      `🔑 Testing stored token created at: ${credentialData.tokenCreatedAt}`
+    );
+    console.log(
+      `⏰ Token age: ${Math.round((new Date() - new Date(credentialData.tokenCreatedAt)) / (1000 * 60 * 60 * 24))} days`
+    );
 
     // Test the token by making a simple API call to Spond
     const controller = new AbortController();
@@ -537,16 +564,19 @@ app.post('/api/validate-spond-token/:memberId', async (req, res) => {
     const response = await fetch('https://api.spond.com/core/v1/groups/', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${credentialData.loginToken}`,
+        Authorization: `Bearer ${credentialData.loginToken}`,
         'Content-Type': 'application/json',
       },
-      signal: controller.signal
+      signal: controller.signal,
     });
 
     clearTimeout(timeoutId);
 
     const now = new Date().toISOString();
-    const tokenAge = Math.round((new Date() - new Date(credentialData.tokenCreatedAt)) / (1000 * 60 * 60 * 24));
+    const tokenAge = Math.round(
+      (new Date() - new Date(credentialData.tokenCreatedAt)) /
+        (1000 * 60 * 60 * 24)
+    );
 
     // Parse existing validation history
     let validationHistory = [];
@@ -557,8 +587,10 @@ app.post('/api/validate-spond-token/:memberId', async (req, res) => {
     }
 
     if (response.ok) {
-      console.log(`✅ Token validation SUCCESS - Token is still valid after ${tokenAge} days`);
-      
+      console.log(
+        `✅ Token validation SUCCESS - Token is still valid after ${tokenAge} days`
+      );
+
       // Add successful validation to history
       validationHistory.push({
         timestamp: now,
@@ -566,14 +598,14 @@ app.post('/api/validate-spond-token/:memberId', async (req, res) => {
         success: true,
         tokenAgeDays: tokenAge,
         responseStatus: response.status,
-        notes: `Token still valid after ${tokenAge} days`
+        notes: `Token still valid after ${tokenAge} days`,
       });
 
       // Update last validated timestamp
       const updatedCredentials = {
         ...credentialData,
         tokenLastValidated: now,
-        validationHistory: JSON.stringify(validationHistory)
+        validationHistory: JSON.stringify(validationHistory),
       };
 
       await runQuery(
@@ -581,19 +613,22 @@ app.post('/api/validate-spond-token/:memberId', async (req, res) => {
         [JSON.stringify(updatedCredentials), `spond_credentials_${memberId}`]
       );
 
-      console.log(`📊 Token lifecycle update: Still valid after ${tokenAge} days`);
+      console.log(
+        `📊 Token lifecycle update: Still valid after ${tokenAge} days`
+      );
 
       return res.json({
         valid: true,
         tokenAgeDays: tokenAge,
         tokenCreatedAt: credentialData.tokenCreatedAt,
         lastValidated: now,
-        message: `Token is valid (${tokenAge} days old)`
+        message: `Token is valid (${tokenAge} days old)`,
       });
-
     } else {
-      console.log(`❌ Token validation FAILED - Token invalid after ${tokenAge} days (Status: ${response.status})`);
-      
+      console.log(
+        `❌ Token validation FAILED - Token invalid after ${tokenAge} days (Status: ${response.status})`
+      );
+
       // Calculate token lifespan
       const tokenLifespanDays = tokenAge;
 
@@ -604,7 +639,7 @@ app.post('/api/validate-spond-token/:memberId', async (req, res) => {
         success: false,
         tokenAgeDays: tokenAge,
         responseStatus: response.status,
-        notes: `Token became invalid after ${tokenAge} days - Status: ${response.status}`
+        notes: `Token became invalid after ${tokenAge} days - Status: ${response.status}`,
       });
 
       // Update credentials with invalidation info
@@ -612,7 +647,7 @@ app.post('/api/validate-spond-token/:memberId', async (req, res) => {
         ...credentialData,
         tokenInvalidatedAt: now,
         tokenLifespanDays: tokenLifespanDays,
-        validationHistory: JSON.stringify(validationHistory)
+        validationHistory: JSON.stringify(validationHistory),
       };
 
       await runQuery(
@@ -621,7 +656,9 @@ app.post('/api/validate-spond-token/:memberId', async (req, res) => {
       );
 
       console.log(`📊 TOKEN LIFESPAN DISCOVERED: ${tokenLifespanDays} days`);
-      console.log(`🔬 Research data: Token created ${credentialData.tokenCreatedAt}, invalidated ${now}`);
+      console.log(
+        `🔬 Research data: Token created ${credentialData.tokenCreatedAt}, invalidated ${now}`
+      );
 
       return res.status(401).json({
         valid: false,
@@ -635,26 +672,25 @@ app.post('/api/validate-spond-token/:memberId', async (req, res) => {
           tokenCreated: credentialData.tokenCreatedAt,
           tokenInvalidated: now,
           lifespanDays: tokenLifespanDays,
-          validationHistory: validationHistory
-        }
+          validationHistory: validationHistory,
+        },
       });
     }
-
   } catch (error) {
     console.error('💥 Error validating Spond token:', error);
-    
+
     if (error.name === 'AbortError') {
       return res.status(500).json({
         valid: false,
         error: 'TIMEOUT',
-        message: 'Token validation timed out'
+        message: 'Token validation timed out',
       });
     }
-    
+
     return res.status(500).json({
       valid: false,
       error: 'VALIDATION_ERROR',
-      message: 'Failed to validate token due to network error'
+      message: 'Failed to validate token due to network error',
     });
   }
 });
@@ -667,16 +703,15 @@ app.get('/api/spond-groups/:memberId', async (req, res) => {
 
   try {
     // Get stored credentials
-    const result = await getOne(
-      'SELECT value FROM settings WHERE key = ?',
-      [`spond_credentials_${memberId}`]
-    );
+    const result = await getOne('SELECT value FROM settings WHERE key = ?', [
+      `spond_credentials_${memberId}`,
+    ]);
 
     if (!result) {
       console.log(`❌ No stored credentials found for member ${memberId}`);
       return res.status(404).json({
         error: 'NO_CREDENTIALS',
-        message: 'No stored credentials found'
+        message: 'No stored credentials found',
       });
     }
 
@@ -686,7 +721,7 @@ app.get('/api/spond-groups/:memberId', async (req, res) => {
       console.log(`❌ No stored token found for member ${memberId}`);
       return res.status(404).json({
         error: 'NO_TOKEN',
-        message: 'No stored token found'
+        message: 'No stored token found',
       });
     }
 
@@ -700,10 +735,10 @@ app.get('/api/spond-groups/:memberId', async (req, res) => {
     const response = await fetch('https://api.spond.com/core/v1/groups/', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${credentialData.loginToken}`,
+        Authorization: `Bearer ${credentialData.loginToken}`,
         'Content-Type': 'application/json',
       },
-      signal: controller.signal
+      signal: controller.signal,
     });
 
     clearTimeout(timeoutId);
@@ -713,17 +748,20 @@ app.get('/api/spond-groups/:memberId', async (req, res) => {
     if (response.ok) {
       const groupsData = await response.json();
       console.log(`✅ Successfully fetched ${groupsData.length} groups`);
-      
+
       // Log group names for debugging
       if (groupsData.length > 0) {
-        console.log(`📋 Groups found:`, groupsData.map(g => `"${g.name}" (${g.id})`).join(', '));
+        console.log(
+          `📋 Groups found:`,
+          groupsData.map(g => `"${g.name}" (${g.id})`).join(', ')
+        );
       } else {
         console.log(`⚠️ No groups found for this user`);
       }
 
       // Store/update groups in spond_groups table
       console.log(`💾 Storing groups in database for member ${memberId}`);
-      
+
       try {
         for (const group of groupsData) {
           // Check if group already exists to preserve is_active state
@@ -731,7 +769,7 @@ app.get('/api/spond-groups/:memberId', async (req, res) => {
             'SELECT is_active FROM spond_groups WHERE id = ? AND member_id = ?',
             [group.id, memberId]
           );
-          
+
           if (existingGroup) {
             // Update only metadata fields, preserve is_active
             await runQuery(
@@ -743,7 +781,7 @@ app.get('/api/spond-groups/:memberId', async (req, res) => {
                 group.description || null,
                 group.imageUrl || null,
                 group.id,
-                memberId
+                memberId,
               ]
             );
           } else {
@@ -756,12 +794,14 @@ app.get('/api/spond-groups/:memberId', async (req, res) => {
                 memberId,
                 group.name,
                 group.description || null,
-                group.imageUrl || null
+                group.imageUrl || null,
               ]
             );
           }
         }
-        console.log(`✅ Successfully stored ${groupsData.length} groups in database`);
+        console.log(
+          `✅ Successfully stored ${groupsData.length} groups in database`
+        );
       } catch (dbError) {
         console.error('❌ Error storing groups in database:', dbError);
         // Continue with API response even if database storage fails
@@ -780,7 +820,7 @@ app.get('/api/spond-groups/:memberId', async (req, res) => {
         return res.json({
           success: true,
           groups: storedGroups,
-          message: `Found ${storedGroups.length} groups`
+          message: `Found ${storedGroups.length} groups`,
         });
       } catch (dbError) {
         console.error('❌ Error retrieving stored groups:', dbError);
@@ -793,47 +833,47 @@ app.get('/api/spond-groups/:memberId', async (req, res) => {
             description: g.description,
             image_url: g.imageUrl,
             is_active: true,
-            last_synced_at: null
+            last_synced_at: null,
           })),
-          message: `Found ${groupsData.length} groups`
+          message: `Found ${groupsData.length} groups`,
         });
       }
-
     } else {
       console.log(`❌ Groups fetch failed with status: ${response.status}`);
-      
+
       if (response.status === 401) {
         console.log(`🔒 Token appears to be expired - authentication required`);
         return res.status(401).json({
           error: 'TOKEN_EXPIRED',
-          message: 'Authentication token has expired'
+          message: 'Authentication token has expired',
         });
       }
 
-      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: 'Unknown error' }));
       console.log(`💥 Error response:`, errorData);
 
       return res.status(response.status).json({
         error: 'GROUPS_FETCH_FAILED',
         message: `Failed to fetch groups: ${errorData.error || 'Unknown error'}`,
-        statusCode: response.status
+        statusCode: response.status,
       });
     }
-
   } catch (error) {
     console.error('💥 Error fetching Spond groups:', error);
-    
+
     if (error.name === 'AbortError') {
       console.log(`⏱️ Groups fetch timed out after 15 seconds`);
       return res.status(500).json({
         error: 'TIMEOUT',
-        message: 'Groups fetch timed out'
+        message: 'Groups fetch timed out',
       });
     }
-    
+
     return res.status(500).json({
       error: 'FETCH_ERROR',
-      message: 'Failed to fetch groups due to network error'
+      message: 'Failed to fetch groups due to network error',
     });
   }
 });
@@ -843,12 +883,15 @@ app.post('/api/spond-groups/:memberId/selections', async (req, res) => {
   const { memberId } = req.params;
   const { selectedGroupIds } = req.body;
 
-  console.log(`💾 Saving group selections for member ${memberId}:`, selectedGroupIds);
+  console.log(
+    `💾 Saving group selections for member ${memberId}:`,
+    selectedGroupIds
+  );
 
   if (!Array.isArray(selectedGroupIds)) {
     return res.status(400).json({
       error: 'INVALID_INPUT',
-      message: 'selectedGroupIds must be an array'
+      message: 'selectedGroupIds must be an array',
     });
   }
 
@@ -873,8 +916,10 @@ app.post('/api/spond-groups/:memberId/selections', async (req, res) => {
     // Clean up activities from deselected groups
     // Due to the foreign key constraint, activities from inactive groups will be automatically excluded
     // from queries, but we can optionally delete them to keep the database clean
-    console.log(`🧹 Cleaning up activities from deselected groups for member ${memberId}`);
-    
+    console.log(
+      `🧹 Cleaning up activities from deselected groups for member ${memberId}`
+    );
+
     const cleanupResult = await runQuery(
       `DELETE FROM spond_activities 
        WHERE member_id = ? 
@@ -886,24 +931,29 @@ app.post('/api/spond-groups/:memberId/selections', async (req, res) => {
        )`,
       [memberId]
     );
-    
-    console.log(`🗑️ Cleaned up ${cleanupResult.changes} activities from deselected groups`);
 
-    console.log(`✅ Successfully updated group selections for member ${memberId}`);
-    console.log(`📊 Active groups: ${selectedGroupIds.length}, Inactive groups: ${await getOne('SELECT COUNT(*) as count FROM spond_groups WHERE member_id = ? AND is_active = FALSE', [memberId])?.count || 0}`);
+    console.log(
+      `🗑️ Cleaned up ${cleanupResult.changes} activities from deselected groups`
+    );
+
+    console.log(
+      `✅ Successfully updated group selections for member ${memberId}`
+    );
+    console.log(
+      `📊 Active groups: ${selectedGroupIds.length}, Inactive groups: ${(await getOne('SELECT COUNT(*) as count FROM spond_groups WHERE member_id = ? AND is_active = FALSE', [memberId])?.count) || 0}`
+    );
 
     res.json({
       success: true,
       message: `Updated selections for ${selectedGroupIds.length} groups`,
       activeGroups: selectedGroupIds.length,
-      activitiesCleanedUp: cleanupResult.changes
+      activitiesCleanedUp: cleanupResult.changes,
     });
-
   } catch (error) {
     console.error('❌ Error saving group selections:', error);
     res.status(500).json({
       error: 'SAVE_ERROR',
-      message: 'Failed to save group selections'
+      message: 'Failed to save group selections',
     });
   }
 });
@@ -927,7 +977,7 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
       console.log(`❌ No stored credentials found for member ${memberId}`);
       return res.status(404).json({
         error: 'NO_CREDENTIALS',
-        message: 'No stored credentials found'
+        message: 'No stored credentials found',
       });
     }
 
@@ -937,7 +987,7 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
       console.log(`❌ No stored token found for member ${memberId}`);
       return res.status(404).json({
         error: 'NO_TOKEN',
-        message: 'No stored token found'
+        message: 'No stored token found',
       });
     }
 
@@ -953,24 +1003,36 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
         success: true,
         message: 'No active groups to sync',
         activitiesSynced: 0,
-        groupsSynced: 0
+        groupsSynced: 0,
       });
     }
 
-    console.log(`📋 Found ${activeGroups.length} active groups: ${activeGroups.map(g => g.name).join(', ')}`);
+    console.log(
+      `📋 Found ${activeGroups.length} active groups: ${activeGroups.map(g => g.name).join(', ')}`
+    );
 
     let totalActivitiesSynced = 0;
     const syncResults = [];
 
     // Fetch activities for each active group
     for (const group of activeGroups) {
-      console.log(`🔍 Fetching activities for group "${group.name}" (${group.id})`);
-      
+      console.log(
+        `🔍 Fetching activities for group "${group.name}" (${group.id})`
+      );
+
       try {
         // Build Spond API URL with date filters (correct endpoint from documentation)
         const apiUrl = new URL('https://api.spond.com/core/v1/sponds/');
-        if (startDate) apiUrl.searchParams.append('minStartTimestamp', `${startDate}T00:00:00.000Z`);
-        if (endDate) apiUrl.searchParams.append('maxEndTimestamp', `${endDate}T23:59:59.999Z`);
+        if (startDate)
+          apiUrl.searchParams.append(
+            'minStartTimestamp',
+            `${startDate}T00:00:00.000Z`
+          );
+        if (endDate)
+          apiUrl.searchParams.append(
+            'maxEndTimestamp',
+            `${endDate}T23:59:59.999Z`
+          );
         apiUrl.searchParams.append('groupId', group.id);
         apiUrl.searchParams.append('max', '100');
         apiUrl.searchParams.append('scheduled', 'true');
@@ -983,30 +1045,34 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
         const response = await fetch(apiUrl.toString(), {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${credentialData.loginToken}`,
+            Authorization: `Bearer ${credentialData.loginToken}`,
             'Content-Type': 'application/json',
           },
-          signal: controller.signal
+          signal: controller.signal,
         });
 
         clearTimeout(timeoutId);
 
         if (!response.ok) {
-          console.error(`❌ Failed to fetch activities for group ${group.name}: ${response.status}`);
+          console.error(
+            `❌ Failed to fetch activities for group ${group.name}: ${response.status}`
+          );
           syncResults.push({
             groupId: group.id,
             groupName: group.name,
             success: false,
             error: `HTTP ${response.status}`,
-            activitiesCount: 0
+            activitiesCount: 0,
           });
           continue;
         }
 
         const activitiesData = await response.json();
         const activities = activitiesData || [];
-        
-        console.log(`📊 Found ${activities.length} activities for group "${group.name}"`);
+
+        console.log(
+          `📊 Found ${activities.length} activities for group "${group.name}"`
+        );
 
         let groupActivitiesSynced = 0;
 
@@ -1030,7 +1096,9 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
                 activity.description || null,
                 activity.startTimestamp,
                 activity.endTimestamp,
-                activity.location?.feature || activity.location?.address || null,
+                activity.location?.feature ||
+                  activity.location?.address ||
+                  null,
                 activity.location?.address || null,
                 activity.location?.latitude || null,
                 activity.location?.longitude || null,
@@ -1038,9 +1106,15 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
                 activity.cancelled || false,
                 activity.maxAccepted || null,
                 activity.autoAccept || false,
-                activity.responses?.[memberId]?.accepted ? 'accepted' : activity.responses?.[memberId]?.responded ? 'declined' : null,
-                activity.organizer?.firstName || activity.owners?.[0]?.profile?.firstName || null,
-                JSON.stringify(activity)
+                activity.responses?.[memberId]?.accepted
+                  ? 'accepted'
+                  : activity.responses?.[memberId]?.responded
+                    ? 'declined'
+                    : null,
+                activity.organizer?.firstName ||
+                  activity.owners?.[0]?.profile?.firstName ||
+                  null,
+                JSON.stringify(activity),
               ]
             );
             groupActivitiesSynced++;
@@ -1050,7 +1124,7 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
         }
 
         totalActivitiesSynced += groupActivitiesSynced;
-        
+
         // Update last synced timestamp for this group
         await runQuery(
           'UPDATE spond_groups SET last_synced_at = CURRENT_TIMESTAMP WHERE id = ? AND member_id = ?',
@@ -1061,11 +1135,12 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
           groupId: group.id,
           groupName: group.name,
           success: true,
-          activitiesCount: groupActivitiesSynced
+          activitiesCount: groupActivitiesSynced,
         });
 
-        console.log(`✅ Synced ${groupActivitiesSynced} activities for group "${group.name}"`);
-
+        console.log(
+          `✅ Synced ${groupActivitiesSynced} activities for group "${group.name}"`
+        );
       } catch (error) {
         console.error(`❌ Error syncing group ${group.name}:`, error);
         syncResults.push({
@@ -1073,7 +1148,7 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
           groupName: group.name,
           success: false,
           error: error.message,
-          activitiesCount: 0
+          activitiesCount: 0,
         });
       }
     }
@@ -1088,26 +1163,27 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
           memberId,
           'activities',
           totalActivitiesSynced > 0 ? 'success' : 'partial',
-          totalActivitiesSynced
+          totalActivitiesSynced,
         ]
       );
     } catch (logError) {
       console.error('❌ Error logging sync operation:', logError);
     }
 
-    console.log(`🎯 Sync completed: ${totalActivitiesSynced} total activities synced across ${activeGroups.length} groups`);
+    console.log(
+      `🎯 Sync completed: ${totalActivitiesSynced} total activities synced across ${activeGroups.length} groups`
+    );
 
     res.json({
       success: true,
       message: `Synced ${totalActivitiesSynced} activities from ${activeGroups.length} groups`,
       activitiesSynced: totalActivitiesSynced,
       groupsSynced: activeGroups.length,
-      syncResults: syncResults
+      syncResults: syncResults,
     });
-
   } catch (error) {
     console.error('❌ Error syncing Spond activities:', error);
-    
+
     // Log failed sync
     try {
       await runQuery(
@@ -1123,13 +1199,13 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
     if (error.name === 'AbortError') {
       return res.status(500).json({
         error: 'TIMEOUT',
-        message: 'Request to Spond API timed out'
+        message: 'Request to Spond API timed out',
       });
     }
 
     res.status(500).json({
       error: 'SYNC_ERROR',
-      message: 'Failed to sync Spond activities'
+      message: 'Failed to sync Spond activities',
     });
   }
 });
@@ -1143,49 +1219,60 @@ app.get('/api/spond-token-research', async (req, res) => {
       'SELECT key, value FROM settings WHERE key LIKE "spond_credentials_%"'
     );
 
-    const researchData = allSettings.map(setting => {
-      const memberId = setting.key.replace('spond_credentials_', '');
-      const data = JSON.parse(setting.value);
-      
-      return {
-        memberId,
-        email: data.email,
-        tokenCreatedAt: data.tokenCreatedAt,
-        tokenLastValidated: data.tokenLastValidated,
-        tokenInvalidatedAt: data.tokenInvalidatedAt,
-        tokenLifespanDays: data.tokenLifespanDays,
-        authenticationCount: data.authenticationCount || 1,
-        validationHistory: JSON.parse(data.validationHistory || '[]')
-      };
-    }).filter(data => data.tokenCreatedAt); // Only include entries with tokens
+    const researchData = allSettings
+      .map(setting => {
+        const memberId = setting.key.replace('spond_credentials_', '');
+        const data = JSON.parse(setting.value);
+
+        return {
+          memberId,
+          email: data.email,
+          tokenCreatedAt: data.tokenCreatedAt,
+          tokenLastValidated: data.tokenLastValidated,
+          tokenInvalidatedAt: data.tokenInvalidatedAt,
+          tokenLifespanDays: data.tokenLifespanDays,
+          authenticationCount: data.authenticationCount || 1,
+          validationHistory: JSON.parse(data.validationHistory || '[]'),
+        };
+      })
+      .filter(data => data.tokenCreatedAt); // Only include entries with tokens
 
     console.log(`📈 Found ${researchData.length} token datasets for analysis`);
 
     // Calculate statistics
     const validTokens = researchData.filter(d => !d.tokenInvalidatedAt);
     const invalidatedTokens = researchData.filter(d => d.tokenInvalidatedAt);
-    const knownLifespans = invalidatedTokens.filter(d => d.tokenLifespanDays).map(d => d.tokenLifespanDays);
+    const knownLifespans = invalidatedTokens
+      .filter(d => d.tokenLifespanDays)
+      .map(d => d.tokenLifespanDays);
 
     const stats = {
       totalTokens: researchData.length,
       activeTokens: validTokens.length,
       invalidatedTokens: invalidatedTokens.length,
-      averageLifespan: knownLifespans.length > 0 ? Math.round(knownLifespans.reduce((a, b) => a + b, 0) / knownLifespans.length) : null,
-      minLifespan: knownLifespans.length > 0 ? Math.min(...knownLifespans) : null,
-      maxLifespan: knownLifespans.length > 0 ? Math.max(...knownLifespans) : null,
-      knownLifespans: knownLifespans
+      averageLifespan:
+        knownLifespans.length > 0
+          ? Math.round(
+              knownLifespans.reduce((a, b) => a + b, 0) / knownLifespans.length
+            )
+          : null,
+      minLifespan:
+        knownLifespans.length > 0 ? Math.min(...knownLifespans) : null,
+      maxLifespan:
+        knownLifespans.length > 0 ? Math.max(...knownLifespans) : null,
+      knownLifespans: knownLifespans,
     };
 
     res.json({
       statistics: stats,
       tokenData: researchData,
-      researchNotes: 'This data helps determine Spond API token validity periods'
+      researchNotes:
+        'This data helps determine Spond API token validity periods',
     });
-
   } catch (error) {
     console.error('❌ Error retrieving token research data:', error);
     res.status(500).json({
-      error: 'Failed to retrieve research data'
+      error: 'Failed to retrieve research data',
     });
   }
 });
@@ -1210,7 +1297,7 @@ app.post('/api/messages', async (req, res) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(messageData),
-      signal: controller.signal
+      signal: controller.signal,
     });
 
     clearTimeout(timeoutId);
@@ -1224,14 +1311,14 @@ app.post('/api/messages', async (req, res) => {
     res.json(data);
   } catch (error) {
     console.error('Error proxying message:', error);
-    
+
     if (error.name === 'AbortError') {
       return res.status(500).json({
         error: 'Request timed out',
         message: 'The request to Anthropic API timed out. Please try again.',
       });
     }
-    
+
     res.status(500).json({
       error: 'Failed to proxy message',
       message: error.message,
@@ -1305,18 +1392,20 @@ app.delete('/api/family-members/:id', async (req, res) => {
 
   try {
     // First, check if the member exists
-    const member = await getOne('SELECT * FROM family_members WHERE id = ?', [id]);
+    const member = await getOne('SELECT * FROM family_members WHERE id = ?', [
+      id,
+    ]);
     if (!member) {
       return res.status(404).json({ error: 'Family member not found' });
     }
 
     // Get counts of related data before deletion (for logging)
     const activitiesCount = await getOne(
-      'SELECT COUNT(*) as count FROM activities WHERE member_id = ?', 
+      'SELECT COUNT(*) as count FROM activities WHERE member_id = ?',
       [id]
     );
     const homeworkCount = await getOne(
-      'SELECT COUNT(*) as count FROM homework WHERE member_id = ?', 
+      'SELECT COUNT(*) as count FROM homework WHERE member_id = ?',
       [id]
     );
 
@@ -1325,19 +1414,21 @@ app.delete('/api/family-members/:id', async (req, res) => {
     console.log(`- Will delete ${homeworkCount.count} homework entries`);
 
     // Delete the family member (CASCADE will handle related data)
-    const result = await runQuery('DELETE FROM family_members WHERE id = ?', [id]);
-    
+    const result = await runQuery('DELETE FROM family_members WHERE id = ?', [
+      id,
+    ]);
+
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Family member not found' });
     }
 
     // Verify cleanup was successful
     const remainingActivities = await getOne(
-      'SELECT COUNT(*) as count FROM activities WHERE member_id = ?', 
+      'SELECT COUNT(*) as count FROM activities WHERE member_id = ?',
       [id]
     );
     const remainingHomework = await getOne(
-      'SELECT COUNT(*) as count FROM homework WHERE member_id = ?', 
+      'SELECT COUNT(*) as count FROM homework WHERE member_id = ?',
       [id]
     );
 
@@ -1347,11 +1438,13 @@ app.delete('/api/family-members/:id', async (req, res) => {
 
     // If foreign key constraints failed, manually clean up
     if (remainingActivities.count > 0 || remainingHomework.count > 0) {
-      console.log('Foreign key constraints may not be working. Manually cleaning up...');
-      
+      console.log(
+        'Foreign key constraints may not be working. Manually cleaning up...'
+      );
+
       await runQuery('DELETE FROM activities WHERE member_id = ?', [id]);
       await runQuery('DELETE FROM homework WHERE member_id = ?', [id]);
-      
+
       console.log('Manual cleanup completed');
     }
 
@@ -1410,7 +1503,8 @@ app.get('/api/activities', async (req, res) => {
     }
 
     if (start_date && end_date) {
-      spondSql += ' AND DATE(sa.start_timestamp) >= ? AND DATE(sa.start_timestamp) <= ?';
+      spondSql +=
+        ' AND DATE(sa.start_timestamp) >= ? AND DATE(sa.start_timestamp) <= ?';
       spondParams.push(start_date, end_date);
     }
 
@@ -1423,12 +1517,12 @@ app.get('/api/activities', async (req, res) => {
     const combinedActivities = [
       ...regularActivities.map(activity => ({
         ...activity,
-        source: 'manual'
+        source: 'manual',
       })),
       ...spondActivities.map(activity => ({
         ...activity,
-        source: 'spond'
-      }))
+        source: 'spond',
+      })),
     ];
 
     // Sort by date and time
@@ -1438,9 +1532,10 @@ app.get('/api/activities', async (req, res) => {
       return dateA - dateB;
     });
 
-    console.log(`✅ Combined ${combinedActivities.length} total activities (${regularActivities.length} regular + ${spondActivities.length} Spond)`);
+    console.log(
+      `✅ Combined ${combinedActivities.length} total activities (${regularActivities.length} regular + ${spondActivities.length} Spond)`
+    );
     res.json(combinedActivities);
-
   } catch (error) {
     console.error('Error fetching activities:', error);
     res.status(500).json({ error: 'Failed to fetch activities' });
@@ -1448,8 +1543,18 @@ app.get('/api/activities', async (req, res) => {
 });
 
 app.post('/api/activities', async (req, res) => {
-  const { member_id, title, date, start_time, end_time, description, activity_type, recurrence_type, recurrence_end_date, notes } =
-    req.body;
+  const {
+    member_id,
+    title,
+    date,
+    start_time,
+    end_time,
+    description,
+    activity_type,
+    recurrence_type,
+    recurrence_end_date,
+    notes,
+  } = req.body;
 
   if (!member_id || !title || !date || !start_time || !end_time) {
     return res.status(400).json({
@@ -1461,7 +1566,18 @@ app.post('/api/activities', async (req, res) => {
     const result = await runQuery(
       `INSERT INTO activities (member_id, title, date, start_time, end_time, description, activity_type, recurrence_type, recurrence_end_date, notes) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [member_id, title, date, start_time, end_time, description || null, activity_type || 'manual', recurrence_type || 'none', recurrence_end_date || null, notes || null]
+      [
+        member_id,
+        title,
+        date,
+        start_time,
+        end_time,
+        description || null,
+        activity_type || 'manual',
+        recurrence_type || 'none',
+        recurrence_end_date || null,
+        notes || null,
+      ]
     );
     const activity = await getOne('SELECT * FROM activities WHERE id = ?', [
       result.id,
@@ -1475,7 +1591,17 @@ app.post('/api/activities', async (req, res) => {
 
 app.put('/api/activities/:id', async (req, res) => {
   const { id } = req.params;
-  const { title, date, start_time, end_time, description, activity_type, recurrence_type, recurrence_end_date, notes } = req.body;
+  const {
+    title,
+    date,
+    start_time,
+    end_time,
+    description,
+    activity_type,
+    recurrence_type,
+    recurrence_end_date,
+    notes,
+  } = req.body;
 
   if (!title || !date || !start_time || !end_time) {
     return res.status(400).json({
@@ -1490,7 +1616,18 @@ app.put('/api/activities/:id', async (req, res) => {
            activity_type = ?, recurrence_type = ?, recurrence_end_date = ?, notes = ?,
            updated_at = CURRENT_TIMESTAMP 
        WHERE id = ?`,
-      [title, date, start_time, end_time, description || null, activity_type || 'manual', recurrence_type || 'none', recurrence_end_date || null, notes || null, id]
+      [
+        title,
+        date,
+        start_time,
+        end_time,
+        description || null,
+        activity_type || 'manual',
+        recurrence_type || 'none',
+        recurrence_end_date || null,
+        notes || null,
+        id,
+      ]
     );
     const activity = await getOne('SELECT * FROM activities WHERE id = ?', [
       id,
@@ -1525,7 +1662,9 @@ app.delete('/api/school-schedule/:memberId', async (req, res) => {
   const { memberId } = req.params;
 
   try {
-    console.log(`🗑️  Starting batch delete of school schedule for member ${memberId}`);
+    console.log(
+      `🗑️  Starting batch delete of school schedule for member ${memberId}`
+    );
     const startTime = Date.now();
 
     // Count records before deletion for logging
@@ -1535,7 +1674,7 @@ app.delete('/api/school-schedule/:memberId', async (req, res) => {
        AND description LIKE '%[TYPE:school_schedule]%'`,
       [memberId]
     );
-    
+
     const activityCountResult = await getOne(
       `SELECT COUNT(*) as count FROM activities 
        WHERE member_id = ? 
@@ -1549,14 +1688,21 @@ app.delete('/api/school-schedule/:memberId', async (req, res) => {
       [memberId]
     );
 
-    const totalBefore = scheduleCountResult.count + activityCountResult.count + homeworkCountResult.count;
-    console.log(`📊 Found ${scheduleCountResult.count} school schedule entries, ${activityCountResult.count} school activity entries, and ${homeworkCountResult.count} homework assignments (${totalBefore} total)`);
+    const totalBefore =
+      scheduleCountResult.count +
+      activityCountResult.count +
+      homeworkCountResult.count;
+    console.log(
+      `📊 Found ${scheduleCountResult.count} school schedule entries, ${activityCountResult.count} school activity entries, and ${homeworkCountResult.count} homework assignments (${totalBefore} total)`
+    );
 
     if (totalBefore === 0) {
-      console.log(`ℹ️  No school schedule entries found for member ${memberId}`);
-      return res.json({ 
+      console.log(
+        `ℹ️  No school schedule entries found for member ${memberId}`
+      );
+      return res.json({
         message: 'No school schedule found to delete',
-        deletedCount: 0
+        deletedCount: 0,
       });
     }
 
@@ -1582,11 +1728,16 @@ app.delete('/api/school-schedule/:memberId', async (req, res) => {
       [memberId]
     );
 
-    const totalDeleted = deleteScheduleResult.changes + deleteActivityResult.changes + deleteHomeworkResult.changes;
+    const totalDeleted =
+      deleteScheduleResult.changes +
+      deleteActivityResult.changes +
+      deleteHomeworkResult.changes;
     const endTime = Date.now();
-    
+
     console.log(`✅ Batch delete completed in ${endTime - startTime}ms`);
-    console.log(`📈 Deleted ${deleteScheduleResult.changes} schedule entries, ${deleteActivityResult.changes} activity entries, and ${deleteHomeworkResult.changes} homework assignments (${totalDeleted} total)`);
+    console.log(
+      `📈 Deleted ${deleteScheduleResult.changes} schedule entries, ${deleteActivityResult.changes} activity entries, and ${deleteHomeworkResult.changes} homework assignments (${totalDeleted} total)`
+    );
 
     res.json({
       message: 'School schedule and homework deleted successfully',
@@ -1594,9 +1745,8 @@ app.delete('/api/school-schedule/:memberId', async (req, res) => {
       scheduleEntries: deleteScheduleResult.changes,
       activityEntries: deleteActivityResult.changes,
       homeworkEntries: deleteHomeworkResult.changes,
-      executionTime: endTime - startTime
+      executionTime: endTime - startTime,
     });
-
   } catch (error) {
     console.error('Error batch deleting school schedule:', error);
     res.status(500).json({ error: 'Failed to delete school schedule' });
@@ -1616,21 +1766,35 @@ const upload = multer({
     } else {
       cb(new Error('Only image files are allowed'), false);
     }
-  }
+  },
 });
 
 // Homework Endpoints
 app.get('/api/homework', async (req, res) => {
-  const { member_id } = req.query;
-  
+  const { member_id, week_start_date } = req.query;
+
   try {
     let homework;
-    if (member_id) {
+    if (member_id && week_start_date) {
+      // Get homework for specific member and week
+      homework = await getAll(
+        'SELECT * FROM homework WHERE member_id = ? AND week_start_date = ? ORDER BY created_at DESC',
+        [member_id, week_start_date]
+      );
+    } else if (member_id) {
+      // Get all homework for specific member (backward compatibility)
       homework = await getAll(
         'SELECT * FROM homework WHERE member_id = ? ORDER BY created_at DESC',
         [member_id]
       );
+    } else if (week_start_date) {
+      // Get all homework for specific week
+      homework = await getAll(
+        'SELECT h.*, fm.name as member_name FROM homework h JOIN family_members fm ON h.member_id = fm.id WHERE h.week_start_date = ? ORDER BY h.created_at DESC',
+        [week_start_date]
+      );
     } else {
+      // Get all homework (backward compatibility)
       homework = await getAll(
         'SELECT h.*, fm.name as member_name FROM homework h JOIN family_members fm ON h.member_id = fm.id ORDER BY h.created_at DESC'
       );
@@ -1643,21 +1807,37 @@ app.get('/api/homework', async (req, res) => {
 });
 
 app.post('/api/homework', async (req, res) => {
-  const { member_id, subject, assignment, due_date, completed, extracted_from_image } = req.body;
+  const {
+    member_id,
+    subject,
+    assignment,
+    week_start_date,
+    completed,
+    extracted_from_image,
+  } = req.body;
 
-  if (!member_id || !subject || !assignment) {
-    return res.status(400).json({ 
-      error: 'member_id, subject, and assignment are required' 
+  if (!member_id || !subject || !assignment || !week_start_date) {
+    return res.status(400).json({
+      error: 'member_id, subject, assignment, and week_start_date are required',
     });
   }
 
   try {
     const result = await runQuery(
-      `INSERT INTO homework (member_id, subject, assignment, due_date, completed, extracted_from_image) 
+      `INSERT INTO homework (member_id, subject, assignment, week_start_date, completed, extracted_from_image) 
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [member_id, subject, assignment, due_date || null, completed || false, extracted_from_image || null]
+      [
+        member_id,
+        subject,
+        assignment,
+        week_start_date,
+        completed || false,
+        extracted_from_image || null,
+      ]
     );
-    const homework = await getOne('SELECT * FROM homework WHERE id = ?', [result.id]);
+    const homework = await getOne('SELECT * FROM homework WHERE id = ?', [
+      result.id,
+    ]);
     res.status(201).json(homework);
   } catch (error) {
     console.error('Error creating homework:', error);
@@ -1667,20 +1847,20 @@ app.post('/api/homework', async (req, res) => {
 
 app.put('/api/homework/:id', async (req, res) => {
   const { id } = req.params;
-  const { subject, assignment, due_date, completed } = req.body;
+  const { subject, assignment, completed } = req.body;
 
   if (!subject || !assignment) {
-    return res.status(400).json({ 
-      error: 'subject and assignment are required' 
+    return res.status(400).json({
+      error: 'subject and assignment are required',
     });
   }
 
   try {
     await runQuery(
       `UPDATE homework 
-       SET subject = ?, assignment = ?, due_date = ?, completed = ?, updated_at = CURRENT_TIMESTAMP 
+       SET subject = ?, assignment = ?, completed = ?, updated_at = CURRENT_TIMESTAMP 
        WHERE id = ?`,
-      [subject, assignment, due_date || null, completed || false, id]
+      [subject, assignment, completed || false, id]
     );
     const homework = await getOne('SELECT * FROM homework WHERE id = ?', [id]);
     if (!homework) {
@@ -1709,176 +1889,213 @@ app.delete('/api/homework/:id', async (req, res) => {
 });
 
 // School Plan Extraction Endpoint
-app.post('/api/extract-school-plan', upload.single('schoolPlanImage'), async (req, res) => {
-  const { member_id, api_key, selected_model } = req.body;
-  const imageFile = req.file;
+app.post(
+  '/api/extract-school-plan',
+  upload.single('schoolPlanImage'),
+  async (req, res) => {
+    const { member_id, api_key, selected_model } = req.body;
+    const imageFile = req.file;
 
-  console.log('=== SCHOOL PLAN EXTRACTION STARTED ===');
-  console.log(`Member ID: ${member_id}`);
-  console.log(`Image file: ${imageFile ? imageFile.originalname : 'none'}`);
-  console.log(`Image size: ${imageFile ? (imageFile.size / 1024).toFixed(2) : 0} KB`);
-  console.log(`Image type: ${imageFile ? imageFile.mimetype : 'none'}`);
-  console.log(`API key provided: ${api_key ? 'Yes (length: ' + api_key.length + ')' : 'No'}`);
-  console.log(`Selected model: ${selected_model || 'Not specified (will use default)'}`);
+    console.log('=== SCHOOL PLAN EXTRACTION STARTED ===');
+    console.log(`Member ID: ${member_id}`);
+    console.log(`Image file: ${imageFile ? imageFile.originalname : 'none'}`);
+    console.log(
+      `Image size: ${imageFile ? (imageFile.size / 1024).toFixed(2) : 0} KB`
+    );
+    console.log(`Image type: ${imageFile ? imageFile.mimetype : 'none'}`);
+    console.log(
+      `API key provided: ${api_key ? 'Yes (length: ' + api_key.length + ')' : 'No'}`
+    );
+    console.log(
+      `Selected model: ${selected_model || 'Not specified (will use default)'}`
+    );
 
-  if (!member_id || !api_key || !imageFile) {
-    console.log('❌ Validation failed - missing required fields');
-    return res.status(400).json({ 
-      error: 'member_id, api_key, and schoolPlanImage are required' 
-    });
-  }
-
-  try {
-    // Get the selected prompt version from settings
-    const promptVersionSetting = await getOne('SELECT value FROM settings WHERE key = ?', ['selectedPromptVersion']);
-    const selectedVersion = promptVersionSetting?.value || 'original';
-    
-    // Read the appropriate prompt file
-    const path = await import('path');
-    const fs = await import('fs');
-    const promptFileName = selectedVersion === 'optimized' ? 'llm_promt_optimized.md' : 'llm_promt.md';
-    const promptPath = path.join(process.cwd(), promptFileName);
-    const prompt = fs.readFileSync(promptPath, 'utf8');
-    console.log(`📄 Prompt loaded successfully (${prompt.length} characters, version: ${selectedVersion})`);
-
-    // Convert image to base64
-    const imageBase64 = imageFile.buffer.toString('base64');
-    const imageMimeType = imageFile.mimetype;
-    console.log(`🖼️  Image converted to base64 (${imageBase64.length} characters)`);
-    console.log(`📡 Sending request to Anthropic API...`);
-
-    // Prepare the message for Claude with vision
-    // Determine which model to use (user selection or fallback to default)
-    const modelToUse = selected_model || 'claude-3-5-sonnet-20241022';
-    console.log(`🤖 Using model: ${modelToUse}`);
-    
-    // Note: We assume the user has selected a vision-capable model
-    // Most Claude 3+ models support vision, but if there are issues,
-    // the Anthropic API will return a clear error message
-    
-    const messageData = {
-      model: modelToUse, // Use selected model or fallback to default
-      max_tokens: 4000,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: prompt
-            },
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: imageMimeType,
-                data: imageBase64
-              }
-            }
-          ]
-        }
-      ]
-    };
-
-    // Send request to Anthropic API
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout for vision
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': api_key,
-        'anthropic-version': '2023-06-01',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(messageData),
-      signal: controller.signal
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.log(`❌ Anthropic API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
-      return res.status(response.status).json({
-        error: 'Failed to extract school plan',
-        message: errorData.error?.message || 'Unknown error from Anthropic API'
-      });
-    }
-
-    const data = await response.json();
-    const extractedText = data.content[0].text;
-    console.log(`✅ Anthropic API response received`);
-    console.log(`📝 Extracted text length: ${extractedText.length} characters`);
-    console.log('--- RAW LLM RESPONSE ---');
-    console.log(extractedText);
-    console.log('--- END RAW RESPONSE ---');
-
-    // Parse the extracted datasets from the response
-    let extractedData;
-    try {
-      console.log('🔍 Parsing LLM response for datasets...');
-      extractedData = parseSchoolPlanResponse(extractedText);
-      console.log('✅ Parsing successful');
-      console.log(`📊 Parsed datasets:`)
-      console.log(`   - school_schedule: ${extractedData.school_schedule ? Object.keys(extractedData.school_schedule).length : 0} days`);
-      console.log(`   - school_activities: ${extractedData.school_activities ? extractedData.school_activities.length : 0} activities`);
-      console.log(`   - school_homework: ${extractedData.school_homework ? extractedData.school_homework.length : 0} assignments`);
-    } catch (parseError) {
-      console.error('❌ Error parsing LLM response:', parseError);
+    if (!member_id || !api_key || !imageFile) {
+      console.log('❌ Validation failed - missing required fields');
       return res.status(400).json({
-        error: 'Failed to parse extracted data',
-        message: 'The AI response could not be parsed into the expected format',
-        rawResponse: extractedText
+        error: 'member_id, api_key, and schoolPlanImage are required',
       });
     }
 
-    // Transform and save the data
-    console.log('💾 Saving extracted data to database...');
-    const savedData = await saveExtractedSchoolPlan(member_id, extractedData, imageFile.originalname);
-    console.log('✅ Data saved successfully');
-    console.log(`📈 Saved records:`)
-    console.log(`   - schedules: ${savedData.schedules.length}`);
-    console.log(`   - activities: ${savedData.activities.length}`);
-    console.log(`   - homework: ${savedData.homework.length}`);
+    try {
+      // Get the selected prompt version from settings
+      const promptVersionSetting = await getOne(
+        'SELECT value FROM settings WHERE key = ?',
+        ['selectedPromptVersion']
+      );
+      const selectedVersion = promptVersionSetting?.value || 'original';
 
-    console.log('🎉 SCHOOL PLAN EXTRACTION COMPLETED SUCCESSFULLY');
+      // Read the appropriate prompt file
+      const path = await import('path');
+      const fs = await import('fs');
+      const promptFileName =
+        selectedVersion === 'optimized'
+          ? 'llm_promt_optimized.md'
+          : 'llm_promt.md';
+      const promptPath = path.join(process.cwd(), promptFileName);
+      const prompt = fs.readFileSync(promptPath, 'utf8');
+      console.log(
+        `📄 Prompt loaded successfully (${prompt.length} characters, version: ${selectedVersion})`
+      );
 
-    res.json({
-      success: true,
-      message: 'School plan extracted successfully',
-      extractedData: extractedData,
-      savedData: savedData
-    });
+      // Convert image to base64
+      const imageBase64 = imageFile.buffer.toString('base64');
+      const imageMimeType = imageFile.mimetype;
+      console.log(
+        `🖼️  Image converted to base64 (${imageBase64.length} characters)`
+      );
+      console.log(`📡 Sending request to Anthropic API...`);
 
-  } catch (error) {
-    console.error('❌ Error extracting school plan:', error);
-    console.log('💥 SCHOOL PLAN EXTRACTION FAILED');
-    
-    if (error.name === 'AbortError') {
-      console.log('⏰ Request timed out');
-      return res.status(500).json({
-        error: 'Request timed out',
-        message: 'The extraction request took too long. Please try again.',
+      // Prepare the message for Claude with vision
+      // Determine which model to use (user selection or fallback to default)
+      const modelToUse = selected_model || 'claude-3-5-sonnet-20241022';
+      console.log(`🤖 Using model: ${modelToUse}`);
+
+      // Note: We assume the user has selected a vision-capable model
+      // Most Claude 3+ models support vision, but if there are issues,
+      // the Anthropic API will return a clear error message
+
+      const messageData = {
+        model: modelToUse, // Use selected model or fallback to default
+        max_tokens: 4000,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: prompt,
+              },
+              {
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: imageMimeType,
+                  data: imageBase64,
+                },
+              },
+            ],
+          },
+        ],
+      };
+
+      // Send request to Anthropic API
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout for vision
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': api_key,
+          'anthropic-version': '2023-06-01',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(messageData),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.log(
+          `❌ Anthropic API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`
+        );
+        return res.status(response.status).json({
+          error: 'Failed to extract school plan',
+          message:
+            errorData.error?.message || 'Unknown error from Anthropic API',
+        });
+      }
+
+      const data = await response.json();
+      const extractedText = data.content[0].text;
+      console.log(`✅ Anthropic API response received`);
+      console.log(
+        `📝 Extracted text length: ${extractedText.length} characters`
+      );
+      console.log('--- RAW LLM RESPONSE ---');
+      console.log(extractedText);
+      console.log('--- END RAW RESPONSE ---');
+
+      // Parse the extracted datasets from the response
+      let extractedData;
+      try {
+        console.log('🔍 Parsing LLM response for datasets...');
+        extractedData = parseSchoolPlanResponse(extractedText);
+        console.log('✅ Parsing successful');
+        console.log(`📊 Parsed datasets:`);
+        console.log(
+          `   - school_schedule: ${extractedData.school_schedule ? Object.keys(extractedData.school_schedule).length : 0} days`
+        );
+        console.log(
+          `   - school_activities: ${extractedData.school_activities ? extractedData.school_activities.length : 0} activities`
+        );
+        console.log(
+          `   - school_homework: ${extractedData.school_homework ? extractedData.school_homework.length : 0} assignments`
+        );
+      } catch (parseError) {
+        console.error('❌ Error parsing LLM response:', parseError);
+        return res.status(400).json({
+          error: 'Failed to parse extracted data',
+          message:
+            'The AI response could not be parsed into the expected format',
+          rawResponse: extractedText,
+        });
+      }
+
+      // Transform and save the data
+      console.log('💾 Saving extracted data to database...');
+      const savedData = await saveExtractedSchoolPlan(
+        member_id,
+        extractedData,
+        imageFile.originalname
+      );
+      console.log('✅ Data saved successfully');
+      console.log(`📈 Saved records:`);
+      console.log(`   - schedules: ${savedData.schedules.length}`);
+      console.log(`   - activities: ${savedData.activities.length}`);
+      console.log(`   - homework: ${savedData.homework.length}`);
+
+      console.log('🎉 SCHOOL PLAN EXTRACTION COMPLETED SUCCESSFULLY');
+
+      res.json({
+        success: true,
+        message: 'School plan extracted successfully',
+        extractedData: extractedData,
+        savedData: savedData,
+      });
+    } catch (error) {
+      console.error('❌ Error extracting school plan:', error);
+      console.log('💥 SCHOOL PLAN EXTRACTION FAILED');
+
+      if (error.name === 'AbortError') {
+        console.log('⏰ Request timed out');
+        return res.status(500).json({
+          error: 'Request timed out',
+          message: 'The extraction request took too long. Please try again.',
+        });
+      }
+
+      console.log(`🚨 Error details: ${error.message}`);
+      res.status(500).json({
+        error: 'Failed to extract school plan',
+        message: error.message,
       });
     }
-    
-    console.log(`🚨 Error details: ${error.message}`);
-    res.status(500).json({
-      error: 'Failed to extract school plan',
-      message: error.message,
-    });
   }
-});
+);
 
 // Helper function to parse the LLM response
 function parseSchoolPlanResponse(responseText) {
-  console.log('🔄 Starting LLM response parsing (school_schedule + school_activities)...');
-  
+  console.log(
+    '🔄 Starting LLM response parsing (school_schedule + school_activities)...'
+  );
+
   const datasets = {
     school_schedule: null,
     school_activities: null,
-    school_homework: null
+    school_homework: null,
   };
 
   try {
@@ -1886,7 +2103,7 @@ function parseSchoolPlanResponse(responseText) {
     console.log('📅 Parsing school_schedule...');
     const mondayIndex = responseText.indexOf('"Monday"');
     let scheduleStart = -1;
-    
+
     if (mondayIndex !== -1) {
       // Work backwards from "Monday" to find the opening brace
       for (let i = mondayIndex - 1; i >= 0; i--) {
@@ -1894,39 +2111,44 @@ function parseSchoolPlanResponse(responseText) {
         if (char === '{') {
           scheduleStart = i;
           break;
-        } else if (char !== ' ' && char !== '\n' && char !== '\r' && char !== '\t') {
+        } else if (
+          char !== ' ' &&
+          char !== '\n' &&
+          char !== '\r' &&
+          char !== '\t'
+        ) {
           break;
         }
       }
     }
-    
+
     if (scheduleStart !== -1) {
       console.log('📅 Found schedule starting at position:', scheduleStart);
-      
+
       // Find the matching closing brace
       let braceCount = 0;
       let scheduleEnd = scheduleStart;
       let inString = false;
       let escapeNext = false;
-      
+
       for (let i = scheduleStart; i < responseText.length; i++) {
         const char = responseText[i];
-        
+
         if (escapeNext) {
           escapeNext = false;
           continue;
         }
-        
+
         if (char === '\\') {
           escapeNext = true;
           continue;
         }
-        
+
         if (char === '"') {
           inString = !inString;
           continue;
         }
-        
+
         if (!inString) {
           if (char === '{') {
             braceCount++;
@@ -1939,12 +2161,17 @@ function parseSchoolPlanResponse(responseText) {
           }
         }
       }
-      
+
       if (braceCount === 0) {
-        const scheduleText = responseText.substring(scheduleStart, scheduleEnd + 1);
+        const scheduleText = responseText.substring(
+          scheduleStart,
+          scheduleEnd + 1
+        );
         console.log(`📋 Schedule JSON text: ${scheduleText}`);
         datasets.school_schedule = JSON.parse(scheduleText);
-        console.log(`✅ Parsed school_schedule with ${Object.keys(datasets.school_schedule).length} days`);
+        console.log(
+          `✅ Parsed school_schedule with ${Object.keys(datasets.school_schedule).length} days`
+        );
       } else {
         console.log('❌ Could not find closing brace for schedule JSON');
       }
@@ -1954,51 +2181,53 @@ function parseSchoolPlanResponse(responseText) {
 
     // Parse school_activities
     console.log('🎯 Parsing school_activities...');
-    
+
     // Look for the activities array - it should start with [ and contain "day" fields
     const activitiesPatterns = [
       /\*\*Dataset 2 - school_activities:\*\*\s*```json\s*(\[[\s\S]*?\])\s*```/i,
       /Dataset 2 - school_activities:\s*```json\s*(\[[\s\S]*?\])\s*```/i,
       /Dataset 2 - school_activities:\s*(\[[\s\S]*?\])/i,
       /school_activities[:\s]*(\[[\s\S]*?\])/i,
-      /activities[:\s]*(\[[\s\S]*?\])/i
+      /activities[:\s]*(\[[\s\S]*?\])/i,
     ];
-    
+
     let activitiesFound = false;
-    
+
     for (const pattern of activitiesPatterns) {
       const match = responseText.match(pattern);
       if (match && match[1]) {
         try {
-          console.log(`🎯 Found activities pattern: ${match[1].substring(0, 100)}...`);
-          
+          console.log(
+            `🎯 Found activities pattern: ${match[1].substring(0, 100)}...`
+          );
+
           // Extract the JSON array
           let activitiesText = match[1].trim();
-          
+
           // Find the complete array by balancing brackets
           let bracketCount = 0;
           let inString = false;
           let escapeNext = false;
           let endIndex = -1;
-          
+
           for (let i = 0; i < activitiesText.length; i++) {
             const char = activitiesText[i];
-            
+
             if (escapeNext) {
               escapeNext = false;
               continue;
             }
-            
+
             if (char === '\\') {
               escapeNext = true;
               continue;
             }
-            
+
             if (char === '"') {
               inString = !inString;
               continue;
             }
-            
+
             if (!inString) {
               if (char === '[') {
                 bracketCount++;
@@ -2011,13 +2240,13 @@ function parseSchoolPlanResponse(responseText) {
               }
             }
           }
-          
+
           if (endIndex !== -1) {
             activitiesText = activitiesText.substring(0, endIndex + 1);
             console.log(`📋 Activities JSON text: ${activitiesText}`);
-            
+
             const parsedActivities = JSON.parse(activitiesText);
-            
+
             // Ensure each activity has required fields with defaults
             datasets.school_activities = parsedActivities.map(activity => ({
               day: activity.day,
@@ -2025,21 +2254,27 @@ function parseSchoolPlanResponse(responseText) {
               start: activity.start,
               end: activity.end,
               type: activity.type || 'recurring', // Default to recurring for backward compatibility
-              specific_date: activity.specific_date || null
+              specific_date: activity.specific_date || null,
             }));
-            
-            console.log(`✅ Parsed school_activities with ${datasets.school_activities.length} activities`);
-            console.log(`📊 Activity types: ${datasets.school_activities.map(a => `${a.name}:${a.type}`).join(', ')}`);
+
+            console.log(
+              `✅ Parsed school_activities with ${datasets.school_activities.length} activities`
+            );
+            console.log(
+              `📊 Activity types: ${datasets.school_activities.map(a => `${a.name}:${a.type}`).join(', ')}`
+            );
             activitiesFound = true;
             break;
           }
         } catch (parseError) {
-          console.log(`⚠️  Failed to parse activities with pattern ${pattern}: ${parseError.message}`);
+          console.log(
+            `⚠️  Failed to parse activities with pattern ${pattern}: ${parseError.message}`
+          );
           continue;
         }
       }
     }
-    
+
     if (!activitiesFound) {
       console.log('📝 No school_activities found in response');
       datasets.school_activities = [];
@@ -2048,20 +2283,27 @@ function parseSchoolPlanResponse(responseText) {
     // Parse homework assignments
     console.log('📚 Parsing school_homework...');
     try {
-      const homeworkPattern = /Dataset 3[^:]*school_homework[^:]*:\s*```json\s*(\[[\s\S]*?\])\s*```/i;
+      const homeworkPattern =
+        /Dataset 3[^:]*school_homework[^:]*:\s*```json\s*(\[[\s\S]*?\])\s*```/i;
       const homeworkMatch = responseText.match(homeworkPattern);
-      
+
       if (homeworkMatch) {
         const homeworkJsonText = homeworkMatch[1].trim();
         console.log('📋 Homework JSON text:', homeworkJsonText);
-        
+
         const parsedHomework = JSON.parse(homeworkJsonText);
-        datasets.school_homework = Array.isArray(parsedHomework) ? parsedHomework : [];
-        console.log(`✅ Parsed school_homework with ${datasets.school_homework.length} assignments`);
-        
+        datasets.school_homework = Array.isArray(parsedHomework)
+          ? parsedHomework
+          : [];
+        console.log(
+          `✅ Parsed school_homework with ${datasets.school_homework.length} assignments`
+        );
+
         // Log homework subjects for debugging
         if (datasets.school_homework.length > 0) {
-          const subjects = datasets.school_homework.map(hw => hw.subject).join(', ');
+          const subjects = datasets.school_homework
+            .map(hw => hw.subject)
+            .join(', ');
           console.log(`📖 Homework subjects: ${subjects}`);
         }
       } else {
@@ -2084,17 +2326,19 @@ function parseSchoolPlanResponse(responseText) {
 function getSchoolYearRange(importDate = new Date()) {
   const currentYear = importDate.getFullYear();
   const currentMonth = importDate.getMonth(); // 0-based (0 = January)
-  
+
   let schoolYearStart, schoolYearEnd;
-  
-  if (currentMonth >= 7) { // August (7) or later - current school year
+
+  if (currentMonth >= 7) {
+    // August (7) or later - current school year
     schoolYearStart = new Date(currentYear, 7, 1); // August 1st
     schoolYearEnd = new Date(currentYear + 1, 6, 31); // July 31st next year
-  } else { // Before August - previous school year
+  } else {
+    // Before August - previous school year
     schoolYearStart = new Date(currentYear - 1, 7, 1); // August 1st previous year
     schoolYearEnd = new Date(currentYear, 6, 31); // July 31st current year
   }
-  
+
   return { schoolYearStart, schoolYearEnd };
 }
 
@@ -2111,11 +2355,11 @@ function getWeekStart(date) {
 // Helper function to save extracted data to database
 async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
   console.log(`💾 Starting database save for member ${memberId}`);
-  
+
   const savedData = {
     schedules: [],
     activities: [],
-    homework: []
+    homework: [],
   };
 
   try {
@@ -2123,21 +2367,29 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
     const importDate = new Date();
     const { schoolYearStart, schoolYearEnd } = getSchoolYearRange(importDate);
     const importWeekStart = getWeekStart(importDate);
-    
+
     // Day mapping used for both schedules and activities
     const dayMapping = {
-      'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5
+      Monday: 1,
+      Tuesday: 2,
+      Wednesday: 3,
+      Thursday: 4,
+      Friday: 5,
     };
-    
-    console.log(`📚 School year: ${schoolYearStart.toDateString()} to ${schoolYearEnd.toDateString()}`);
+
+    console.log(
+      `📚 School year: ${schoolYearStart.toDateString()} to ${schoolYearEnd.toDateString()}`
+    );
     console.log(`📆 Import week starts: ${importWeekStart.toDateString()}`);
 
     // Save school schedule as recurring activities
     if (extractedData.school_schedule) {
       console.log(`📅 Processing recurring school schedule...`);
-      
+
       // Step 1: Clean up existing school schedules from import week onwards
-      console.log(`🧹 Cleaning up existing school schedules from ${importWeekStart.toISOString().split('T')[0]} onwards...`);
+      console.log(
+        `🧹 Cleaning up existing school schedules from ${importWeekStart.toISOString().split('T')[0]} onwards...`
+      );
       const deleteResult = await runQuery(
         `DELETE FROM activities 
          WHERE member_id = ? 
@@ -2145,42 +2397,49 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
          AND date >= ?`,
         [memberId, importWeekStart.toISOString().split('T')[0]]
       );
-      console.log(`🗑️  Deleted ${deleteResult.changes || 0} existing school schedule entries`);
-      
+      console.log(
+        `🗑️  Deleted ${deleteResult.changes || 0} existing school schedule entries`
+      );
+
       // Step 2: Generate recurring entries for each day of the week (BATCH OPTIMIZED)
       console.log(`📦 Preparing batch insert for school schedule entries...`);
-      
+
       // Collect all entries first, then batch insert
       const batchEntries = [];
       const allDayEntries = {}; // Track entries for savedData response
-      
-      for (const [day, times] of Object.entries(extractedData.school_schedule)) {
+
+      for (const [day, times] of Object.entries(
+        extractedData.school_schedule
+      )) {
         console.log(`📅 Processing day: ${day}, times:`, times);
         if (times && times.start && times.end) {
           const dayNum = dayMapping[day];
           console.log(`🗓️  Day ${day} mapped to number: ${dayNum}`);
-          
+
           if (dayNum) {
             // Generate entries for this day throughout the school year
             let currentWeek = new Date(importWeekStart);
             let entriesCreated = 0;
             allDayEntries[day] = [];
-            
+
             while (currentWeek <= schoolYearEnd) {
               // Calculate the specific date for this day of the week
               const targetDate = new Date(currentWeek);
               const dayDiff = dayNum - 1; // dayNum is 1-based, we need 0-based for date calculation
               targetDate.setDate(currentWeek.getDate() + dayDiff);
-              
+
               // Only create if the date is within school year and not in the past
-              if (targetDate >= importWeekStart && targetDate <= schoolYearEnd) {
+              if (
+                targetDate >= importWeekStart &&
+                targetDate <= schoolYearEnd
+              ) {
                 const dateString = targetDate.toISOString().split('T')[0];
                 const notes = times.notes || null;
-                
+
                 // Add to batch entries array instead of individual insert
                 batchEntries.push([
-                  memberId, 
-                  'School', 
+                  memberId,
+                  'School',
                   dateString,
                   times.start,
                   times.end,
@@ -2188,21 +2447,23 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
                   'school_schedule',
                   'weekly',
                   schoolYearEnd.toISOString().split('T')[0],
-                  notes
+                  notes,
                 ]);
                 entriesCreated++;
-                
+
                 // Store for savedData response (first few entries)
                 if (entriesCreated <= 10) {
                   allDayEntries[day].push({ day, date: dateString, ...times });
                 }
               }
-              
+
               // Move to next week
               currentWeek.setDate(currentWeek.getDate() + 7);
             }
-            
-            console.log(`📋 Prepared ${entriesCreated} entries for ${day} (batch)`);
+
+            console.log(
+              `📋 Prepared ${entriesCreated} entries for ${day} (batch)`
+            );
           } else {
             console.log(`⚠️  Day ${day} not recognized in dayMapping`);
           }
@@ -2210,25 +2471,31 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
           console.log(`⚠️  Missing start/end times for ${day}:`, times);
         }
       }
-      
+
       // Execute batch insert for all school schedule entries
       if (batchEntries.length > 0) {
-        console.log(`💾 Executing batch insert for ${batchEntries.length} school schedule entries...`);
+        console.log(
+          `💾 Executing batch insert for ${batchEntries.length} school schedule entries...`
+        );
         const startTime = Date.now();
-        
+
         // Create placeholders for batch insert
-        const placeholders = batchEntries.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
+        const placeholders = batchEntries
+          .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .join(', ');
         const flatParams = batchEntries.flat();
-        
+
         await runQuery(
           `INSERT INTO activities (member_id, title, date, start_time, end_time, description, activity_type, recurrence_type, recurrence_end_date, notes) 
            VALUES ${placeholders}`,
           flatParams
         );
-        
+
         const endTime = Date.now();
-        console.log(`✅ Batch insert completed in ${endTime - startTime}ms (${batchEntries.length} records)`);
-        
+        console.log(
+          `✅ Batch insert completed in ${endTime - startTime}ms (${batchEntries.length} records)`
+        );
+
         // Add sample entries to savedData for response (maintain original behavior)
         for (const [day, entries] of Object.entries(allDayEntries)) {
           for (const entry of entries) {
@@ -2241,11 +2508,16 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
     }
 
     // Save school activities as recurring activities (BATCH OPTIMIZED)
-    if (extractedData.school_activities && extractedData.school_activities.length > 0) {
+    if (
+      extractedData.school_activities &&
+      extractedData.school_activities.length > 0
+    ) {
       console.log(`🎯 Processing school activities...`);
-      
+
       // Clean up existing school activities from import week onwards
-      console.log(`🧹 Cleaning up existing school activities from ${importWeekStart.toISOString().split('T')[0]} onwards...`);
+      console.log(
+        `🧹 Cleaning up existing school activities from ${importWeekStart.toISOString().split('T')[0]} onwards...`
+      );
       const deleteActivitiesResult = await runQuery(
         `DELETE FROM activities 
          WHERE member_id = ? 
@@ -2253,115 +2525,144 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
          AND date >= ?`,
         [memberId, importWeekStart.toISOString().split('T')[0]]
       );
-      console.log(`🗑️  Deleted ${deleteActivitiesResult.changes || 0} existing school activity entries`);
-      
+      console.log(
+        `🗑️  Deleted ${deleteActivitiesResult.changes || 0} existing school activity entries`
+      );
+
       // Collect all activity entries for batch processing
       const batchActivityEntries = [];
       const activitySamples = []; // For savedData response
-      
+
       // Process each school activity with type awareness
       for (const activity of extractedData.school_activities) {
-        console.log(`🎯 Processing ${activity.type || 'recurring'} activity:`, activity);
-        
+        console.log(
+          `🎯 Processing ${activity.type || 'recurring'} activity:`,
+          activity
+        );
+
         if (activity.day && activity.name && activity.start && activity.end) {
           const dayNum = dayMapping[activity.day];
-          console.log(`🗓️  Activity "${activity.name}" on ${activity.day} (${dayNum}) ${activity.start}-${activity.end} - Type: ${activity.type || 'recurring'}`);
-          
+          console.log(
+            `🗓️  Activity "${activity.name}" on ${activity.day} (${dayNum}) ${activity.start}-${activity.end} - Type: ${activity.type || 'recurring'}`
+          );
+
           if (dayNum) {
             const activityType = activity.type || 'recurring';
-            const recurrenceType = activityType === 'recurring' ? 'weekly' : 'none';
-            const recurrenceEndDate = activityType === 'recurring' ? schoolYearEnd.toISOString().split('T')[0] : null;
-            
+            const recurrenceType =
+              activityType === 'recurring' ? 'weekly' : 'none';
+            const recurrenceEndDate =
+              activityType === 'recurring'
+                ? schoolYearEnd.toISOString().split('T')[0]
+                : null;
+
             if (activityType === 'one_time') {
               // Handle one-time activities
-              console.log(`📅 Preparing one-time entry for ${activity.name} (${activity.day})`);
-              
+              console.log(
+                `📅 Preparing one-time entry for ${activity.name} (${activity.day})`
+              );
+
               // One-time activities are always placed on the corresponding day of the current import week
               const targetDate = new Date(importWeekStart);
               const dayDiff = dayNum - 1; // dayNum is 1-based, we need 0-based for date calculation
               targetDate.setDate(importWeekStart.getDate() + dayDiff);
-              console.log(`📍 Placing one-time activity on ${activity.day} of current week: ${targetDate.toISOString().split('T')[0]}`);
-              
-              if (targetDate >= importWeekStart && targetDate <= schoolYearEnd) {
+              console.log(
+                `📍 Placing one-time activity on ${activity.day} of current week: ${targetDate.toISOString().split('T')[0]}`
+              );
+
+              if (
+                targetDate >= importWeekStart &&
+                targetDate <= schoolYearEnd
+              ) {
                 const dateString = targetDate.toISOString().split('T')[0];
-                
+
                 // Add to batch entries
                 batchActivityEntries.push([
-                  memberId, 
-                  activity.name, 
+                  memberId,
+                  activity.name,
                   dateString,
                   activity.start,
                   activity.end,
                   `School activity: ${activity.name} [TYPE:school_activity]`,
                   'school_activity',
                   recurrenceType,
-                  recurrenceEndDate
+                  recurrenceEndDate,
                 ]);
-                
+
                 // Add to samples for response
-                activitySamples.push({ 
-                  day: activity.day, 
+                activitySamples.push({
+                  day: activity.day,
                   name: activity.name,
-                  date: dateString, 
+                  date: dateString,
                   start: activity.start,
                   end: activity.end,
-                  type: activityType
+                  type: activityType,
                 });
-                
-                console.log(`📋 Prepared one-time entry for "${activity.name}" on ${dateString}`);
+
+                console.log(
+                  `📋 Prepared one-time entry for "${activity.name}" on ${dateString}`
+                );
               } else {
-                console.log(`⚠️  One-time activity date ${targetDate.toISOString().split('T')[0]} is outside school year range`);
+                console.log(
+                  `⚠️  One-time activity date ${targetDate.toISOString().split('T')[0]} is outside school year range`
+                );
               }
             } else {
               // Handle recurring activities
-              console.log(`📅 Preparing recurring entries for ${activity.name} (${activity.day})`);
-              
+              console.log(
+                `📅 Preparing recurring entries for ${activity.name} (${activity.day})`
+              );
+
               // Generate recurring entries for this activity throughout the school year
               let currentWeek = new Date(importWeekStart);
               let entriesCreated = 0;
-              
+
               while (currentWeek <= schoolYearEnd) {
                 // Calculate the specific date for this day of the week
                 const targetDate = new Date(currentWeek);
                 const dayDiff = dayNum - 1; // dayNum is 1-based, we need 0-based for date calculation
                 targetDate.setDate(currentWeek.getDate() + dayDiff);
-                
+
                 // Only create if the date is within school year and not in the past
-                if (targetDate >= importWeekStart && targetDate <= schoolYearEnd) {
+                if (
+                  targetDate >= importWeekStart &&
+                  targetDate <= schoolYearEnd
+                ) {
                   const dateString = targetDate.toISOString().split('T')[0];
-                  
+
                   // Add to batch entries
                   batchActivityEntries.push([
-                    memberId, 
-                    activity.name, 
+                    memberId,
+                    activity.name,
                     dateString,
                     activity.start,
                     activity.end,
                     `School activity: ${activity.name} [TYPE:school_activity]`,
                     'school_activity',
                     recurrenceType,
-                    recurrenceEndDate
+                    recurrenceEndDate,
                   ]);
                   entriesCreated++;
-                  
+
                   // Only add to samples for the first few entries (to avoid huge response)
                   if (entriesCreated <= 5) {
-                    activitySamples.push({ 
-                      day: activity.day, 
+                    activitySamples.push({
+                      day: activity.day,
                       name: activity.name,
-                      date: dateString, 
+                      date: dateString,
                       start: activity.start,
                       end: activity.end,
-                      type: activityType
+                      type: activityType,
                     });
                   }
                 }
-                
+
                 // Move to next week
                 currentWeek.setDate(currentWeek.getDate() + 7);
               }
-              
-              console.log(`📋 Prepared ${entriesCreated} recurring entries for activity "${activity.name}"`);
+
+              console.log(
+                `📋 Prepared ${entriesCreated} recurring entries for activity "${activity.name}"`
+              );
             }
           } else {
             console.log(`⚠️  Day ${activity.day} not recognized in dayMapping`);
@@ -2370,25 +2671,31 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
           console.log(`⚠️  Missing required fields for activity:`, activity);
         }
       }
-      
+
       // Execute batch insert for all school activity entries
       if (batchActivityEntries.length > 0) {
-        console.log(`💾 Executing batch insert for ${batchActivityEntries.length} school activity entries...`);
+        console.log(
+          `💾 Executing batch insert for ${batchActivityEntries.length} school activity entries...`
+        );
         const startTime = Date.now();
-        
+
         // Create placeholders for batch insert
-        const placeholders = batchActivityEntries.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
+        const placeholders = batchActivityEntries
+          .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .join(', ');
         const flatParams = batchActivityEntries.flat();
-        
+
         await runQuery(
           `INSERT INTO activities (member_id, title, date, start_time, end_time, description, activity_type, recurrence_type, recurrence_end_date) 
            VALUES ${placeholders}`,
           flatParams
         );
-        
+
         const endTime = Date.now();
-        console.log(`✅ Batch insert completed in ${endTime - startTime}ms (${batchActivityEntries.length} records)`);
-        
+        console.log(
+          `✅ Batch insert completed in ${endTime - startTime}ms (${batchActivityEntries.length} records)`
+        );
+
         // Add sample entries to savedData for response
         savedData.activities.push(...activitySamples);
       } else {
@@ -2399,36 +2706,61 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
     }
 
     // Save homework assignments
-    if (extractedData.school_homework && extractedData.school_homework.length > 0) {
-      console.log(`📚 Processing ${extractedData.school_homework.length} homework assignments...`);
-      
+    if (
+      extractedData.school_homework &&
+      extractedData.school_homework.length > 0
+    ) {
+      console.log(
+        `📚 Processing ${extractedData.school_homework.length} homework assignments...`
+      );
+
+      // Calculate the week start date for homework (same as import week)
+      const homeworkWeekStart = importWeekStart.toISOString().split('T')[0];
+      console.log(
+        `📅 Assigning homework to week starting: ${homeworkWeekStart}`
+      );
+
       for (const homework of extractedData.school_homework) {
         if (homework.subject && homework.assignment) {
           try {
             const result = await runQuery(
-              `INSERT INTO homework (member_id, subject, assignment, extracted_from_image) 
-               VALUES (?, ?, ?, ?)`,
-              [memberId, homework.subject, homework.assignment, imageFileName]
+              `INSERT INTO homework (member_id, subject, assignment, week_start_date, extracted_from_image) 
+               VALUES (?, ?, ?, ?, ?)`,
+              [
+                memberId,
+                homework.subject,
+                homework.assignment,
+                homeworkWeekStart,
+                imageFileName,
+              ]
             );
-            
+
             savedData.homework.push({
               id: result.id,
               subject: homework.subject,
               assignment: homework.assignment,
-              extracted_from_image: imageFileName
+              week_start_date: homeworkWeekStart,
+              extracted_from_image: imageFileName,
             });
-            
-            console.log(`✅ Saved homework: ${homework.subject} - ${homework.assignment.substring(0, 50)}${homework.assignment.length > 50 ? '...' : ''}`);
+
+            console.log(
+              `✅ Saved homework: ${homework.subject} - ${homework.assignment.substring(0, 50)}${homework.assignment.length > 50 ? '...' : ''}`
+            );
           } catch (homeworkError) {
-            console.error(`❌ Error saving homework for ${homework.subject}:`, homeworkError);
+            console.error(
+              `❌ Error saving homework for ${homework.subject}:`,
+              homeworkError
+            );
             // Continue with other homework items even if one fails
           }
         } else {
           console.log(`⚠️  Skipping homework with missing data:`, homework);
         }
       }
-      
-      console.log(`📚 Homework processing completed: ${savedData.homework.length} assignments saved`);
+
+      console.log(
+        `📚 Homework processing completed: ${savedData.homework.length} assignments saved`
+      );
     } else {
       console.log('📝 No homework assignments to process');
     }
@@ -2481,34 +2813,40 @@ app.put('/api/settings/:key', async (req, res) => {
 app.get('/api/prompt-content', async (req, res) => {
   const fs = require('fs').promises;
   const path = require('path');
-  
+
   try {
     // Get the selected prompt version from settings
-    const promptVersionSetting = await getOne('SELECT value FROM settings WHERE key = ?', ['selectedPromptVersion']);
+    const promptVersionSetting = await getOne(
+      'SELECT value FROM settings WHERE key = ?',
+      ['selectedPromptVersion']
+    );
     const selectedVersion = promptVersionSetting?.value || 'original';
-    
+
     // Determine which prompt file to read
-    const promptFileName = selectedVersion === 'optimized' ? 'llm_promt_optimized.md' : 'llm_promt.md';
+    const promptFileName =
+      selectedVersion === 'optimized'
+        ? 'llm_promt_optimized.md'
+        : 'llm_promt.md';
     const promptPath = path.join(__dirname, promptFileName);
-    
+
     // Read and return the prompt content
     const promptContent = await fs.readFile(promptPath, 'utf8');
-    
+
     res.json({
       version: selectedVersion,
-      content: promptContent
+      content: promptContent,
     });
   } catch (error) {
     console.error('Error reading prompt file:', error);
-    
+
     // Fallback to original prompt if optimized file doesn't exist or there's an error
     try {
       const fallbackPath = path.join(__dirname, 'llm_promt.md');
       const fallbackContent = await fs.readFile(fallbackPath, 'utf8');
-      
+
       res.json({
         version: 'original',
-        content: fallbackContent
+        content: fallbackContent,
       });
     } catch (fallbackError) {
       console.error('Error reading fallback prompt file:', fallbackError);
@@ -2516,8 +2854,6 @@ app.get('/api/prompt-content', async (req, res) => {
     }
   }
 });
-
-
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 HomeDash Backend Server Started`);
