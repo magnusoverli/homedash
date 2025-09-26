@@ -1,0 +1,21 @@
+# Production override file for server deployment
+# Use this with: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  homedash-app:
+    environment:
+      - NODE_ENV=production
+      # No VITE_API_URL - enables automatic hostname detection
+      # App will use window.location.hostname:3001 automatically
+    # Remove development volumes if they exist
+    volumes: []
+
+  homedash-backend:
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    # Remove development command override
+    command: node server.js
+    # Remove development volumes if they exist  
+    volumes:
+      - homedash-data:/app/data

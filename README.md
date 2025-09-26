@@ -48,7 +48,68 @@ HomeDash is a modern React-based family dashboard that helps families manage sch
    - Docker
    - Docker Compose
 
-2. **Deploy the application**
+2. **Portable Deployment** (Works on any system)
+   ```bash
+   # Clone the repository
+   git clone <repository-url>
+   cd homedash2
+   
+   # Start the application (automatically detects your system's IP/hostname)
+   docker-compose up -d
+   
+   # Access the application
+   # Local: http://localhost:3000
+   # Network: http://<your-system-ip>:3000
+   ```
+   
+   **The application automatically detects your hostname/IP** - no configuration needed!
+
+3. **Advanced Deployment Options**
+   
+   **Standard deployment (automatic hostname detection):**
+   ```bash
+   docker-compose up -d
+   ```
+   
+   **Custom API URL (for reverse proxies, custom domains):**
+   ```bash
+   # Edit docker-compose.custom.yml to set your custom VITE_API_URL
+   docker-compose -f docker-compose.yml -f docker-compose.custom.yml up -d
+   ```
+   
+   **Production deployment:**
+   ```bash
+   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+   ```
+
+## 🌐 Network Access & Deployment
+
+### Automatic Hostname Detection
+
+The application is designed for **zero-configuration deployment**:
+
+- **Local access**: `http://localhost:3000`
+- **Network access**: `http://<server-ip>:3000` 
+- **Domain access**: `http://yourdomain.com:3000`
+
+The frontend automatically detects the hostname you're using and configures the API calls accordingly. This means:
+
+✅ **Works out of the box** on any Docker-enabled system  
+✅ **No IP configuration needed**  
+✅ **Portable across different environments**  
+✅ **Scales from localhost to production**
+
+### Deployment Examples
+
+| Scenario | Access URL | Configuration |
+|----------|------------|---------------|
+| Local development | `http://localhost:3000` | `docker-compose up -d` |
+| Home server | `http://192.168.1.100:3000` | `docker-compose up -d` |
+| Cloud server | `http://your-server-ip:3000` | `docker-compose up -d` |
+| Custom domain | `http://homedash.yourdomain.com:3000` | `docker-compose up -d` |
+| Reverse proxy | `https://homedash.yourdomain.com` | Use `docker-compose.custom.yml` |
+
+2. **Legacy: Deploy the application**
    ```bash
    # Clone the repository
    git clone <repository-url>

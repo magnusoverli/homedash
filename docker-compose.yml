@@ -6,10 +6,13 @@ services:
       args: []
     container_name: homedash-app
     restart: unless-stopped
-    network_mode: host
+    ports:
+      - "3000:3000"
+    networks:
+      - homedash-network
     environment:
       - NODE_ENV=production
-      - VITE_API_URL=http://localhost:3001
+      # Removed VITE_API_URL to enable dynamic detection based on hostname
     depends_on:
       - homedash-backend
     healthcheck:
@@ -33,7 +36,10 @@ services:
       dockerfile: Dockerfile
     container_name: homedash-backend
     restart: unless-stopped
-    network_mode: host
+    ports:
+      - "3001:3001"
+    networks:
+      - homedash-network
     environment:
       - NODE_ENV=production
       - PORT=3001
@@ -56,3 +62,7 @@ services:
 
 volumes:
   homedash-data:
+
+networks:
+  homedash-network:
+    driver: bridge
