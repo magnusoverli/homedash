@@ -315,10 +315,20 @@ app.post('/api/test-spond-credentials', async (req, res) => {
       console.log('📥 Real Spond API response body:');
       console.log(JSON.stringify(responseData, null, 2));
 
+      // Extract Spond user ID from the response
+      const spondUserId =
+        responseData.id || responseData.userId || responseData.user?.id;
+      if (spondUserId) {
+        console.log(`👤 Spond User ID extracted: ${spondUserId}`);
+      } else {
+        console.log('⚠️ Could not extract Spond user ID from response');
+      }
+
       return res.json({
         valid: true,
         message: 'Spond credentials validated successfully! ✓',
         responseData: responseData,
+        spondUserId: spondUserId,
       });
     } else {
       const errorData = await response
@@ -377,11 +387,12 @@ app.post('/api/test-spond-credentials', async (req, res) => {
 // Store Spond credentials for a family member
 app.post('/api/spond-credentials/:memberId', async (req, res) => {
   const { memberId } = req.params;
-  const { email, password, loginToken, userData } = req.body;
+  const { email, password, loginToken, userData, spondUserId } = req.body;
 
   console.log(`💾 Storing Spond credentials for member ${memberId}`);
   console.log(`📧 Email: ${email}`);
   console.log(`🔑 Login token: ${loginToken ? '[PRESENT]' : '[MISSING]'}`);
+  console.log(`👤 Spond User ID: ${spondUserId || '[NOT PROVIDED]'}`);
 
   if (!email || !password) {
     return res.status(400).json({
@@ -395,6 +406,7 @@ app.post('/api/spond-credentials/:memberId', async (req, res) => {
       email,
       password, // In production, this should be encrypted
       loginToken: loginToken || null,
+      spondUserId: spondUserId || null,
       userData: userData ? JSON.stringify(userData) : null,
       // Token lifecycle tracking
       tokenCreatedAt: loginToken ? new Date().toISOString() : null,
@@ -470,6 +482,7 @@ app.get('/api/spond-credentials/:memberId', async (req, res) => {
       hasCredentials: true,
       authenticated: !!credentialData.loginToken,
       email: credentialData.email,
+      spondUserId: credentialData.spondUserId,
       lastAuthenticated: credentialData.lastAuthenticated,
       userData: credentialData.userData
         ? JSON.parse(credentialData.userData)
@@ -693,6 +706,234 @@ app.post('/api/validate-spond-token/:memberId', async (req, res) => {
       valid: false,
       error: 'VALIDATION_ERROR',
       message: 'Failed to validate token due to network error',
+    });
+  }
+});
+
+// Refresh Spond user ID for existing credentials (migration helper)
+app.post('/api/spond-refresh-userid/:memberId', async (req, res) => {
+  const { memberId } = req.params;
+
+  console.log(`🔄 Refreshing Spond user ID for member ${memberId}`);
+
+  try {
+    // Get stored credentials
+    const result = await getOne('SELECT value FROM settings WHERE key = ?', [
+      `spond_credentials_${memberId}`,
+    ]);
+
+    if (!result) {
+      console.log(`❌ No stored credentials found for member ${memberId}`);
+      return res.status(404).json({
+        error: 'NO_CREDENTIALS',
+        message: 'No stored credentials found',
+      });
+    }
+
+    const credentialData = JSON.parse(result.value);
+
+    if (credentialData.spondUserId) {
+      console.log(
+        `✅ Spond user ID already exists: ${credentialData.spondUserId}`
+      );
+      return res.json({
+        success: true,
+        message: 'Spond user ID already stored',
+        spondUserId: credentialData.spondUserId,
+      });
+    }
+
+    // Re-authenticate to get the user ID
+    console.log(`🔐 Re-authenticating to fetch Spond user ID...`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    const response = await fetch('https://api.spond.com/core/v1/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: credentialData.email,
+        password: credentialData.password,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (response.ok) {
+      const responseData = await response.json();
+
+      // Extract Spond user ID
+      const spondUserId =
+        responseData.id || responseData.userId || responseData.user?.id;
+
+      if (spondUserId) {
+        console.log(`✅ Successfully fetched Spond user ID: ${spondUserId}`);
+
+        // Update stored credentials with the user ID and new token
+        const updatedCredentials = {
+          ...credentialData,
+          spondUserId: spondUserId,
+          loginToken: responseData.loginToken || credentialData.loginToken,
+          userData: JSON.stringify(responseData),
+          lastAuthenticated: new Date().toISOString(),
+          authenticationCount: (credentialData.authenticationCount || 0) + 1,
+        };
+
+        await runQuery(
+          `UPDATE settings SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE key = ?`,
+          [JSON.stringify(updatedCredentials), `spond_credentials_${memberId}`]
+        );
+
+        return res.json({
+          success: true,
+          message: 'Spond user ID successfully updated',
+          spondUserId: spondUserId,
+        });
+      } else {
+        console.log(`⚠️ Could not extract Spond user ID from response`);
+        return res.status(500).json({
+          error: 'USERID_NOT_FOUND',
+          message:
+            'Could not extract Spond user ID from authentication response',
+        });
+      }
+    } else {
+      console.log(`❌ Re-authentication failed: ${response.status}`);
+      return res.status(401).json({
+        error: 'AUTH_FAILED',
+        message: 'Failed to re-authenticate with Spond',
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error refreshing Spond user ID:', error);
+
+    if (error.name === 'AbortError') {
+      return res.status(500).json({
+        error: 'TIMEOUT',
+        message: 'Request timed out',
+      });
+    }
+
+    return res.status(500).json({
+      error: 'REFRESH_ERROR',
+      message: 'Failed to refresh Spond user ID',
+    });
+  }
+});
+
+// Refresh Spond user ID for existing credentials (migration helper)
+app.post('/api/spond-refresh-userid/:memberId', async (req, res) => {
+  const { memberId } = req.params;
+
+  console.log(`🔄 Refreshing Spond user ID for member ${memberId}`);
+
+  try {
+    // Get stored credentials
+    const result = await getOne('SELECT value FROM settings WHERE key = ?', [
+      `spond_credentials_${memberId}`,
+    ]);
+
+    if (!result) {
+      console.log(`❌ No stored credentials found for member ${memberId}`);
+      return res.status(404).json({
+        error: 'NO_CREDENTIALS',
+        message: 'No stored credentials found',
+      });
+    }
+
+    const credentialData = JSON.parse(result.value);
+
+    if (credentialData.spondUserId) {
+      console.log(
+        `✅ Spond user ID already exists: ${credentialData.spondUserId}`
+      );
+      return res.json({
+        success: true,
+        message: 'Spond user ID already stored',
+        spondUserId: credentialData.spondUserId,
+      });
+    }
+
+    // Re-authenticate to get the user ID
+    console.log(`🔐 Re-authenticating to fetch Spond user ID...`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    const response = await fetch('https://api.spond.com/core/v1/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: credentialData.email,
+        password: credentialData.password,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (response.ok) {
+      const responseData = await response.json();
+
+      // Extract Spond user ID
+      const spondUserId =
+        responseData.id || responseData.userId || responseData.user?.id;
+
+      if (spondUserId) {
+        console.log(`✅ Successfully fetched Spond user ID: ${spondUserId}`);
+
+        // Update stored credentials with the user ID and new token
+        const updatedCredentials = {
+          ...credentialData,
+          spondUserId: spondUserId,
+          loginToken: responseData.loginToken || credentialData.loginToken,
+          userData: JSON.stringify(responseData),
+          lastAuthenticated: new Date().toISOString(),
+          authenticationCount: (credentialData.authenticationCount || 0) + 1,
+        };
+
+        await runQuery(
+          `UPDATE settings SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE key = ?`,
+          [JSON.stringify(updatedCredentials), `spond_credentials_${memberId}`]
+        );
+
+        return res.json({
+          success: true,
+          message: 'Spond user ID successfully updated',
+          spondUserId: spondUserId,
+        });
+      } else {
+        console.log(`⚠️ Could not extract Spond user ID from response`);
+        return res.status(500).json({
+          error: 'USERID_NOT_FOUND',
+          message:
+            'Could not extract Spond user ID from authentication response',
+        });
+      }
+    } else {
+      console.log(`❌ Re-authentication failed: ${response.status}`);
+      return res.status(401).json({
+        error: 'AUTH_FAILED',
+        message: 'Failed to re-authenticate with Spond',
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error refreshing Spond user ID:', error);
+
+    if (error.name === 'AbortError') {
+      return res.status(500).json({
+        error: 'TIMEOUT',
+        message: 'Request timed out',
+      });
+    }
+
+    return res.status(500).json({
+      error: 'REFRESH_ERROR',
+      message: 'Failed to refresh Spond user ID',
     });
   }
 });
@@ -993,6 +1234,18 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
       });
     }
 
+    // Extract Spond user ID for response checking
+    const spondUserId = credentialData.spondUserId;
+    if (!spondUserId) {
+      console.log(
+        `⚠️ No Spond user ID found for member ${memberId} - response status tracking may not work`
+      );
+    } else {
+      console.log(
+        `👤 Using Spond user ID: ${spondUserId} for response tracking`
+      );
+    }
+
     // Get active groups for this member
     const activeGroups = await getAll(
       'SELECT id, name FROM spond_groups WHERE member_id = ? AND is_active = TRUE',
@@ -1087,9 +1340,9 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
                 id, group_id, member_id, title, description, 
                 start_timestamp, end_timestamp, location_name, location_address,
                 location_latitude, location_longitude, activity_type, is_cancelled,
-                max_accepted, auto_accept, response_status, organizer_name, raw_data,
+                max_accepted, auto_accept, response_status, response_comment, organizer_name, raw_data,
                 updated_at
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
               [
                 activity.id,
                 group.id,
@@ -1108,11 +1361,14 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
                 activity.cancelled || false,
                 activity.maxAccepted || null,
                 activity.autoAccept || false,
-                activity.responses?.[memberId]?.accepted
+                // Use Spond user ID to check response status, fallback to memberId if not available
+                activity.responses?.[spondUserId || memberId]?.accepted
                   ? 'accepted'
-                  : activity.responses?.[memberId]?.responded
+                  : activity.responses?.[spondUserId || memberId]?.responded
                     ? 'declined'
                     : null,
+                // Add response comment if available
+                activity.responses?.[spondUserId || memberId]?.comment || null,
                 activity.organizer?.firstName ||
                   activity.owners?.[0]?.profile?.firstName ||
                   null,
