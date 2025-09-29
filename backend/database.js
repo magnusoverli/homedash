@@ -310,21 +310,51 @@ const initDatabase = () => {
                         }
                         console.log('✅ spond_sync_log table created/verified');
 
-                        // Re-enable foreign key constraints
-                        db.run('PRAGMA foreign_keys = ON', pragmaErr2 => {
-                          if (pragmaErr2) {
-                            console.error(
-                              '❌ Error re-enabling foreign keys:',
-                              pragmaErr2
+                        // Create Spond Profile Mappings Table
+                        db.run(
+                          `CREATE TABLE IF NOT EXISTS spond_profile_mappings (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            member_id INTEGER NOT NULL,
+                            spond_profile_id TEXT NOT NULL,
+                            profile_name TEXT,
+                            profile_type TEXT CHECK(profile_type IN ('self', 'child', 'dependent')),
+                            parent_user_id TEXT,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            FOREIGN KEY (member_id) REFERENCES family_members(id) ON DELETE CASCADE,
+                            UNIQUE(member_id)
+                          )`,
+                          err => {
+                            if (err) {
+                              console.error(
+                                '❌ Error creating spond_profile_mappings table:',
+                                err
+                              );
+                              return tableReject(err);
+                            }
+                            console.log(
+                              '✅ spond_profile_mappings table created/verified'
                             );
-                            return tableReject(pragmaErr2);
+
+                            // Re-enable foreign key constraints
+                            db.run('PRAGMA foreign_keys = ON', pragmaErr2 => {
+                              if (pragmaErr2) {
+                                console.error(
+                                  '❌ Error re-enabling foreign keys:',
+                                  pragmaErr2
+                                );
+                                return tableReject(pragmaErr2);
+                              }
+                              console.log(
+                                '🔧 Re-enabled foreign key constraints'
+                              );
+                              console.log(
+                                '🎉 All Spond tables created/verified successfully'
+                              );
+                              tableResolve();
+                            });
                           }
-                          console.log('🔧 Re-enabled foreign key constraints');
-                          console.log(
-                            '🎉 All Spond tables created/verified successfully'
-                          );
-                          tableResolve();
-                        });
+                        );
                       }
                     );
                   }
@@ -405,10 +435,27 @@ const initDatabase = () => {
                                 return indexReject(err);
                               }
 
-                              console.log(
-                                'All Spond indexes created successfully'
+                              // Create index for profile mappings
+                              db.run(
+                                `CREATE INDEX IF NOT EXISTS idx_spond_profile_mappings_member 
+                                ON spond_profile_mappings(member_id)`,
+                                err => {
+                                  if (
+                                    err &&
+                                    !err.message.includes('no such table')
+                                  ) {
+                                    console.error(
+                                      'Error creating idx_spond_profile_mappings_member:',
+                                      err
+                                    );
+                                  }
+
+                                  console.log(
+                                    'All Spond indexes created successfully'
+                                  );
+                                  indexResolve();
+                                }
                               );
-                              indexResolve();
                             }
                           );
                         }

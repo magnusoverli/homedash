@@ -308,8 +308,12 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .button-remove-image {
@@ -460,7 +464,6 @@
   border: 1px solid rgba(255, 165, 0, 0.3);
 }
 
-
 .status-icon {
   font-size: 1.25rem;
   flex-shrink: 0;
@@ -480,7 +483,6 @@
   color: #ffa500;
 }
 
-
 .status-details {
   font-size: 0.8rem;
   opacity: 0.8;
@@ -493,7 +495,6 @@
   padding-top: 1rem;
   border-top: 1px solid rgba(103, 4, 255, 0.1);
 }
-
 
 .spond-password-input-group {
   display: flex;
@@ -549,7 +550,6 @@
   color: #ef4444;
 }
 
-
 /* Advanced Settings */
 .advanced-settings-form {
   display: flex;
@@ -558,7 +558,11 @@
 }
 
 .danger-zone {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(185, 28, 28, 0.03) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(239, 68, 68, 0.05) 0%,
+    rgba(185, 28, 28, 0.03) 100%
+  );
   border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 5px;
   padding: 1.5rem;
@@ -842,7 +846,6 @@
     height: 45px;
   }
 
-
   .upload-label {
     padding: 1.5rem;
     min-height: 160px;
@@ -954,7 +957,11 @@
 .schedule-delete-confirmation {
   margin-top: 1rem;
   padding: 1rem;
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.08) 0%, rgba(245, 158, 11, 0.05) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(251, 191, 36, 0.08) 0%,
+    rgba(245, 158, 11, 0.05) 100%
+  );
   border: 1px solid rgba(245, 158, 11, 0.2);
   border-radius: 5px;
   animation: slideDown 0.2s ease-out;
@@ -1116,6 +1123,14 @@
   color: #ff6b6b;
 }
 
+.empty-subtitle {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: rgba(183, 129, 255, 0.7);
+  max-width: 350px;
+  line-height: 1.4;
+}
+
 /* Group Items */
 .group-item {
   display: flex;
@@ -1168,7 +1183,7 @@
   user-select: none;
 }
 
-.group-checkbox input[type="checkbox"] {
+.group-checkbox input[type='checkbox'] {
   display: none;
 }
 
@@ -1186,12 +1201,12 @@
   border-color: rgba(103, 4, 255, 0.6);
 }
 
-.group-checkbox input[type="checkbox"]:checked + .checkbox-custom {
+.group-checkbox input[type='checkbox']:checked + .checkbox-custom {
   background: #6704ff;
   border-color: #6704ff;
 }
 
-.group-checkbox input[type="checkbox"]:checked + .checkbox-custom::after {
+.group-checkbox input[type='checkbox']:checked + .checkbox-custom::after {
   content: '✓';
   position: absolute;
   top: 50%;
@@ -1219,7 +1234,6 @@
   border-top: 1px solid rgba(103, 4, 255, 0.1);
   margin-top: 1.5rem;
 }
-
 
 /* School Calendar Import Styles */
 .calendar-import-form {
@@ -1329,4 +1343,34 @@
 .calendar-help-text li {
   margin-bottom: 0.25rem;
   word-break: break-all;
+}
+
+.groups-button.profile-button-warning {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.groups-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(107, 114, 128, 0.1);
+  border-color: rgba(107, 114, 128, 0.3);
+  color: #6b7280;
+}
+
+.groups-button:disabled:hover {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
 }

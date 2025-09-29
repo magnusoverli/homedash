@@ -315,12 +315,31 @@ app.post('/api/test-spond-credentials', async (req, res) => {
       console.log('📥 Real Spond API response body:');
       console.log(JSON.stringify(responseData, null, 2));
 
-      // Extract Spond user ID from the response
-      const spondUserId =
-        responseData.id || responseData.userId || responseData.user?.id;
-      if (spondUserId) {
-        console.log(`👤 Spond User ID extracted: ${spondUserId}`);
-      } else {
+      // Extract Spond user ID from the passwordToken JWT
+      let spondUserId = null;
+
+      try {
+        if (responseData.passwordToken) {
+          console.log('🔍 Extracting user ID from passwordToken JWT...');
+          const tokenParts = responseData.passwordToken.split('.');
+          if (tokenParts.length === 3) {
+            // Decode the JWT payload (base64url decode)
+            const payload = Buffer.from(tokenParts[1], 'base64').toString(
+              'utf-8'
+            );
+            const parsedPayload = JSON.parse(payload);
+
+            if (parsedPayload.sub) {
+              spondUserId = parsedPayload.sub;
+              console.log(`👤 Extracted user ID from JWT: ${spondUserId}`);
+            }
+          }
+        }
+      } catch (error) {
+        console.log('⚠️ Error extracting user ID from JWT:', error.message);
+      }
+
+      if (!spondUserId) {
         console.log('⚠️ Could not extract Spond user ID from response');
       }
 
@@ -938,7 +957,7 @@ app.post('/api/spond-refresh-userid/:memberId', async (req, res) => {
   }
 });
 
-// Fetch Spond groups for authenticated member
+// Fetch Spond profile-groups combinations for authenticated member
 app.get('/api/spond-groups/:memberId', async (req, res) => {
   const { memberId } = req.params;
 
@@ -1002,68 +1021,131 @@ app.get('/api/spond-groups/:memberId', async (req, res) => {
         console.log(`⚠️ No groups found for this user`);
       }
 
-      // Store/update groups in spond_groups table
-      console.log(`💾 Storing groups in database for member ${memberId}`);
+      // Extract profile-group combinations for this parent's children
+      const profileGroups = [];
+      const parentUserId = credentialData.spondUserId;
 
       try {
         for (const group of groupsData) {
-          // Check if group already exists to preserve is_active state
-          const existingGroup = await getOne(
-            'SELECT is_active FROM spond_groups WHERE id = ? AND member_id = ?',
-            [group.id, memberId]
-          );
+          if (group.members && Array.isArray(group.members)) {
+            for (const member of group.members) {
+              // Check if this member is a child of the authenticated parent
+              let isMyChild = false;
 
-          if (existingGroup) {
-            // Update only metadata fields, preserve is_active
-            await runQuery(
-              `UPDATE spond_groups 
-               SET name = ?, description = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP
-               WHERE id = ? AND member_id = ?`,
-              [
-                group.name,
-                group.description || null,
-                group.imageUrl || null,
-                group.id,
-                memberId,
-              ]
-            );
-          } else {
-            // Insert new group with default is_active = FALSE
-            await runQuery(
-              `INSERT INTO spond_groups (id, member_id, name, description, image_url, is_active, updated_at)
-               VALUES (?, ?, ?, ?, ?, FALSE, CURRENT_TIMESTAMP)`,
-              [
-                group.id,
-                memberId,
-                group.name,
-                group.description || null,
-                group.imageUrl || null,
-              ]
-            );
+              // Check by guardians
+              if (member.guardians && Array.isArray(member.guardians)) {
+                for (const guardian of member.guardians) {
+                  if (
+                    guardian.id === parentUserId ||
+                    guardian.email === credentialData.email ||
+                    guardian.profile?.id === parentUserId
+                  ) {
+                    isMyChild = true;
+                    break;
+                  }
+                }
+              }
+
+              // Also include if it's the parent themselves (by email match)
+              if (member.email === credentialData.email) {
+                isMyChild = true;
+              }
+
+              if (isMyChild) {
+                const profileId =
+                  member.id || member.userId || member.profile?.id;
+                const profileName =
+                  `${member.firstName || ''} ${member.lastName || ''}`.trim();
+
+                // Create a unique entry for this profile-group combination
+                const profileGroupKey = `${profileId}_${group.id}`;
+                profileGroups.push({
+                  key: profileGroupKey,
+                  groupId: group.id,
+                  groupName: group.name,
+                  profileId: profileId,
+                  profileName: profileName,
+                  displayName: `${profileName} - ${group.name}`,
+                  isParent: member.email === credentialData.email,
+                });
+
+                // Store/update this profile-group combination in database
+                const existingGroup = await getOne(
+                  'SELECT is_active FROM spond_groups WHERE id = ? AND member_id = ? AND profile_id = ?',
+                  [group.id, memberId, profileId]
+                );
+
+                if (existingGroup) {
+                  // Update only metadata fields, preserve is_active
+                  await runQuery(
+                    `UPDATE spond_groups 
+                   SET name = ?, description = ?, image_url = ?, profile_name = ?, updated_at = CURRENT_TIMESTAMP
+                   WHERE id = ? AND member_id = ? AND profile_id = ?`,
+                    [
+                      group.name,
+                      group.description || null,
+                      group.imageUrl || null,
+                      profileName,
+                      group.id,
+                      memberId,
+                      profileId,
+                    ]
+                  );
+                } else {
+                  // Insert new profile-group combination with default is_active = FALSE
+                  await runQuery(
+                    `INSERT OR REPLACE INTO spond_groups (id, member_id, name, description, image_url, profile_id, profile_name, is_active, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, FALSE, CURRENT_TIMESTAMP)`,
+                    [
+                      group.id,
+                      memberId,
+                      group.name,
+                      group.description || null,
+                      group.imageUrl || null,
+                      profileId,
+                      profileName,
+                    ]
+                  );
+                }
+              }
+            }
           }
         }
+
         console.log(
-          `✅ Successfully stored ${groupsData.length} groups in database`
+          `✅ Found ${profileGroups.length} profile-group combinations`
         );
       } catch (dbError) {
         console.error('❌ Error storing groups in database:', dbError);
         // Continue with API response even if database storage fails
       }
 
-      // Get groups with their current selection status from database
+      // Get profile-groups with their current selection status from database
       try {
         const storedGroups = await getAll(
-          `SELECT id, name, description, image_url, is_active, last_synced_at 
+          `SELECT id, name, description, image_url, profile_id, profile_name, is_active, last_synced_at 
            FROM spond_groups 
            WHERE member_id = ? 
-           ORDER BY name`,
+           ORDER BY profile_name, name`,
           [memberId]
         );
 
+        // Format the response to include both the stored groups and the profile groups
+        const formattedGroups = storedGroups.map(g => ({
+          key: `${g.profile_id}_${g.id}`,
+          groupId: g.id,
+          groupName: g.name,
+          profileId: g.profile_id,
+          profileName: g.profile_name,
+          displayName: `${g.profile_name} - ${g.name}`,
+          isActive: g.is_active,
+          lastSyncedAt: g.last_synced_at,
+        }));
+
         return res.json({
           success: true,
-          groups: storedGroups,
-          message: `Found ${storedGroups.length} groups`,
+          groups: formattedGroups,
+          message: `Found ${formattedGroups.length} profile-group combinations`,
         });
       } catch (dbError) {
         console.error('❌ Error retrieving stored groups:', dbError);
@@ -1121,39 +1203,434 @@ app.get('/api/spond-groups/:memberId', async (req, res) => {
   }
 });
 
-// Save selected Spond groups for a member
-app.post('/api/spond-groups/:memberId/selections', async (req, res) => {
+// Fetch available Spond profiles (members) from all groups
+app.get('/api/spond-profiles/:memberId', async (req, res) => {
   const { memberId } = req.params;
-  const { selectedGroupIds } = req.body;
 
+  console.log(`🔍 Fetching available Spond profiles for member ${memberId}`);
+
+  try {
+    // Get stored credentials
+    const result = await getOne('SELECT value FROM settings WHERE key = ?', [
+      `spond_credentials_${memberId}`,
+    ]);
+
+    if (!result) {
+      console.log(`❌ No stored credentials found for member ${memberId}`);
+      return res.status(404).json({
+        error: 'NO_CREDENTIALS',
+        message: 'No stored credentials found',
+      });
+    }
+
+    const credentialData = JSON.parse(result.value);
+
+    if (!credentialData.loginToken) {
+      console.log(`❌ No stored token found for member ${memberId}`);
+      return res.status(404).json({
+        error: 'NO_TOKEN',
+        message: 'No stored token found',
+      });
+    }
+
+    const parentUserId = credentialData.spondUserId;
+    console.log(`👤 Parent user ID: ${parentUserId || 'Not available'}`);
+
+    console.log(`🔑 Using stored token to fetch groups with member details`);
+    console.log(`📡 Making API call to: https://api.spond.com/core/v1/groups/`);
+
+    // Fetch groups from Spond API
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    const response = await fetch('https://api.spond.com/core/v1/groups/', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${credentialData.loginToken}`,
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    console.log(`📊 Spond groups API response status: ${response.status}`);
+
+    if (response.ok) {
+      const groupsData = await response.json();
+      console.log(`✅ Successfully fetched ${groupsData.length} groups`);
+
+      // Extract unique profiles from all groups
+      const profilesMap = new Map();
+
+      for (const group of groupsData) {
+        // Check if group has members array
+        if (group.members && Array.isArray(group.members)) {
+          console.log(
+            `📋 Processing group "${group.name}" with ${group.members.length} members`
+          );
+
+          for (const member of group.members) {
+            const profileId = member.id || member.userId || member.profile?.id;
+
+            // Debug: Log guardian info if present
+            if (member.guardians && member.guardians.length > 0) {
+              console.log(
+                `   👥 Member ${member.firstName} ${member.lastName} (ID: ${profileId}) has ${member.guardians.length} guardian(s)`
+              );
+            }
+
+            if (profileId && !profilesMap.has(profileId)) {
+              console.log(
+                `   ➕ Adding new profile: ${member.firstName} ${member.lastName} (ID: ${profileId})`
+              );
+            } else if (profileId && profilesMap.has(profileId)) {
+              console.log(
+                `   🔄 Profile already exists: ${member.firstName} ${member.lastName} (ID: ${profileId}), adding group: ${group.name}`
+              );
+            }
+
+            if (profileId && !profilesMap.has(profileId)) {
+              const profile = {
+                id: profileId,
+                name:
+                  `${member.firstName || ''} ${member.lastName || ''}`.trim() ||
+                  'Unknown',
+                firstName: member.firstName || '',
+                lastName: member.lastName || '',
+                email: member.email || null,
+                groups: [group.name],
+                profileType: profileId === parentUserId ? 'self' : 'child',
+                // Store additional useful data
+                dateOfBirth: member.dateOfBirth || null,
+                guardians: member.guardians || [],
+              };
+
+              profilesMap.set(profileId, profile);
+            } else if (profileId && profilesMap.has(profileId)) {
+              // Add this group to the existing profile's groups list
+              profilesMap.get(profileId).groups.push(group.name);
+            }
+          }
+        }
+
+        // Also check subGroups if they exist
+        if (group.subGroups && Array.isArray(group.subGroups)) {
+          for (const subGroup of group.subGroups) {
+            if (subGroup.members && Array.isArray(subGroup.members)) {
+              for (const member of subGroup.members) {
+                const profileId =
+                  member.id || member.userId || member.profile?.id;
+
+                if (profileId && !profilesMap.has(profileId)) {
+                  // Debug: Log guardian info if present
+                  if (member.guardians && member.guardians.length > 0) {
+                    console.log(
+                      `   👥 Member ${member.firstName} has ${member.guardians.length} guardian(s)`
+                    );
+                  }
+
+                  const profile = {
+                    id: profileId,
+                    name:
+                      `${member.firstName || ''} ${member.lastName || ''}`.trim() ||
+                      'Unknown',
+                    firstName: member.firstName || '',
+                    lastName: member.lastName || '',
+                    email: member.email || null,
+                    groups: [group.name],
+                    profileType: profileId === parentUserId ? 'self' : 'child',
+                    // Store additional useful data
+                    dateOfBirth: member.dateOfBirth || null,
+                    guardians: member.guardians || [],
+                  };
+
+                  profilesMap.set(profileId, profile);
+                } else if (profileId && profilesMap.has(profileId)) {
+                  profilesMap
+                    .get(profileId)
+                    .groups.push(`${group.name} - ${subGroup.name}`);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      let allProfiles = Array.from(profilesMap.values());
+      console.log(
+        `📊 Found ${allProfiles.length} total unique profiles across all groups`
+      );
+
+      // Filter to only show profiles that are related to this parent
+      const filteredProfiles = allProfiles.filter(profile => {
+        // Include if it's the parent's own profile (by email match or ID match)
+        if (profile.email === credentialData.email) {
+          profile.profileType = 'self';
+          return true;
+        }
+        if (profile.id === parentUserId) {
+          profile.profileType = 'self';
+          return true;
+        }
+
+        // Include if the parent is listed as a guardian for this profile
+        if (profile.guardians && Array.isArray(profile.guardians)) {
+          for (const guardian of profile.guardians) {
+            // Check if guardian ID matches parent ID or email matches
+            if (
+              guardian.id === parentUserId ||
+              guardian.email === credentialData.email ||
+              guardian.profile?.id === parentUserId
+            ) {
+              profile.profileType = 'child';
+              console.log(`👶 Found child: ${profile.name} (guardian match)`);
+              return true;
+            }
+          }
+        }
+
+        // For debugging: Check if this might be a child based on same last name
+        // (This is a heuristic, not definitive)
+        const parentName = credentialData.userData?.name || '';
+        const parentLastName = parentName.split(' ').pop();
+        if (
+          parentLastName &&
+          profile.lastName === parentLastName &&
+          !profile.email
+        ) {
+          console.log(`🔍 Possible child (same last name): ${profile.name}`);
+          // Don't auto-include, just log for debugging
+        }
+
+        return false;
+      });
+
+      console.log(
+        `✅ Filtered to ${filteredProfiles.length} profiles related to parent`
+      );
+
+      // Log each filtered profile with their groups to verify deduplication
+      filteredProfiles.forEach(profile => {
+        console.log(
+          `  - ${profile.name} (ID: ${profile.id}): ${profile.groups.length} groups: ${profile.groups.join(', ')}`
+        );
+      });
+
+      // Log profile summary
+      const selfProfiles = filteredProfiles.filter(
+        p => p.profileType === 'self'
+      );
+      const childProfiles = filteredProfiles.filter(
+        p => p.profileType === 'child'
+      );
+      console.log(
+        `👤 Self profiles: ${selfProfiles.length}, Child profiles: ${childProfiles.length}`
+      );
+
+      // Check if this member already has a profile mapping
+      const existingMapping = await getOne(
+        'SELECT * FROM spond_profile_mappings WHERE member_id = ?',
+        [memberId]
+      );
+
+      return res.json({
+        success: true,
+        profiles: filteredProfiles,
+        parentUserId: parentUserId,
+        existingMapping: existingMapping || null,
+        message: `Found ${filteredProfiles.length} profiles for this parent account`,
+      });
+    } else {
+      console.log(`❌ Groups fetch failed with status: ${response.status}`);
+
+      if (response.status === 401) {
+        console.log(`🔒 Token appears to be expired - authentication required`);
+        return res.status(401).json({
+          error: 'TOKEN_EXPIRED',
+          message: 'Authentication token has expired',
+        });
+      }
+
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: 'Unknown error' }));
+      console.log(`💥 Error response:`, errorData);
+
+      return res.status(response.status).json({
+        error: 'PROFILES_FETCH_FAILED',
+        message: `Failed to fetch profiles: ${errorData.error || 'Unknown error'}`,
+        statusCode: response.status,
+      });
+    }
+  } catch (error) {
+    console.error('💥 Error fetching Spond profiles:', error);
+
+    if (error.name === 'AbortError') {
+      console.log(`⏱️ Profiles fetch timed out after 15 seconds`);
+      return res.status(500).json({
+        error: 'TIMEOUT',
+        message: 'Profiles fetch timed out',
+      });
+    }
+
+    return res.status(500).json({
+      error: 'FETCH_ERROR',
+      message: 'Failed to fetch profiles due to network error',
+    });
+  }
+});
+
+// Save Spond profile mapping for a member
+app.post('/api/spond-profile-mapping/:memberId', async (req, res) => {
+  const { memberId } = req.params;
+  const { profileId, profileName, profileType } = req.body;
+
+  console.log(`💾 Saving profile mapping for member ${memberId}`);
   console.log(
-    `💾 Saving group selections for member ${memberId}:`,
-    selectedGroupIds
+    `👤 Profile: ${profileName} (${profileId}), Type: ${profileType}`
   );
 
-  if (!Array.isArray(selectedGroupIds)) {
+  if (!profileId || !profileName) {
     return res.status(400).json({
       error: 'INVALID_INPUT',
-      message: 'selectedGroupIds must be an array',
+      message: 'profileId and profileName are required',
     });
   }
 
   try {
-    // First, set all groups for this member to inactive
+    // Get the parent user ID from credentials
+    const credResult = await getOne(
+      'SELECT value FROM settings WHERE key = ?',
+      [`spond_credentials_${memberId}`]
+    );
+
+    if (!credResult) {
+      return res.status(404).json({
+        error: 'NO_CREDENTIALS',
+        message: 'No stored credentials found',
+      });
+    }
+
+    const credentialData = JSON.parse(credResult.value);
+    const parentUserId = credentialData.spondUserId;
+
+    // Check if mapping already exists
+    const existingMapping = await getOne(
+      'SELECT id FROM spond_profile_mappings WHERE member_id = ?',
+      [memberId]
+    );
+
+    if (existingMapping) {
+      // Update existing mapping
+      await runQuery(
+        `UPDATE spond_profile_mappings 
+         SET spond_profile_id = ?, profile_name = ?, profile_type = ?, 
+             parent_user_id = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE member_id = ?`,
+        [profileId, profileName, profileType || 'child', parentUserId, memberId]
+      );
+      console.log(`✅ Updated profile mapping for member ${memberId}`);
+    } else {
+      // Insert new mapping
+      await runQuery(
+        `INSERT INTO spond_profile_mappings 
+         (member_id, spond_profile_id, profile_name, profile_type, parent_user_id)
+         VALUES (?, ?, ?, ?, ?)`,
+        [memberId, profileId, profileName, profileType || 'child', parentUserId]
+      );
+      console.log(`✅ Created new profile mapping for member ${memberId}`);
+    }
+
+    return res.json({
+      success: true,
+      message: 'Profile mapping saved successfully',
+      mapping: {
+        memberId,
+        profileId,
+        profileName,
+        profileType: profileType || 'child',
+        parentUserId,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error saving profile mapping:', error);
+    return res.status(500).json({
+      error: 'SAVE_ERROR',
+      message: 'Failed to save profile mapping',
+    });
+  }
+});
+
+// Get Spond profile mapping for a member
+app.get('/api/spond-profile-mapping/:memberId', async (req, res) => {
+  const { memberId } = req.params;
+
+  console.log(`🔍 Retrieving profile mapping for member ${memberId}`);
+
+  try {
+    const mapping = await getOne(
+      'SELECT * FROM spond_profile_mappings WHERE member_id = ?',
+      [memberId]
+    );
+
+    if (!mapping) {
+      console.log(`❌ No profile mapping found for member ${memberId}`);
+      return res.status(404).json({
+        error: 'NO_MAPPING',
+        message: 'No profile mapping found',
+      });
+    }
+
+    console.log(`✅ Found profile mapping for member ${memberId}`);
+    return res.json({
+      success: true,
+      mapping: mapping,
+    });
+  } catch (error) {
+    console.error('❌ Error retrieving profile mapping:', error);
+    return res.status(500).json({
+      error: 'FETCH_ERROR',
+      message: 'Failed to retrieve profile mapping',
+    });
+  }
+});
+
+// Save selected Spond groups for a member
+app.post('/api/spond-groups/:memberId/selections', async (req, res) => {
+  const { memberId } = req.params;
+  const { selectedProfileGroups } = req.body;
+
+  console.log(
+    `💾 Saving profile-group selections for member ${memberId}:`,
+    selectedProfileGroups
+  );
+
+  if (!Array.isArray(selectedProfileGroups)) {
+    return res.status(400).json({
+      error: 'INVALID_INPUT',
+      message: 'selectedProfileGroups must be an array',
+    });
+  }
+
+  try {
+    // First, set all profile-groups for this member to inactive
     await runQuery(
       'UPDATE spond_groups SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE member_id = ?',
       [memberId]
     );
 
-    // Then, set selected groups to active
-    if (selectedGroupIds.length > 0) {
-      const placeholders = selectedGroupIds.map(() => '?').join(',');
-      await runQuery(
-        `UPDATE spond_groups 
-         SET is_active = TRUE, updated_at = CURRENT_TIMESTAMP 
-         WHERE member_id = ? AND id IN (${placeholders})`,
-        [memberId, ...selectedGroupIds]
-      );
+    // Then, set selected profile-groups to active
+    // Each selection contains: {groupId, profileId}
+    if (selectedProfileGroups.length > 0) {
+      for (const selection of selectedProfileGroups) {
+        await runQuery(
+          `UPDATE spond_groups 
+           SET is_active = TRUE, updated_at = CURRENT_TIMESTAMP 
+           WHERE member_id = ? AND id = ? AND profile_id = ?`,
+          [memberId, selection.groupId, selection.profileId]
+        );
+      }
     }
 
     // Clean up activities from deselected groups
@@ -1182,14 +1659,22 @@ app.post('/api/spond-groups/:memberId/selections', async (req, res) => {
     console.log(
       `✅ Successfully updated group selections for member ${memberId}`
     );
+
+    const inactiveCount =
+      (
+        await getOne(
+          'SELECT COUNT(*) as count FROM spond_groups WHERE member_id = ? AND is_active = FALSE',
+          [memberId]
+        )
+      )?.count || 0;
     console.log(
-      `📊 Active groups: ${selectedGroupIds.length}, Inactive groups: ${(await getOne('SELECT COUNT(*) as count FROM spond_groups WHERE member_id = ? AND is_active = FALSE', [memberId])?.count) || 0}`
+      `📊 Active profile-groups: ${selectedProfileGroups.length}, Inactive profile-groups: ${inactiveCount}`
     );
 
     res.json({
       success: true,
-      message: `Updated selections for ${selectedGroupIds.length} groups`,
-      activeGroups: selectedGroupIds.length,
+      message: `Updated selections for ${selectedProfileGroups.length} activities`,
+      activeGroups: selectedProfileGroups.length,
       activitiesCleanedUp: cleanupResult.changes,
     });
   } catch (error) {
@@ -1246,9 +1731,9 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
       );
     }
 
-    // Get active groups for this member
+    // Get active profile-groups for this member
     const activeGroups = await getAll(
-      'SELECT id, name FROM spond_groups WHERE member_id = ? AND is_active = TRUE',
+      'SELECT id, name, profile_id, profile_name FROM spond_groups WHERE member_id = ? AND is_active = TRUE',
       [memberId]
     );
 
@@ -1272,7 +1757,7 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
     // Fetch activities for each active group
     for (const group of activeGroups) {
       console.log(
-        `🔍 Fetching activities for group "${group.name}" (${group.id})`
+        `🔍 Fetching activities for "${group.profile_name}" in group "${group.name}" (Profile ID: ${group.profile_id})`
       );
 
       try {
@@ -1361,14 +1846,14 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
                 activity.cancelled || false,
                 activity.maxAccepted || null,
                 activity.autoAccept || false,
-                // Use Spond user ID to check response status, fallback to memberId if not available
-                activity.responses?.[spondUserId || memberId]?.accepted
+                // Use the profile ID from this specific group
+                activity.responses?.[group.profile_id]?.accepted
                   ? 'accepted'
-                  : activity.responses?.[spondUserId || memberId]?.responded
+                  : activity.responses?.[group.profile_id]?.responded
                     ? 'declined'
                     : null,
                 // Add response comment if available
-                activity.responses?.[spondUserId || memberId]?.comment || null,
+                activity.responses?.[group.profile_id]?.comment || null,
                 activity.organizer?.firstName ||
                   activity.owners?.[0]?.profile?.firstName ||
                   null,
