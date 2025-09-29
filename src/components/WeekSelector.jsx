@@ -38,9 +38,20 @@ const WeekSelector = ({ currentWeek, onWeekChange }) => {
     onWeekChange(new Date());
   };
 
+  const getWeekNumber = date => {
+    const d = new Date(
+      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+    );
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+  };
+
   const formatDateRange = () => {
     if (!weekStart || !weekEnd) return '';
 
+    const weekNumber = getWeekNumber(weekStart);
     const startMonth = weekStart.toLocaleDateString('en-US', {
       month: 'short',
     });
@@ -50,9 +61,9 @@ const WeekSelector = ({ currentWeek, onWeekChange }) => {
     const year = weekEnd.getFullYear();
 
     if (startMonth === endMonth) {
-      return `${startMonth} ${startDate}-${endDate}, ${year}`;
+      return `Week ${weekNumber} - ${startMonth} ${startDate}-${endDate}, ${year}`;
     } else {
-      return `${startMonth} ${startDate} - ${endMonth} ${endDate}, ${year}`;
+      return `Week ${weekNumber} - ${startMonth} ${startDate}-${endMonth} ${endDate}, ${year}`;
     }
   };
 
@@ -96,7 +107,7 @@ const WeekSelector = ({ currentWeek, onWeekChange }) => {
         </button>
 
         <div className="week-display">
-          <h2 className="week-range">Week of {formatDateRange()}</h2>
+          <h2 className="week-range">{formatDateRange()}</h2>
           <button
             className="today-button"
             onClick={handleToday}

@@ -1878,7 +1878,21 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
                 (() => {
                   let status = null;
                   if (activity.responses) {
-                    if (
+                    // Check if invitation has been sent (at least one accept/decline response)
+                    const invitationSent =
+                      (activity.responses.acceptedIds?.length || 0) +
+                        (activity.responses.declinedIds?.length || 0) >
+                      0;
+
+                    if (!invitationSent) {
+                      // No invitation sent yet - mark as tentative (null)
+                      status = null;
+                      if (groupActivitiesSynced === 0) {
+                        console.log(
+                          `📅 Activity "${activity.heading || activity.title}" - invitation not sent yet (tentative)`
+                        );
+                      }
+                    } else if (
                       activity.responses.acceptedIds?.includes(group.profile_id)
                     ) {
                       status = 'accepted';

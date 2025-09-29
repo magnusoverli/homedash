@@ -47,9 +47,20 @@ const Header = ({ currentWeek, onWeekChange, showWeekSelector = false }) => {
     navigate('/settings');
   };
 
+  const getWeekNumber = date => {
+    const d = new Date(
+      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+    );
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+  };
+
   const formatDateRange = () => {
     if (!weekStart || !weekEnd) return '';
 
+    const weekNumber = getWeekNumber(weekStart);
     const startMonth = weekStart.toLocaleDateString('en-US', {
       month: 'short',
     });
@@ -59,9 +70,9 @@ const Header = ({ currentWeek, onWeekChange, showWeekSelector = false }) => {
     const year = weekEnd.getFullYear();
 
     if (startMonth === endMonth) {
-      return `${startMonth} ${startDate}-${endDate}, ${year}`;
+      return `${weekNumber} - ${startMonth} ${startDate}-${endDate}, ${year}`;
     } else {
-      return `${startMonth} ${startDate} - ${endMonth} ${endDate}, ${year}`;
+      return `${weekNumber} - ${startMonth} ${startDate} - ${endMonth} ${endDate}, ${year}`;
     }
   };
 
@@ -154,7 +165,7 @@ const Header = ({ currentWeek, onWeekChange, showWeekSelector = false }) => {
 
             <div className="week-display-inline">
               <span className="week-range-inline">
-                Week of {formatDateRange()}
+                Week {formatDateRange()}
               </span>
               <button
                 className="today-button-small"
