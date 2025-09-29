@@ -78,7 +78,19 @@ const MainPage = ({ currentWeek }) => {
         structuredActivities[weekKey] = {};
 
         // Add all activities (preserving source and Spond-specific data)
+        // Filter out declined Spond activities
         activitiesData.forEach(activity => {
+          // Skip declined Spond activities
+          if (
+            activity.source === 'spond' &&
+            activity.response_status === 'declined'
+          ) {
+            console.log(
+              `🚫 Hiding declined activity: ${activity.title} for member ${activity.member_id}`
+            );
+            return;
+          }
+
           if (!structuredActivities[weekKey][activity.member_id]) {
             structuredActivities[weekKey][activity.member_id] = [];
           }
@@ -99,6 +111,7 @@ const MainPage = ({ currentWeek }) => {
             activity_type: activity.activity_type,
             is_cancelled: activity.is_cancelled,
             organizer_name: activity.organizer_name,
+            response_status: activity.response_status, // Include response status
           });
         });
 
@@ -132,7 +145,19 @@ const MainPage = ({ currentWeek }) => {
               refreshedStructuredActivities[weekKey] = {};
 
               // Add all activities (preserving source and Spond-specific data)
+              // Filter out declined Spond activities
               refreshedActivitiesData.forEach(activity => {
+                // Skip declined Spond activities
+                if (
+                  activity.source === 'spond' &&
+                  activity.response_status === 'declined'
+                ) {
+                  console.log(
+                    `🚫 Hiding declined activity: ${activity.title} for member ${activity.member_id}`
+                  );
+                  return;
+                }
+
                 if (
                   !refreshedStructuredActivities[weekKey][activity.member_id]
                 ) {
@@ -157,6 +182,7 @@ const MainPage = ({ currentWeek }) => {
                     activity_type: activity.activity_type,
                     is_cancelled: activity.is_cancelled,
                     organizer_name: activity.organizer_name,
+                    response_status: activity.response_status, // Include response status
                   }
                 );
               });

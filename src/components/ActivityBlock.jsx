@@ -76,6 +76,11 @@ const ActivityBlock = ({
     return activity.source === 'spond';
   };
 
+  const isTentativeActivity = () => {
+    // Activity is tentative if it's from Spond and has no response
+    return activity.source === 'spond' && !activity.response_status;
+  };
+
   const isMunicipalCalendarActivity = () => {
     return activity.source === 'municipal_calendar';
   };
@@ -270,7 +275,7 @@ const ActivityBlock = ({
 
   return (
     <div
-      className={`activity-block ${!activity.title ? 'empty-activity' : ''} ${isMunicipalCalendarActivity() ? 'municipal-calendar-event' : ''} ${isMunicipalCalendarActivity() ? `municipal-${getMunicipalEventType()}` : ''}`}
+      className={`activity-block ${!activity.title ? 'empty-activity' : ''} ${isMunicipalCalendarActivity() ? 'municipal-calendar-event' : ''} ${isMunicipalCalendarActivity() ? `municipal-${getMunicipalEventType()}` : ''} ${isTentativeActivity() ? 'tentative-activity' : ''}`}
       style={calculatePosition()}
       onClick={handleClick}
       onMouseEnter={() => setShowActions(true)}

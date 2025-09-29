@@ -1819,6 +1819,34 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
         // Store activities in database
         for (const activity of activities) {
           try {
+            // Debug: Log response structure for first activity
+            if (groupActivitiesSynced === 0) {
+              console.log(
+                `🔍 Response structure for "${activity.heading || activity.title}":`
+              );
+              console.log(`   Profile ID checking: ${group.profile_id}`);
+              if (activity.responses) {
+                console.log(
+                  `   All response keys:`,
+                  Object.keys(activity.responses)
+                );
+                console.log(
+                  `   Full responses object:`,
+                  JSON.stringify(activity.responses, null, 2)
+                );
+              } else {
+                console.log(`   No responses object found`);
+              }
+
+              // Also check if there's a different structure
+              if (activity.respondents) {
+                console.log(
+                  `   Found respondents array:`,
+                  JSON.stringify(activity.respondents?.slice(0, 2), null, 2)
+                );
+              }
+            }
+
             // Convert Spond activity to our database format (using correct field names from documentation)
             await runQuery(
               `INSERT OR REPLACE INTO spond_activities (
@@ -1846,14 +1874,33 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
                 activity.cancelled || false,
                 activity.maxAccepted || null,
                 activity.autoAccept || false,
-                // Use the profile ID from this specific group
-                activity.responses?.[group.profile_id]?.accepted
-                  ? 'accepted'
-                  : activity.responses?.[group.profile_id]?.responded
-                    ? 'declined'
-                    : null,
-                // Add response comment if available
-                activity.responses?.[group.profile_id]?.comment || null,
+                // Check response status using the array format from Spond API
+                (() => {
+                  let status = null;
+                  if (activity.responses) {
+                    if (
+                      activity.responses.acceptedIds?.includes(group.profile_id)
+                    ) {
+                      status = 'accepted';
+                    } else if (
+                      activity.responses.declinedIds?.includes(group.profile_id)
+                    ) {
+                      status = 'declined';
+                      console.log(
+                        `❌ Activity "${activity.heading || activity.title}" marked as DECLINED for ${group.profile_name}`
+                      );
+                    } else if (
+                      activity.responses.unansweredIds?.includes(
+                        group.profile_id
+                      )
+                    ) {
+                      status = null; // Not responded yet (tentative)
+                    }
+                  }
+                  return status;
+                })(),
+                // Response comments not available in this API format
+                null,
                 activity.organizer?.firstName ||
                   activity.owners?.[0]?.profile?.firstName ||
                   null,
