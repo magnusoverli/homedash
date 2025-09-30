@@ -18,7 +18,7 @@ const AVATAR_COLORS = [
 ];
 
 const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
-  const { showSuccess, showError, showConfirmation } = useToast();
+  const { showSuccess, showError } = useToast();
   const [formData, setFormData] = useState({
     name: '',
     avatarColor: '#FFF48D',
@@ -29,8 +29,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
 
   // LLM extraction state
   const [isExtracting, setIsExtracting] = useState(false);
-  const [extractionResult, setExtractionResult] = useState(null);
-  const [extractionError, setExtractionError] = useState('');
   const [llmSettings, setLlmSettings] = useState({
     enabled: false,
     apiKey: '',
@@ -40,7 +38,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
   // School schedule management
   const [hasSchoolSchedule, setHasSchoolSchedule] = useState(false);
   const [isDeletingSchedule, setIsDeletingSchedule] = useState(false);
-  const [scheduleDeleteError, setScheduleDeleteError] = useState('');
   const [showScheduleDeleteConfirm, setShowScheduleDeleteConfirm] =
     useState(false);
 
@@ -50,7 +47,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
   const [spondPassword, setSpondPassword] = useState('');
   const [isTestingSpondCredentials, setIsTestingSpondCredentials] =
     useState(false);
-  const [spondTestResult, setSpondTestResult] = useState(null);
   const [spondAuthState, setSpondAuthState] = useState({
     hasCredentials: false,
     authenticated: false,
@@ -68,7 +64,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
   // Municipal calendar state
   const [calendarUrl, setCalendarUrl] = useState('');
   const [isImportingCalendar, setIsImportingCalendar] = useState(false);
-  const [calendarImportResult, setCalendarImportResult] = useState(null);
   const [calendarLastSynced, setCalendarLastSynced] = useState(null);
   const [calendarEventCount, setCalendarEventCount] = useState(0);
   const [isRemovingCalendar, setIsRemovingCalendar] = useState(false);
@@ -82,8 +77,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       });
     }
     setShowDeleteConfirm(false);
-    setExtractionResult(null);
-    setExtractionError('');
     setActiveTab('basic'); // Reset to basic tab when member changes
   }, [member]);
 
@@ -231,21 +224,15 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       ...prev,
       schoolPlanImage: null,
     }));
-    setExtractionResult(null);
-    setExtractionError('');
   };
 
   const handleExtractSchoolPlan = async () => {
     if (!formData.schoolPlanImage || !member?.id || !llmSettings.apiKey) {
-      setExtractionError(
-        'Image, member, and API key are required for extraction'
-      );
+      showError('Image, member, and API key are required for extraction');
       return;
     }
 
     setIsExtracting(true);
-    setExtractionError('');
-    setExtractionResult(null);
 
     try {
       const result = await dataService.extractSchoolPlan(
@@ -254,9 +241,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
         llmSettings.apiKey,
         llmSettings.selectedModel
       );
-
-      setExtractionResult(result);
-      setExtractionError('');
 
       // Refresh school schedule status
       checkForSchoolSchedule();
@@ -283,25 +267,24 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       // Provide helpful context based on error type
       if (error.message?.includes('529')) {
         userFriendlyMessage +=
-          '\n\nThis usually happens when many people are using the AI service at the same time. Try again in a few minutes.';
+          '. This usually happens when many people are using the AI service at the same time. Try again in a few minutes.';
       } else if (
         error.message?.includes('401') ||
         error.message?.includes('Invalid API key')
       ) {
-        userFriendlyMessage +=
-          '\n\nPlease verify your API key in the Settings.';
+        userFriendlyMessage += '. Please verify your API key in the Settings.';
       } else if (
         error.message?.includes('timeout') ||
         error.message?.includes('timed out')
       ) {
         userFriendlyMessage +=
-          '\n\nThe request took too long to process. This can happen with large or complex images.';
+          '. The request took too long to process. This can happen with large or complex images.';
       } else if (error.message?.includes('Network error')) {
         userFriendlyMessage +=
-          '\n\nPlease check your internet connection and try again.';
+          '. Please check your internet connection and try again.';
       }
 
-      setExtractionError(userFriendlyMessage);
+      showError(userFriendlyMessage);
     } finally {
       setIsExtracting(false);
     }
@@ -312,14 +295,12 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
 
     // Show inline confirmation instead of toast
     setShowScheduleDeleteConfirm(true);
-    setScheduleDeleteError('');
   };
 
   const confirmDeleteSchedule = async () => {
     if (!member?.id) return;
 
     setIsDeletingSchedule(true);
-    setScheduleDeleteError('');
 
     try {
       // Use the new batch delete endpoint for optimal performance
@@ -330,8 +311,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       );
 
       setHasSchoolSchedule(false);
-      setScheduleDeleteError('');
-
       setShowScheduleDeleteConfirm(false);
 
       // Create detailed success message
@@ -351,9 +330,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       );
     } catch (error) {
       console.error('Error deleting school schedule:', error);
-      setScheduleDeleteError(
-        error.message || 'Failed to delete school schedule'
-      );
+      showError(error.message || 'Failed to delete school schedule');
     } finally {
       setIsDeletingSchedule(false);
     }
@@ -361,7 +338,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
 
   const cancelDeleteSchedule = () => {
     setShowScheduleDeleteConfirm(false);
-    setScheduleDeleteError('');
   };
 
   const handleSave = () => {
@@ -491,7 +467,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
     if (!enabled) {
       setSpondEmail('');
       setSpondPassword('');
-      setSpondTestResult(null);
 
       // Clear stored credentials when disabling
       if (member?.id && spondAuthState.hasCredentials) {
@@ -524,20 +499,15 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
   const handleSpondCredentialsChange = (email, password) => {
     setSpondEmail(email);
     setSpondPassword(password);
-    setSpondTestResult(null);
   };
 
   const handleImportCalendar = async () => {
     if (!calendarUrl || !member?.id) {
-      setCalendarImportResult({
-        success: false,
-        message: 'Please enter a calendar URL',
-      });
+      showError('Please enter a calendar URL');
       return;
     }
 
     setIsImportingCalendar(true);
-    setCalendarImportResult(null);
 
     try {
       const response = await fetch(
@@ -556,27 +526,14 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        setCalendarImportResult({
-          success: true,
-          message: data.message || 'Calendar imported successfully!',
-          eventsImported: data.eventsImported,
-        });
         setCalendarLastSynced(new Date().toISOString());
         setCalendarEventCount(data.eventsImported);
-        showSuccess(data.message);
+        showSuccess(data.message || 'Calendar imported successfully!');
       } else {
-        setCalendarImportResult({
-          success: false,
-          message: data.error || 'Failed to import calendar',
-        });
         showError(data.error || 'Failed to import calendar');
       }
     } catch (error) {
       console.error('Error importing calendar:', error);
-      setCalendarImportResult({
-        success: false,
-        message: 'Network error while importing calendar',
-      });
       showError('Network error while importing calendar');
     } finally {
       setIsImportingCalendar(false);
@@ -609,10 +566,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
         setCalendarUrl('');
         setCalendarLastSynced(null);
         setCalendarEventCount(0);
-        setCalendarImportResult({
-          success: true,
-          message: 'School calendar removed successfully',
-        });
         showSuccess('School calendar removed successfully');
 
         // Refresh the page or trigger a data reload
@@ -632,15 +585,11 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
 
   const testSpondCredentials = async () => {
     if (!spondEmail || !spondPassword) {
-      setSpondTestResult({
-        success: false,
-        message: 'Please enter both email and password.',
-      });
+      showError('Please enter both email and password.');
       return;
     }
 
     setIsTestingSpondCredentials(true);
-    setSpondTestResult(null);
 
     // Enhanced logging for Spond authentication
     console.log('=== SPOND AUTHENTICATION TEST STARTED ===');
@@ -681,12 +630,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
             console.log('  - Login token received: [PRESENT]');
           }
         }
-
-        setSpondTestResult({
-          success: true,
-          message:
-            data.message || 'Spond credentials validated successfully! ✓',
-        });
 
         // Store credentials after successful authentication
         if (data.responseData && member?.id) {
@@ -732,12 +675,10 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
         console.log(`  - Error type: ${data.error || 'Unknown'}`);
         console.log(`  - Message: ${data.message || 'Unknown error'}`);
 
-        setSpondTestResult({
-          success: false,
-          message:
-            data.message ||
-            'Invalid Spond credentials. Please check your email and password.',
-        });
+        showError(
+          data.message ||
+            'Invalid Spond credentials. Please check your email and password.'
+        );
       }
     } catch (error) {
       console.error('❌ Spond authentication error:', error);
@@ -746,11 +687,9 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       console.log(`  - Error message: ${error.message}`);
       console.log(`  - Stack trace: ${error.stack}`);
 
-      setSpondTestResult({
-        success: false,
-        message:
-          'Network error while testing Spond credentials. Please try again.',
-      });
+      showError(
+        'Network error while testing Spond credentials. Please try again.'
+      );
     } finally {
       const endTime = new Date().toISOString();
       console.log(`⏱️ Authentication test completed at: ${endTime}`);
@@ -1057,70 +996,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                     )}
                   </div>
 
-                  {/* Extraction Status */}
-                  {extractionError && (
-                    <div className="extraction-status error">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
-                        <circle
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        />
-                        <line
-                          x1="15"
-                          y1="9"
-                          x2="9"
-                          y2="15"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        />
-                        <line
-                          x1="9"
-                          y1="9"
-                          x2="15"
-                          y2="15"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        />
-                      </svg>
-                      <span>{extractionError}</span>
-                    </div>
-                  )}
-
-                  {extractionResult && (
-                    <div className="extraction-status success">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
-                        <path
-                          d="M22 11.08V12a10 10 0 11-5.93-9.14"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <polyline
-                          points="22,4 12,14.01 9,11.01"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      <span>School plan imported successfully</span>
-                    </div>
-                  )}
-
                   {!llmSettings.enabled && formData.schoolPlanImage && (
                     <div className="extraction-status info">
                       <svg
@@ -1279,42 +1154,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                         )}
                       </button>
                     </div>
-
-                    {scheduleDeleteError && (
-                      <div className="extraction-status error">
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <circle
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          />
-                          <line
-                            x1="15"
-                            y1="9"
-                            x2="9"
-                            y2="15"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          />
-                          <line
-                            x1="9"
-                            y1="9"
-                            x2="15"
-                            y2="15"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          />
-                        </svg>
-                        <span>{scheduleDeleteError}</span>
-                      </div>
-                    )}
 
                     {showScheduleDeleteConfirm && (
                       <div className="schedule-delete-confirmation">
@@ -1494,13 +1333,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                                 : 'Log in'}
                             </button>
                           </div>
-                          {spondTestResult && (
-                            <div
-                              className={`spond-test-result ${spondTestResult.success ? 'success' : 'error'}`}
-                            >
-                              {spondTestResult.message}
-                            </div>
-                          )}
                         </div>
 
                         {/* Activities Selection Button */}
@@ -1612,19 +1444,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                               : 'Remove Calendar'}
                           </button>
                         </div>
-                      </div>
-                    )}
-
-                    {calendarImportResult && (
-                      <div
-                        className={`calendar-import-result ${calendarImportResult.success ? 'success' : 'error'}`}
-                      >
-                        {calendarImportResult.message}
-                        {calendarImportResult.eventsImported > 0 && (
-                          <span className="import-count">
-                            ({calendarImportResult.eventsImported} events)
-                          </span>
-                        )}
                       </div>
                     )}
 
