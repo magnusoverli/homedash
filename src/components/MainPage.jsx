@@ -6,6 +6,7 @@ import LoadingState from './LoadingState';
 import ErrorState from './ErrorState';
 import EmptyState from './EmptyState';
 import dataService from '../services/dataService';
+import { formatLocalDate } from '../utils/timeUtils';
 import './MainPage.css';
 
 const MainPage = ({ currentWeek }) => {
@@ -66,8 +67,8 @@ const MainPage = ({ currentWeek }) => {
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekEnd.getDate() + 6);
 
-        const startDateStr = weekStart.toISOString().split('T')[0];
-        const endDateStr = weekEnd.toISOString().split('T')[0];
+        const startDateStr = formatLocalDate(weekStart);
+        const endDateStr = formatLocalDate(weekEnd);
 
         // Load all activities (regular and Spond combined)
         const activitiesData = await dataService.getActivities({
@@ -238,18 +239,23 @@ const MainPage = ({ currentWeek }) => {
     try {
       // Calculate week start date for homework filtering
       const weekStart = getWeekStart();
-      const weekStartStr = weekStart.toISOString().split('T')[0];
+      const weekStartStr = formatLocalDate(weekStart);
 
       const homeworkData = {};
 
       // Load homework for each family member for the current week
       for (const member of familyMembers) {
+        console.log(
+          `🔍 Loading homework for member ${member.id} (${member.name}), week: ${weekStartStr}`
+        );
         const memberHomework = await dataService.getHomework({
           member_id: member.id,
           week_start_date: weekStartStr,
         });
+        console.log(`📚 Homework for ${member.name}:`, memberHomework);
         homeworkData[member.id] = memberHomework;
       }
+      console.log('✅ All homework loaded:', homeworkData);
       setHomework(homeworkData);
       setError('');
     } catch (error) {
@@ -293,7 +299,7 @@ const MainPage = ({ currentWeek }) => {
     const day = weekStart.getDay();
     const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
     weekStart.setDate(diff);
-    return weekStart.toISOString().split('T')[0];
+    return formatLocalDate(weekStart);
   };
 
   const getMemberActivities = memberId => {

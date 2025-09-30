@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import ActivityBlock from './ActivityBlock';
 import { getActivityType } from '../utils/activityUtils';
+import { formatLocalDate } from '../utils/timeUtils';
 import './PersonWeekCard.css';
 
 const PersonWeekCard = ({
@@ -133,7 +134,7 @@ const PersonWeekCard = ({
 
     onAddActivity({
       memberId: member.id,
-      date: clickedDate.toISOString().split('T')[0],
+      date: formatLocalDate(clickedDate),
       startTime,
       endTime,
       title: '',

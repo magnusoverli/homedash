@@ -3042,6 +3042,10 @@ const upload = multer({
 app.get('/api/homework', async (req, res) => {
   const { member_id, week_start_date } = req.query;
 
+  console.log(
+    `📚 GET /api/homework - member_id: ${member_id}, week_start_date: ${week_start_date}`
+  );
+
   try {
     let homework;
     if (member_id && week_start_date) {
@@ -3049,6 +3053,9 @@ app.get('/api/homework', async (req, res) => {
       homework = await getAll(
         'SELECT * FROM homework WHERE member_id = ? AND week_start_date = ? ORDER BY created_at DESC',
         [member_id, week_start_date]
+      );
+      console.log(
+        `📊 Found ${homework.length} homework items for member ${member_id}, week ${week_start_date}`
       );
     } else if (member_id) {
       // Get all homework for specific member (backward compatibility)
