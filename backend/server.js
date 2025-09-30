@@ -150,6 +150,9 @@ app.post('/api/test-key', async (req, res) => {
     }
   } catch (error) {
     console.error('Error testing API key:', error);
+    console.error('Error name:', error.name);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
 
     // Check if it's a timeout error
     if (error.name === 'AbortError') {
@@ -161,11 +164,31 @@ app.post('/api/test-key', async (req, res) => {
       });
     }
 
+    // Check for DNS/network errors
+    if (error.code === 'ENOTFOUND' || error.code === 'EAI_AGAIN') {
+      return res.status(500).json({
+        valid: false,
+        message:
+          'Cannot reach Anthropic API - DNS resolution failed. Check your network/firewall settings.',
+        error: error.code,
+      });
+    }
+
+    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+      return res.status(500).json({
+        valid: false,
+        message:
+          'Cannot connect to Anthropic API - connection refused or timed out. Check firewall/proxy settings.',
+        error: error.code,
+      });
+    }
+
     return res.status(500).json({
       valid: false,
       message:
         'Failed to validate API key - please check your network connection',
       error: error.message,
+      errorCode: error.code,
     });
   }
 });
