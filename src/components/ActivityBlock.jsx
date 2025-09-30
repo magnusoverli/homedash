@@ -1,27 +1,15 @@
 import { useState } from 'react';
+import { CATEGORY_COLORS, CATEGORY_ICONS } from '../constants/colors';
+import { formatTime } from '../utils/timeUtils';
+import {
+  isSchoolScheduleActivity,
+  isSpondActivity,
+  isTentativeActivity,
+  isMunicipalCalendarActivity,
+  getMunicipalEventType,
+  getMunicipalEventIcon,
+} from '../utils/activityUtils';
 import './ActivityBlock.css';
-
-const CATEGORY_COLORS = {
-  work: '#B2AEFF',
-  exercise: '#D2FCC3',
-  family: '#DEB2FA',
-  meal: '#FCDD8C',
-  personal: '#BADAF8',
-  medical: '#F4B3BB',
-  social: '#FFF48D',
-  chores: '#ECECEC',
-};
-
-const CATEGORY_ICONS = {
-  work: '💼',
-  exercise: '🏃',
-  family: '👨‍👩‍👧',
-  meal: '🍽️',
-  personal: '⭐',
-  medical: '🏥',
-  social: '👥',
-  chores: '🧹',
-};
 
 const ActivityBlock = ({
   activity,
@@ -47,91 +35,19 @@ const ActivityBlock = ({
     return CATEGORY_ICONS[activity.category] || CATEGORY_ICONS.personal;
   };
 
-  const formatTime = timeString => {
-    const [hours, minutes] = timeString.split(':').map(Number);
-    return minutes === 0
-      ? `${hours.toString().padStart(2, '0')}:00`
-      : `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  };
-
-  const isSchoolScheduleActivity = () => {
-    return (
-      activity.description &&
-      activity.description.includes('[TYPE:school_schedule]')
-    );
-  };
-
-  const isSchoolActivity = () => {
-    return (
-      activity.description &&
-      activity.description.includes('[TYPE:school_activity]')
-    );
-  };
-
-  const isSchoolRelated = () => {
-    return isSchoolScheduleActivity() || isSchoolActivity();
-  };
-
-  const isSpondActivity = () => {
-    return activity.source === 'spond';
-  };
-
-  const isTentativeActivity = () => {
-    // Activity is tentative if it's from Spond and has no response
-    return activity.source === 'spond' && !activity.response_status;
-  };
-
-  const isMunicipalCalendarActivity = () => {
-    return activity.source === 'municipal_calendar';
-  };
-
-  const getMunicipalEventType = () => {
-    if (!isMunicipalCalendarActivity()) return null;
-
-    // Check activity_type field for specific event types
-    if (activity.activity_type === 'vacation') return 'vacation';
-    if (activity.activity_type === 'planning_day') return 'planning_day';
-    if (activity.activity_type === 'holiday') return 'holiday';
-    if (activity.activity_type === 'school_event') return 'school_event';
-
-    // Fallback to checking title
-    const title = (activity.title || '').toLowerCase();
-    if (title.includes('ferie')) return 'vacation';
-    if (title.includes('planleggingsdag')) return 'planning_day';
-    if (title.includes('fridag')) return 'holiday';
-
-    return 'school_event';
-  };
-
-  const getMunicipalEventIcon = () => {
-    const eventType = getMunicipalEventType();
-    switch (eventType) {
-      case 'vacation':
-        return '🏖️';
-      case 'planning_day':
-        return '📋';
-      case 'holiday':
-        return '🎉';
-      case 'school_event':
-        return '🏫';
-      default:
-        return '📅';
-    }
-  };
-
   const getSpondMatchInfo = () => {
-    if (!isSpondActivity() || !activity.raw_data) return null;
+    if (!isSpondActivity(activity) || !activity.raw_data) return null;
 
     try {
       const rawData = JSON.parse(activity.raw_data);
       return rawData.matchInfo || null;
-    } catch (e) {
+    } catch {
       return null;
     }
   };
 
   // Debug log for Spond activities
-  if (isSpondActivity()) {
+  if (isSpondActivity(activity)) {
     console.log('🎯 Spond activity detected:', {
       title: activity.title,
       source: activity.source,
@@ -151,7 +67,7 @@ const ActivityBlock = ({
     if (!title) return 'New Activity';
 
     // For Spond activities, allow full title to span multiple lines
-    if (isSpondActivity()) {
+    if (isSpondActivity(activity)) {
       if (height < 30) {
         return getActivityIcon();
       } else if (height < 50) {
@@ -275,7 +191,7 @@ const ActivityBlock = ({
 
   return (
     <div
-      className={`activity-block ${!activity.title ? 'empty-activity' : ''} ${isMunicipalCalendarActivity() ? 'municipal-calendar-event' : ''} ${isMunicipalCalendarActivity() ? `municipal-${getMunicipalEventType()}` : ''} ${isTentativeActivity() ? 'tentative-activity' : ''}`}
+      className={`activity-block ${!activity.title ? 'empty-activity' : ''} ${isMunicipalCalendarActivity(activity) ? 'municipal-calendar-event' : ''} ${isMunicipalCalendarActivity(activity) ? `municipal-${getMunicipalEventType(activity)}` : ''} ${isTentativeActivity(activity) ? 'tentative-activity' : ''}`}
       style={calculatePosition()}
       onClick={handleClick}
       onMouseEnter={() => setShowActions(true)}
@@ -289,7 +205,7 @@ const ActivityBlock = ({
         <div className="activity-title">
           {getAbbreviatedTitle(activity.title)}
         </div>
-        {isSchoolScheduleActivity() && height >= 60 && (
+        {isSchoolScheduleActivity(activity) && height >= 60 && (
           <div className="activity-end-time">
             {formatTime(activity.endTime)}
           </div>
@@ -297,7 +213,7 @@ const ActivityBlock = ({
       </div>
 
       {/* Notes positioned in the middle-left of the activity block */}
-      {isSchoolScheduleActivity() && activity.notes && height >= 60 && (
+      {isSchoolScheduleActivity(activity) && activity.notes && height >= 60 && (
         <div className="activity-notes-container">
           {parseNotes(activity.notes).map((note, index) => (
             <div key={index} className="activity-note-badge">
@@ -308,13 +224,13 @@ const ActivityBlock = ({
       )}
 
       {/* Home/Away indicator for Spond match activities */}
-      {isSpondActivity() && getHomeAwayIndicator() && height >= 40 && (
+      {isSpondActivity(activity) && getHomeAwayIndicator() && height >= 40 && (
         <div className="spond-match-indicator">{getHomeAwayIndicator()}</div>
       )}
 
       {/* Municipal calendar event emoji in lower right */}
-      {isMunicipalCalendarActivity() && (
-        <div className="municipal-event-emoji">{getMunicipalEventIcon()}</div>
+      {isMunicipalCalendarActivity(activity) && (
+        <div className="municipal-event-emoji">{getMunicipalEventIcon(activity)}</div>
       )}
 
       {showActions && activity.title && (

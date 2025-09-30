@@ -5,6 +5,7 @@ import AddMemberForm from './AddMemberForm';
 import EditMemberModal from './EditMemberModal';
 import API_ENDPOINTS from '../config/api';
 import dataService from '../services/dataService';
+import { saveSetting } from '../utils/settingsUtils';
 import './Settings.css';
 
 const Settings = () => {
@@ -105,50 +106,25 @@ const Settings = () => {
   // Save LLM settings to API when they change
   useEffect(() => {
     if (!isLoadingSettings) {
-      dataService
-        .updateSetting('llmIntegrationEnabled', String(llmIntegrationEnabled))
-        .catch(error => {
-          console.error('Error saving llmIntegrationEnabled:', error);
-          // Fallback to localStorage
-          localStorage.setItem(
-            'llmIntegrationEnabled',
-            JSON.stringify(llmIntegrationEnabled)
-          );
-        });
+      saveSetting('llmIntegrationEnabled', String(llmIntegrationEnabled));
     }
   }, [llmIntegrationEnabled, isLoadingSettings]);
 
   useEffect(() => {
     if (!isLoadingSettings && apiKey) {
-      dataService.updateSetting('anthropicApiKey', apiKey).catch(error => {
-        console.error('Error saving apiKey:', error);
-        // Fallback to localStorage
-        localStorage.setItem('anthropicApiKey', apiKey);
-      });
+      saveSetting('anthropicApiKey', apiKey);
     }
   }, [apiKey, isLoadingSettings]);
 
   useEffect(() => {
     if (!isLoadingSettings && selectedModel) {
-      dataService
-        .updateSetting('selectedAnthropicModel', selectedModel)
-        .catch(error => {
-          console.error('Error saving selectedModel:', error);
-          // Fallback to localStorage
-          localStorage.setItem('selectedAnthropicModel', selectedModel);
-        });
+      saveSetting('selectedAnthropicModel', selectedModel);
     }
   }, [selectedModel, isLoadingSettings]);
 
   useEffect(() => {
     if (!isLoadingSettings && selectedPromptVersion) {
-      dataService
-        .updateSetting('selectedPromptVersion', selectedPromptVersion)
-        .catch(error => {
-          console.error('Error saving selectedPromptVersion:', error);
-          // Fallback to localStorage
-          localStorage.setItem('selectedPromptVersion', selectedPromptVersion);
-        });
+      saveSetting('selectedPromptVersion', selectedPromptVersion);
     }
   }, [selectedPromptVersion, isLoadingSettings]);
 

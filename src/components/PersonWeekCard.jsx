@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import ActivityBlock from './ActivityBlock';
+import { getActivityType } from '../utils/activityUtils';
 import './PersonWeekCard.css';
 
 const PersonWeekCard = ({
@@ -42,32 +43,7 @@ const PersonWeekCard = ({
 
   // Function to get custom color for an activity based on its type/source
   const getActivityCustomColor = activity => {
-    let activityType = 'manual'; // default fallback
-
-    // Check for school types first (highest priority)
-    if (
-      activity.description &&
-      activity.description.includes('[TYPE:school_schedule]')
-    ) {
-      activityType = 'school_schedule';
-    } else if (
-      activity.description &&
-      activity.description.includes('[TYPE:school_activity]')
-    ) {
-      activityType = 'school_activity';
-    }
-    // Check for category (second priority)
-    else if (activity.category) {
-      activityType = `category_${activity.category}`;
-    }
-    // Check source (third priority)
-    else if (activity.source === 'spond') {
-      activityType = 'spond';
-    }
-    // Default to manual if no specific type found
-    else {
-      activityType = 'manual';
-    }
+    const activityType = getActivityType(activity);
 
     // Return custom color if set, otherwise default for that type
     return (

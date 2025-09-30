@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createBackdropClickHandler } from '../utils/modalUtils';
 import './SpondProfileModal.css';
 import { API_URL } from '../config/api';
 
@@ -91,8 +92,10 @@ const SpondProfileModal = ({ isOpen, onClose, member, onProfileSelected }) => {
 
   if (!isOpen) return null;
 
+  const handleBackdropClick = createBackdropClickHandler(onClose);
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={handleBackdropClick}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Select Spond Profile for {member?.name}</h2>

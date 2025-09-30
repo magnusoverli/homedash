@@ -1,26 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useModalKeyboard } from '../hooks/useModalKeyboard';
+import { createBackdropClickHandler } from '../utils/modalUtils';
 import './ScheduleModal.css';
 
 const ScheduleModal = ({ isOpen, onClose, title, children }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [dragOver, setDragOver] = useState(false);
-  useEffect(() => {
-    const handleEscape = e => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen, onClose]);
+  
+  useModalKeyboard(isOpen, onClose);
 
   const handleFileSelect = e => {
     const file = e.target.files[0];
@@ -55,11 +42,7 @@ const ScheduleModal = ({ isOpen, onClose, title, children }) => {
 
   if (!isOpen) return null;
 
-  const handleBackdropClick = e => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
+  const handleBackdropClick = createBackdropClickHandler(onClose);
 
   return (
     <div className="modal-backdrop" onClick={handleBackdropClick}>

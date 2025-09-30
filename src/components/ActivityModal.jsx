@@ -1,16 +1,8 @@
 import { useState, useEffect } from 'react';
+import { CATEGORIES } from '../constants/colors';
+import { formatTime, generateTimeOptions } from '../utils/timeUtils';
+import { createBackdropClickHandler } from '../utils/modalUtils';
 import './ActivityModal.css';
-
-const CATEGORIES = [
-  { value: 'work', label: 'Work', color: '#B2AEFF' },
-  { value: 'exercise', label: 'Exercise', color: '#D2FCC3' },
-  { value: 'family', label: 'Family', color: '#DEB2FA' },
-  { value: 'meal', label: 'Meal', color: '#FCDD8C' },
-  { value: 'personal', label: 'Personal', color: '#BADAF8' },
-  { value: 'medical', label: 'Medical', color: '#F4B3BB' },
-  { value: 'social', label: 'Social', color: '#FFF48D' },
-  { value: 'chores', label: 'Chores', color: '#ECECEC' },
-];
 
 const ActivityModal = ({ activity, onSave, onClose }) => {
   const [formData, setFormData] = useState({
@@ -53,24 +45,10 @@ const ActivityModal = ({ activity, onSave, onClose }) => {
     }));
   };
 
-  const generateTimeOptions = () => {
-    const options = [];
-    for (let hour = 0; hour < 24; hour++) {
-      for (let minute = 0; minute < 60; minute += 15) {
-        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        options.push(time);
-      }
-    }
-    return options;
-  };
-
-  const formatTimeLabel = time => {
-    const [hours, minutes] = time.split(':').map(Number);
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  };
+  const handleBackdropClick = createBackdropClickHandler(onClose);
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={handleBackdropClick}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2 className="modal-title">
@@ -142,7 +120,7 @@ const ActivityModal = ({ activity, onSave, onClose }) => {
                 <option value="">Select time</option>
                 {generateTimeOptions().map(time => (
                   <option key={time} value={time}>
-                    {formatTimeLabel(time)}
+                    {formatTime(time)}
                   </option>
                 ))}
               </select>
@@ -163,7 +141,7 @@ const ActivityModal = ({ activity, onSave, onClose }) => {
                 <option value="">Select time</option>
                 {generateTimeOptions().map(time => (
                   <option key={time} value={time}>
-                    {formatTimeLabel(time)}
+                    {formatTime(time)}
                   </option>
                 ))}
               </select>

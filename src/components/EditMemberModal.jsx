@@ -3,19 +3,9 @@ import GenericModal from './GenericModal';
 import dataService from '../services/dataService';
 import { useToast } from '../contexts/ToastContext';
 import API_ENDPOINTS from '../config/api';
+import { AVATAR_COLORS } from '../constants/colors';
+import { getInitials } from '../utils/stringUtils';
 import './EditMemberModal.css';
-
-const AVATAR_COLORS = [
-  { name: 'Yellow', hex: '#FFF48D' },
-  { name: 'Orange', hex: '#FCDD8C' },
-  { name: 'Salmon', hex: '#F4B3BB' },
-  { name: 'Pink', hex: '#DEB2FA' },
-  { name: 'Purple', hex: '#B2AEFF' },
-  { name: 'Blue', hex: '#BADAF8' },
-  { name: 'Turquoise', hex: '#C1FDFD' },
-  { name: 'Green', hex: '#D2FCC3' },
-  { name: 'Gray', hex: '#ECECEC' },
-];
 
 const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
   const { showSuccess, showError } = useToast();
@@ -356,15 +346,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
   const handleDelete = () => {
     onDelete(member.id);
     onClose();
-  };
-
-  const getInitials = name => {
-    if (!name) return 'NN';
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-    }
-    return name.slice(0, 2).toUpperCase();
   };
 
   const fetchSpondGroups = async () => {
@@ -756,7 +737,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                         style={{ backgroundColor: formData.avatarColor }}
                       >
                         <span className="avatar-initials">
-                          {getInitials(formData.name)}
+                          {getInitials(formData.name, 'NN')}
                         </span>
                       </div>
                       <div className="avatar-info">

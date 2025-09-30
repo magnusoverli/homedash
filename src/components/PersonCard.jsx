@@ -2,20 +2,9 @@ import { useState } from 'react';
 import PersonWeekCard from './PersonWeekCard';
 import GenericModal from './GenericModal';
 import SettingsIcon from './SettingsIcon';
+import { AVAILABLE_COLORS } from '../constants/colors';
+import { getActivityType } from '../utils/activityUtils';
 import './PersonCard.css';
-
-// Available colors for activity blocks (from design manual pastell colors)
-const AVAILABLE_COLORS = [
-  { name: 'Light Purple', value: '#B2AEFF', hex: '#B2AEFF' },
-  { name: 'Light Green', value: '#D2FCC3', hex: '#D2FCC3' },
-  { name: 'Light Pink', value: '#DEB2FA', hex: '#DEB2FA' },
-  { name: 'Light Orange', value: '#FCDD8C', hex: '#FCDD8C' },
-  { name: 'Light Blue', value: '#BADAF8', hex: '#BADAF8' },
-  { name: 'Light Salmon', value: '#F4B3BB', hex: '#F4B3BB' },
-  { name: 'Light Yellow', value: '#FFF48D', hex: '#FFF48D' },
-  { name: 'Light Gray', value: '#ECECEC', hex: '#ECECEC' },
-  { name: 'Turquoise', value: '#C1FDFD', hex: '#C1FDFD' },
-];
 
 const PersonCard = ({
   member,
@@ -38,31 +27,8 @@ const PersonCard = ({
     const typesPresent = new Set();
     
     activities.forEach(activity => {
-      let hasSpecificType = false;
-      
-      // Check for school types first (highest priority)
-      if (activity.description && activity.description.includes('[TYPE:school_schedule]')) {
-        typesPresent.add('school_schedule');
-        hasSpecificType = true;
-      } else if (activity.description && activity.description.includes('[TYPE:school_activity]')) {
-        typesPresent.add('school_activity');
-        hasSpecificType = true;
-      }
-      // Check for category (second priority)
-      else if (activity.category) {
-        typesPresent.add(`category_${activity.category}`);
-        hasSpecificType = true;
-      }
-      // Check source (third priority)
-      else if (activity.source === 'spond') {
-        typesPresent.add('spond');
-        hasSpecificType = true;
-      }
-      // Default to manual
-      else {
-        typesPresent.add('manual');
-        hasSpecificType = true;
-      }
+      const activityType = getActivityType(activity);
+      typesPresent.add(activityType);
     });
     
     return Array.from(typesPresent);

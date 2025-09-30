@@ -1,17 +1,7 @@
 import { useState } from 'react';
+import { AVATAR_COLORS } from '../constants/colors';
+import { getInitials } from '../utils/stringUtils';
 import './AddMemberForm.css';
-
-const AVATAR_COLORS = [
-  { name: 'Yellow', hex: '#FFF48D' },
-  { name: 'Orange', hex: '#FCDD8C' },
-  { name: 'Salmon', hex: '#F4B3BB' },
-  { name: 'Pink', hex: '#DEB2FA' },
-  { name: 'Purple', hex: '#B2AEFF' },
-  { name: 'Blue', hex: '#BADAF8' },
-  { name: 'Turquoise', hex: '#C1FDFD' },
-  { name: 'Green', hex: '#D2FCC3' },
-  { name: 'Gray', hex: '#ECECEC' },
-];
 
 const AddMemberForm = ({ onAdd, onCancel }) => {
   const [name, setName] = useState('');
@@ -27,15 +17,6 @@ const AddMemberForm = ({ onAdd, onCancel }) => {
       setName('');
       setAvatarColor(AVATAR_COLORS[0].hex);
     }
-  };
-
-  const getInitials = name => {
-    if (!name) return '?';
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-    }
-    return name.slice(0, 2).toUpperCase();
   };
 
   return (
