@@ -1,16 +1,16 @@
 /**
  * File Validation Utilities
- * 
+ *
  * Centralized file validation functions for upload features
  */
 
 /**
  * Validate image file type and size
- * 
+ *
  * @param {File} file - File object to validate
  * @param {number} maxSizeMB - Maximum file size in megabytes (default: 5)
  * @returns {Object} Validation result with valid flag and error message
- * 
+ *
  * @example
  * const result = validateImageFile(file, 5);
  * if (!result.valid) {
@@ -23,12 +23,18 @@ export const validateImageFile = (file, maxSizeMB = 5) => {
     return { valid: false, error: 'No file selected' };
   }
 
-  const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-  
+  const validTypes = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/gif',
+    'application/pdf',
+  ];
+
   if (!validTypes.includes(file.type)) {
     return {
       valid: false,
-      error: 'Please select a valid image file (JPEG, PNG, or GIF)',
+      error: 'Please select a valid image or PDF file (JPEG, PNG, GIF, or PDF)',
     };
   }
 
@@ -45,12 +51,12 @@ export const validateImageFile = (file, maxSizeMB = 5) => {
 
 /**
  * Validate file with custom allowed types
- * 
+ *
  * @param {File} file - File object to validate
  * @param {string[]} allowedTypes - Array of allowed MIME types
  * @param {number} maxSizeMB - Maximum file size in megabytes
  * @returns {Object} Validation result with valid flag and error message
- * 
+ *
  * @example
  * const result = validateFile(file, ['application/pdf', 'image/png'], 10);
  */
@@ -82,10 +88,10 @@ export const validateFile = (file, allowedTypes, maxSizeMB = 10) => {
 
 /**
  * Format file size to human-readable string
- * 
+ *
  * @param {number} bytes - File size in bytes
  * @returns {string} Formatted file size (e.g., "2.5 MB", "150 KB")
- * 
+ *
  * @example
  * formatFileSize(1536000) // "1.5 MB"
  */
@@ -101,7 +107,7 @@ export const formatFileSize = bytes => {
 
 /**
  * Check if file is an image
- * 
+ *
  * @param {File} file - File object to check
  * @returns {boolean} True if file is an image
  */
@@ -111,13 +117,15 @@ export const isImageFile = file => {
 
 /**
  * Get file extension from filename
- * 
+ *
  * @param {string} filename - Filename to extract extension from
  * @returns {string} File extension (lowercase, without dot)
- * 
+ *
  * @example
  * getFileExtension('photo.JPG') // 'jpg'
  */
 export const getFileExtension = filename => {
-  return filename.slice(((filename.lastIndexOf('.') - 1) >>> 0) + 2).toLowerCase();
+  return filename
+    .slice(((filename.lastIndexOf('.') - 1) >>> 0) + 2)
+    .toLowerCase();
 };

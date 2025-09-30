@@ -531,7 +531,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       if (response.ok && data.valid) {
         // Store credentials after successful authentication
         if (data.responseData && member?.id) {
-          try{
+          try {
             const storeResponse = await fetch(
               `${API_ENDPOINTS.SPOND_CREDENTIALS}/${member.id}`,
               {
@@ -691,7 +691,8 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                   <div className="section-header">
                     <h3 className="section-title">📅 School Plan</h3>
                     <p className="section-description">
-                      Upload a picture of the weekly school schedule or plan
+                      Upload an image or PDF of the weekly school schedule or
+                      plan
                     </p>
                   </div>
 
@@ -734,7 +735,10 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                               >
                                 {isExtracting ? (
                                   <>
-                                    <LoadingSpinner size={16} className="extract-spinner" />
+                                    <LoadingSpinner
+                                      size={16}
+                                      className="extract-spinner"
+                                    />
                                     Extracting...
                                   </>
                                 ) : (
@@ -789,7 +793,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                           type="file"
                           id="school-plan-upload"
                           className="file-input"
-                          accept="image/jpeg,image/jpg,image/png,image/gif"
+                          accept="image/jpeg,image/jpg,image/png,image/gif,application/pdf"
                           onChange={handleFileUpload}
                         />
                         <label
@@ -872,7 +876,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                       </svg>
                       <span>
                         Enable LLM Integration in Settings to extract data from
-                        school plans automatically
+                        school plan images or PDFs automatically
                       </span>
                     </div>
                   )}
@@ -898,7 +902,10 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                       >
                         {isDeletingSchedule ? (
                           <>
-                            <LoadingSpinner size={14} className="delete-spinner" />
+                            <LoadingSpinner
+                              size={14}
+                              className="delete-spinner"
+                            />
                             Deleting...
                           </>
                         ) : (
@@ -1175,7 +1182,8 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                   <div className="section-header">
                     <h3 className="section-title">⚠️ Delete Family Member</h3>
                     <p className="section-description">
-                      Permanently remove this family member and all associated data
+                      Permanently remove this family member and all associated
+                      data
                     </p>
                   </div>
 

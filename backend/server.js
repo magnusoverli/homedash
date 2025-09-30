@@ -1721,19 +1721,22 @@ app.get('/api/spond-activities/:memberId/sync-status', async (req, res) => {
 
     // Check if data is stale
     const lastSyncDate = new Date(syncStatus.oldest_sync);
-    const minutesSinceSync = (Date.now() - lastSyncDate.getTime()) / (1000 * 60);
+    const minutesSinceSync =
+      (Date.now() - lastSyncDate.getTime()) / (1000 * 60);
     const needsSync = minutesSinceSync > maxAgeMinutes;
 
     res.json({
       needsSync,
-      reason: needsSync ? `Data is ${Math.round(minutesSinceSync)} minutes old` : 'Data is fresh',
+      reason: needsSync
+        ? `Data is ${Math.round(minutesSinceSync)} minutes old`
+        : 'Data is fresh',
       lastSyncedAt: syncStatus.oldest_sync,
       minutesSinceSync: Math.round(minutesSinceSync),
       activeGroupsCount: syncStatus.active_groups_count,
     });
   } catch (error) {
     console.error('Error checking sync status:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to check sync status',
       needsSync: true, // Fail-safe: sync on error
     });
@@ -2677,8 +2680,9 @@ app.get('/api/activities', async (req, res) => {
     // Filter out school_schedule activities for dates with municipal calendar events
     const filteredActivities = combinedActivities.filter(activity => {
       // Check if this is a school_schedule activity
-      const isSchoolSchedule =
-        activity.description?.includes('[TYPE:school_schedule]');
+      const isSchoolSchedule = activity.description?.includes(
+        '[TYPE:school_schedule]'
+      );
       if (!isSchoolSchedule) {
         return true; // Keep all non-school_schedule activities
       }
@@ -2932,11 +2936,14 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
   fileFilter: (req, file, cb) => {
-    // Check file type
-    if (file.mimetype.startsWith('image/')) {
+    // Check file type - accept images and PDFs
+    if (
+      file.mimetype.startsWith('image/') ||
+      file.mimetype === 'application/pdf'
+    ) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed'), false);
+      cb(new Error('Only image files and PDFs are allowed'), false);
     }
   },
 });
@@ -3116,6 +3123,11 @@ app.post(
       // Most Claude 3+ models support vision, but if there are issues,
       // the Anthropic API will return a clear error message
 
+      // Determine content type based on file mimetype
+      // PDFs use 'document' type, images use 'image' type
+      const contentType =
+        imageMimeType === 'application/pdf' ? 'document' : 'image';
+
       const messageData = {
         model: modelToUse, // Use selected model or fallback to default
         max_tokens: 4000,
@@ -3128,7 +3140,7 @@ app.post(
                 text: prompt,
               },
               {
-                type: 'image',
+                type: contentType,
                 source: {
                   type: 'base64',
                   media_type: imageMimeType,
