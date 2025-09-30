@@ -335,7 +335,16 @@ const PersonWeekCard = ({
                           isOverlapping={isOverlapping}
                           overlapIndex={overlapIndex}
                           overlapCount={overlapCount}
-                          onDelete={() => onDeleteActivity(activity.id)}
+                          onDelete={() => {
+                            if (!activity.id) {
+                              console.error(
+                                'Cannot delete activity without ID:',
+                                activity
+                              );
+                              return;
+                            }
+                            onDeleteActivity(activity.id);
+                          }}
                           customColor={getActivityCustomColor(activity)}
                         />
                       );

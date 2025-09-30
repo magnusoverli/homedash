@@ -176,11 +176,7 @@ const ActivityBlock = ({
 
   const handleDelete = e => {
     e.stopPropagation();
-    console.log(
-      'Delete button clicked for activity:',
-      activity.id,
-      activity.title
-    );
+    e.preventDefault();
     onDelete();
   };
 

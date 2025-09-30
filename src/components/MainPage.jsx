@@ -120,20 +120,30 @@ const MainPage = ({ currentWeek }) => {
           const syncPromises = familyMembers.map(async member => {
             try {
               // Check if sync is needed
-              const syncStatus = await dataService.checkSpondSyncStatus(member.id, 5);
-              
+              const syncStatus = await dataService.checkSpondSyncStatus(
+                member.id,
+                5
+              );
+
               if (syncStatus.needsSync) {
-                console.log(`🔄 Syncing Spond for ${member.name}: ${syncStatus.reason}`);
+                console.log(
+                  `🔄 Syncing Spond for ${member.name}: ${syncStatus.reason}`
+                );
                 await dataService.syncSpondActivities(
                   member.id,
                   startDateStr,
                   endDateStr
                 );
               } else {
-                console.log(`✅ Spond data fresh for ${member.name}: ${syncStatus.reason}`);
+                console.log(
+                  `✅ Spond data fresh for ${member.name}: ${syncStatus.reason}`
+                );
               }
             } catch (error) {
-              console.warn(`Background sync check/update failed for ${member.name}:`, error);
+              console.warn(
+                `Background sync check/update failed for ${member.name}:`,
+                error
+              );
             }
           });
 
@@ -311,6 +321,11 @@ const MainPage = ({ currentWeek }) => {
   };
 
   const handleDeleteActivity = async (memberId, activityId) => {
+    if (!activityId) {
+      console.error('Cannot delete activity: no ID provided');
+      return;
+    }
+
     try {
       await dataService.deleteActivity(activityId);
       const weekKey = getWeekKey(currentWeek);
