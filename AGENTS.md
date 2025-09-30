@@ -41,6 +41,130 @@
 - **Error Handling**: Use try-catch blocks, console.error for debugging
 - **Accessibility**: Include proper ARIA labels, semantic HTML, keyboard navigation
 
+## Shared Components Library
+
+### Icon Components (`src/components/icons/`)
+
+All SVG icons are centralized in reusable components. Always use these instead of inline SVGs.
+
+**Available Icons:**
+- `CloseIcon` - X/close icon for modals and dismissible elements
+- `LoadingSpinner` - Animated loading spinner with SVG animation
+- `TrashIcon` - Delete/trash icon for destructive actions
+- `UploadIcon` - Upload/cloud upload icon for file uploads
+- `BackArrowIcon` - Back/left arrow icon for navigation
+- `WarningIcon` - Warning/alert triangle icon for errors and confirmations
+- `CheckmarkIcon` - Checkmark/success icon for successful states
+- `PlusIcon` - Plus/add icon for add buttons and actions
+- `SettingsIcon` - Settings/gear icon for settings access
+
+**Usage:**
+```jsx
+import { CloseIcon, LoadingSpinner } from '../components/icons';
+
+<CloseIcon size={24} color="currentColor" className="custom-class" />
+<LoadingSpinner size={40} />
+```
+
+**Props:**
+- `size` (number): Icon size in pixels (default: 24)
+- `color` (string): Icon color (default: 'currentColor')
+- `className` (string): Additional CSS classes
+
+### UI Components
+
+#### Button Component
+Standardized button with consistent styling and variants.
+
+```jsx
+import Button from '../components/Button';
+
+<Button variant="primary" onClick={handleSave}>Save</Button>
+<Button variant="secondary" onClick={handleCancel}>Cancel</Button>
+<Button variant="danger" icon={<TrashIcon size={16} />}>Delete</Button>
+```
+
+**Variants:** primary, secondary, danger, danger-confirm, danger-advanced  
+**Sizes:** small, medium (default), large
+
+#### LoadingState Component
+Standardized loading state with spinner and message.
+
+```jsx
+import LoadingState from '../components/LoadingState';
+
+<LoadingState text="Loading data..." spinnerSize={40} />
+```
+
+#### ErrorState Component
+Standardized error state with icon, message, and optional retry.
+
+```jsx
+import ErrorState from '../components/ErrorState';
+
+<ErrorState
+  title="Something went wrong"
+  message={error}
+  onRetry={handleRetry}
+/>
+```
+
+#### EmptyState Component
+Standardized empty state for empty lists or no data scenarios.
+
+```jsx
+import EmptyState from '../components/EmptyState';
+
+<EmptyState
+  icon="📭"
+  title="No items found"
+  message="Add your first item to get started"
+  onAction={handleAdd}
+  actionText="Add Item"
+/>
+```
+
+### Utility Functions
+
+#### File Validation (`src/utils/fileValidation.js`)
+
+```jsx
+import { validateImageFile, formatFileSize } from '../utils/fileValidation';
+
+const validation = validateImageFile(file, 5); // 5MB max
+if (!validation.valid) {
+  showError(validation.error);
+  return;
+}
+```
+
+**Available Functions:**
+- `validateImageFile(file, maxSizeMB)` - Validate image files
+- `validateFile(file, allowedTypes, maxSizeMB)` - Validate any file type
+- `formatFileSize(bytes)` - Format bytes to human-readable string
+- `isImageFile(file)` - Check if file is an image
+- `getFileExtension(filename)` - Get file extension
+
+#### Error Handling (`src/utils/errorUtils.js`)
+
+```jsx
+import { getApiErrorMessage } from '../utils/errorUtils';
+
+try {
+  // API call
+} catch (error) {
+  showError(getApiErrorMessage(error));
+}
+```
+
+**Available Functions:**
+- `getApiErrorMessage(error, response)` - Get user-friendly error message
+- `getHttpStatusMessage(statusCode)` - Get HTTP status message
+- `isNetworkError(error)` - Check if error is network-related
+- `isTimeoutError(error)` - Check if error is timeout-related
+- `formatErrorForLogging(error, context)` - Format error for logging
+- `handleAsyncError(operation, errorCallback, context)` - Error handler wrapper
+
 ## Anthropic API Integration
 
 ### Official Documentation

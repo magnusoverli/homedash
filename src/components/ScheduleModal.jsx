@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useModalKeyboard } from '../hooks/useModalKeyboard';
 import { createBackdropClickHandler } from '../utils/modalUtils';
+import { validateImageFile } from '../utils/fileValidation';
+import CloseIcon from './icons/CloseIcon';
+import UploadIcon from './icons/UploadIcon';
 import './ScheduleModal.css';
 
 const ScheduleModal = ({ isOpen, onClose, title, children }) => {
@@ -11,7 +14,8 @@ const ScheduleModal = ({ isOpen, onClose, title, children }) => {
 
   const handleFileSelect = e => {
     const file = e.target.files[0];
-    if (file && file.type.startsWith('image/')) {
+    const validation = validateImageFile(file, 10);
+    if (validation.valid) {
       setSelectedFile(file);
     }
   };
@@ -30,7 +34,8 @@ const ScheduleModal = ({ isOpen, onClose, title, children }) => {
     e.preventDefault();
     setDragOver(false);
     const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
+    const validation = validateImageFile(file, 10);
+    if (validation.valid) {
       setSelectedFile(file);
     }
   };
@@ -53,21 +58,7 @@ const ScheduleModal = ({ isOpen, onClose, title, children }) => {
             onClick={onClose}
             aria-label="Close modal"
           >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M18 6L6 18M6 6L18 18"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <CloseIcon size={24} />
           </button>
           {title && <h2 className="modal-title">{title}</h2>}
           <div className="modal-header-spacer"></div>
@@ -98,15 +89,7 @@ const ScheduleModal = ({ isOpen, onClose, title, children }) => {
               />
 
               <div className="upload-icon">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <UploadIcon size={48} />
               </div>
 
               <div className="upload-text">
@@ -133,15 +116,7 @@ const ScheduleModal = ({ isOpen, onClose, title, children }) => {
                   onClick={handleRemoveFile}
                   aria-label="Remove file"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M18 6L6 18M6 6L18 18"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                  <CloseIcon size={20} />
                 </button>
               )}
             </div>

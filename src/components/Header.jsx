@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import SettingsIcon from './SettingsIcon';
+import { SettingsIcon } from './icons';
 import './Header.css';
 
 const Header = ({ currentWeek, onWeekChange, showWeekSelector = false }) => {

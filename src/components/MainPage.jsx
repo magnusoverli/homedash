@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import PersonCard from './PersonCard';
 import ActivityModal from './ActivityModal';
+import LoadingState from './LoadingState';
+import ErrorState from './ErrorState';
+import EmptyState from './EmptyState';
 import dataService from '../services/dataService';
 import './MainPage.css';
 
@@ -434,30 +437,19 @@ const MainPage = ({ currentWeek }) => {
     <main className="main-page">
       <div className="container">
         {isLoadingMembers || isLoadingActivities || isLoadingHomework ? (
-          <div className="loading-state">
-            <div className="loading-spinner"></div>
-            <p className="loading-text">Loading your weekly schedule...</p>
-          </div>
+          <LoadingState text="Loading your weekly schedule..." />
         ) : error ? (
-          <div className="error-state">
-            <div className="error-icon">⚠️</div>
-            <h2 className="error-title">Something went wrong</h2>
-            <p className="error-text">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="retry-button"
-            >
-              Try Again
-            </button>
-          </div>
+          <ErrorState
+            title="Something went wrong"
+            message={error}
+            onRetry={() => window.location.reload()}
+          />
         ) : familyMembers.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">👨‍👩‍👧‍👦</div>
-            <h2 className="empty-state-title">No Family Members Yet</h2>
-            <p className="empty-state-text">
-              Go to Settings to add family members and start planning your week!
-            </p>
-          </div>
+          <EmptyState
+            icon="👨‍👩‍👧‍👦"
+            title="No Family Members Yet"
+            message="Go to Settings to add family members and start planning your week!"
+          />
         ) : (
           <div className="calendar-grid">
             {familyMembers.slice(0, 3).map(member => (

@@ -1,5 +1,6 @@
 import { useModalKeyboard } from '../hooks/useModalKeyboard';
 import { createBackdropClickHandler } from '../utils/modalUtils';
+import CloseIcon from './icons/CloseIcon';
 import './GenericModal.css';
 
 const GenericModal = ({ isOpen, onClose, title, children }) => {
@@ -18,21 +19,7 @@ const GenericModal = ({ isOpen, onClose, title, children }) => {
             onClick={onClose}
             aria-label="Close modal"
           >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M18 6L6 18M6 6L18 18"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <CloseIcon size={24} />
           </button>
           {title && <h2 className="modal-title">{title}</h2>}
           <div className="modal-header-spacer"></div>

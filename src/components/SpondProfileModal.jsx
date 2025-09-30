@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { createBackdropClickHandler } from '../utils/modalUtils';
+import GenericModal from './GenericModal';
+import LoadingState from './LoadingState';
+import Button from './Button';
+import { getApiErrorMessage } from '../utils/errorUtils';
 import './SpondProfileModal.css';
 import { API_URL } from '../config/api';
 
@@ -39,7 +42,7 @@ const SpondProfileModal = ({ isOpen, onClose, member, onProfileSelected }) => {
       }
     } catch (err) {
       console.error('Error fetching profiles:', err);
-      setError('Failed to fetch available profiles');
+      setError(getApiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -84,33 +87,20 @@ const SpondProfileModal = ({ isOpen, onClose, member, onProfileSelected }) => {
       }
     } catch (err) {
       console.error('Error saving profile mapping:', err);
-      setError('Failed to save profile mapping');
+      setError(getApiErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
-  if (!isOpen) return null;
-
-  const handleBackdropClick = createBackdropClickHandler(onClose);
-
   return (
-    <div className="modal-overlay" onClick={handleBackdropClick}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Select Spond Profile for {member?.name}</h2>
-          <button className="close-button" onClick={onClose}>
-            ×
-          </button>
-        </div>
-
-        <div className="modal-body">
-          {loading && (
-            <div className="loading-container">
-              <div className="loading-spinner"></div>
-              <p>Loading profiles...</p>
-            </div>
-          )}
+    <GenericModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`Select Spond Profile for ${member?.name || 'Family Member'}`}
+    >
+      <div className="spond-profile-modal-body">
+        {loading && <LoadingState text="Loading profiles..." />}
 
           {error && (
             <div className="error-message">
@@ -189,24 +179,20 @@ const SpondProfileModal = ({ isOpen, onClose, member, onProfileSelected }) => {
 
         {!loading && !error && profiles.length > 0 && (
           <div className="modal-footer">
-            <button
-              className="btn-secondary"
-              onClick={onClose}
-              disabled={loading}
-            >
+            <Button variant="secondary" onClick={onClose} disabled={loading}>
               Cancel
-            </button>
-            <button
-              className="btn-primary"
+            </Button>
+            <Button
+              variant="primary"
               onClick={handleSaveMapping}
               disabled={loading || !selectedProfileId}
             >
               {existingMapping ? 'Update Profile' : 'Save Profile'}
-            </button>
+            </Button>
           </div>
         )}
       </div>
-    </div>
+    </GenericModal>
   );
 };
 

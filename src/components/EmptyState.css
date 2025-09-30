@@ -1,0 +1,35 @@
+/* EmptyState Component Styles */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  gap: 1rem;
+}
+
+.empty-state-icon {
+  font-size: 4rem;
+  margin-bottom: 0.5rem;
+  line-height: 1;
+}
+
+.empty-state-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.empty-state-message {
+  margin: 0;
+  font-size: 1rem;
+  color: #6b7280;
+  max-width: 400px;
+}
+
+.empty-state-action {
+  margin-top: 0.5rem;
+}

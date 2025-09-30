@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import PersonWeekCard from './PersonWeekCard';
 import GenericModal from './GenericModal';
-import SettingsIcon from './SettingsIcon';
+import { SettingsIcon } from './icons';
 import { AVAILABLE_COLORS } from '../constants/colors';
 import { getActivityType } from '../utils/activityUtils';
 import './PersonCard.css';

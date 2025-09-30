@@ -1,10 +1,20 @@
 import { useState, useEffect } from 'react';
 import GenericModal from './GenericModal';
+import {
+  LoadingSpinner,
+  TrashIcon,
+  UploadIcon,
+  WarningIcon,
+  CheckmarkIcon,
+  CloseIcon,
+} from './icons';
 import dataService from '../services/dataService';
 import { useToast } from '../contexts/ToastContext';
 import API_ENDPOINTS from '../config/api';
 import { AVATAR_COLORS } from '../constants/colors';
 import { getInitials } from '../utils/stringUtils';
+import { validateImageFile } from '../utils/fileValidation';
+import { getApiErrorMessage } from '../utils/errorUtils';
 import './EditMemberModal.css';
 
 const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
@@ -188,20 +198,13 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
   const handleFileUpload = event => {
     const file = event.target.files[0];
     if (file) {
-      // Validate file type
-      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-      if (!validTypes.includes(file.type)) {
-        showError('Please select a valid image file (JPEG, PNG, or GIF)');
+      const validation = validateImageFile(file, 5);
+      if (!validation.valid) {
+        showError(validation.error);
         return;
       }
 
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        showError('File size must be less than 5MB');
-        return;
-      }
-
-      // For now, just store the file object. Later we'll implement actual upload
+      // Store the file object
       setFormData(prev => ({
         ...prev,
         schoolPlanImage: file,
@@ -250,31 +253,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
     } catch (error) {
       console.error('Error extracting school plan:', error);
 
-      // Enhanced error handling with user-friendly messages
-      let userFriendlyMessage =
-        error.message || 'Failed to extract school plan';
-
-      // Provide helpful context based on error type
-      if (error.message?.includes('529')) {
-        userFriendlyMessage +=
-          '. This usually happens when many people are using the AI service at the same time. Try again in a few minutes.';
-      } else if (
-        error.message?.includes('401') ||
-        error.message?.includes('Invalid API key')
-      ) {
-        userFriendlyMessage += '. Please verify your API key in the Settings.';
-      } else if (
-        error.message?.includes('timeout') ||
-        error.message?.includes('timed out')
-      ) {
-        userFriendlyMessage +=
-          '. The request took too long to process. This can happen with large or complex images.';
-      } else if (error.message?.includes('Network error')) {
-        userFriendlyMessage +=
-          '. Please check your internet connection and try again.';
-      }
-
-      showError(userFriendlyMessage);
+      showError(getApiErrorMessage(error));
     } finally {
       setIsExtracting(false);
     }
@@ -834,36 +813,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                               >
                                 {isExtracting ? (
                                   <>
-                                    <svg
-                                      className="extract-spinner"
-                                      width="16"
-                                      height="16"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                    >
-                                      <circle
-                                        cx="12"
-                                        cy="12"
-                                        r="10"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeDasharray="31.416"
-                                        strokeDashoffset="31.416"
-                                      >
-                                        <animate
-                                          attributeName="stroke-dasharray"
-                                          dur="2s"
-                                          values="0 31.416;15.708 15.708;0 31.416"
-                                          repeatCount="indefinite"
-                                        />
-                                        <animate
-                                          attributeName="stroke-dashoffset"
-                                          dur="2s"
-                                          values="0;-15.708;-31.416"
-                                          repeatCount="indefinite"
-                                        />
-                                      </circle>
-                                    </svg>
+                                    <LoadingSpinner size={16} className="extract-spinner" />
                                     Extracting...
                                   </>
                                 ) : (
@@ -907,21 +857,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                               onClick={handleRemoveImage}
                               aria-label="Remove school plan image"
                             >
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 16 16"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M12 4L4 12M4 4L12 12"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
+                              <CloseIcon size={16} />
                             </button>
                           </div>
                         </div>
@@ -1026,27 +962,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                   <div className="modal-section">
                     <div className="school-schedule-compact">
                       <div className="schedule-info">
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <path
-                            d="M22 11.08V12a10 10 0 11-5.93-9.14"
-                            stroke="#22c55e"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <polyline
-                            points="22,4 12,14.01 9,11.01"
-                            stroke="#22c55e"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
+                        <CheckmarkIcon size={16} color="#22c55e" />
                         <span className="schedule-text">
                           School schedule imported
                         </span>
@@ -1061,81 +977,12 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                       >
                         {isDeletingSchedule ? (
                           <>
-                            <svg
-                              className="delete-spinner"
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                            >
-                              <circle
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeDasharray="31.416"
-                                strokeDashoffset="31.416"
-                              >
-                                <animate
-                                  attributeName="stroke-dasharray"
-                                  dur="2s"
-                                  values="0 31.416;15.708 15.708;0 31.416"
-                                  repeatCount="indefinite"
-                                />
-                                <animate
-                                  attributeName="stroke-dashoffset"
-                                  dur="2s"
-                                  values="0;-15.708;-31.416"
-                                  repeatCount="indefinite"
-                                />
-                              </circle>
-                            </svg>
+                            <LoadingSpinner size={14} className="delete-spinner" />
                             Deleting...
                           </>
                         ) : (
                           <>
-                            <svg
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                            >
-                              <polyline
-                                points="3,6 5,6 21,6"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <path
-                                d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <line
-                                x1="10"
-                                y1="11"
-                                x2="10"
-                                y2="17"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <line
-                                x1="14"
-                                y1="11"
-                                x2="14"
-                                y2="17"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
+                            <TrashIcon size={14} />
                             Delete
                           </>
                         )}
@@ -1145,27 +992,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                     {showScheduleDeleteConfirm && (
                       <div className="schedule-delete-confirmation">
                         <div className="confirmation-message">
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                          >
-                            <path
-                              d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"
-                              stroke="#f59e0b"
-                              strokeWidth="2"
-                            />
-                            <line
-                              x1="12"
-                              y1="9"
-                              x2="12"
-                              y2="13"
-                              stroke="#f59e0b"
-                              strokeWidth="2"
-                            />
-                            <circle cx="12" cy="17" r="1" fill="#f59e0b" />
-                          </svg>
+                          <WarningIcon size={16} color="#f59e0b" />
                           <span>
                             Delete{' '}
                             <strong>{member?.name || 'this member'}</strong>'s
@@ -1239,27 +1066,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                     {calendarLastSynced && (
                       <div className="calendar-status-info">
                         <div className="status-item">
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                          >
-                            <path
-                              d="M22 11.08V12a10 10 0 11-5.93-9.14"
-                              stroke="#22c55e"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                            <polyline
-                              points="22,4 12,14.01 9,11.01"
-                              stroke="#22c55e"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
+                          <CheckmarkIcon size={16} color="#22c55e" />
                           <span className="status-text">
                             Last imported:{' '}
                             {new Date(calendarLastSynced).toLocaleString()}
@@ -1468,27 +1275,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                     <div className="danger-zone">
                       <div className="danger-zone-header">
                         <div className="danger-icon">
-                          <svg
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                          >
-                            <path
-                              d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"
-                              stroke="#ef4444"
-                              strokeWidth="2"
-                            />
-                            <line
-                              x1="12"
-                              y1="9"
-                              x2="12"
-                              y2="13"
-                              stroke="#ef4444"
-                              strokeWidth="2"
-                            />
-                            <circle cx="12" cy="17" r="1" fill="#ef4444" />
-                          </svg>
+                          <WarningIcon size={20} color="#ef4444" />
                         </div>
                         <div className="danger-zone-text">
                           <h4 className="danger-zone-title">Danger Zone</h4>
@@ -1538,47 +1325,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                             className="button button-danger-advanced"
                             onClick={() => setShowDeleteConfirm(true)}
                           >
-                            <svg
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                            >
-                              <polyline
-                                points="3,6 5,6 21,6"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <path
-                                d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <line
-                                x1="10"
-                                y1="11"
-                                x2="10"
-                                y2="17"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <line
-                                x1="14"
-                                y1="11"
-                                x2="14"
-                                y2="17"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
+                            <TrashIcon size={16} />
                             Delete Family Member
                           </button>
                         )}

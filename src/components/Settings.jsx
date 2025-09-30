@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import FamilyMemberCard from './FamilyMemberCard';
 import AddMemberForm from './AddMemberForm';
 import EditMemberModal from './EditMemberModal';
+import LoadingState from './LoadingState';
+import { BackArrowIcon, PlusIcon } from './icons';
+import { getApiErrorMessage } from '../utils/errorUtils';
 import API_ENDPOINTS from '../config/api';
 import dataService from '../services/dataService';
 import { saveSetting } from '../utils/settingsUtils';
@@ -187,17 +190,7 @@ const Settings = () => {
       }
     } catch (error) {
       console.error('Error fetching models:', error);
-      
-      // Enhanced error handling for better user experience
-      let errorMessage = 'Failed to connect to backend. Please ensure the server is running.';
-      
-      if (error.message?.includes('529')) {
-        errorMessage = 'Anthropic API is currently overloaded. Please try again in a few moments.';
-      } else if (error.message?.includes('Network error')) {
-        errorMessage = 'Network connection failed. Please check your internet connection.';
-      }
-      
-      setModelsError(errorMessage);
+      setModelsError(getApiErrorMessage(error));
       setAvailableModels([]);
     } finally {
       setIsLoadingModels(false);
@@ -368,21 +361,9 @@ const Settings = () => {
       }
     } catch (error) {
       console.error('API key test error:', error);
-      
-      // Enhanced error handling for API key testing
-      let errorMessage = 'Failed to connect to backend. Please ensure the server is running.';
-      
-      if (error.message?.includes('529')) {
-        errorMessage = 'Anthropic API is currently overloaded. Please try again in a few moments.';
-      } else if (error.message?.includes('Network error')) {
-        errorMessage = 'Network connection failed. Please check your internet connection.';
-      } else if (error.message?.includes('timeout')) {
-        errorMessage = 'Request timed out. Please try again.';
-      }
-      
       setApiKeyTestResult({
         success: false,
-        message: errorMessage,
+        message: getApiErrorMessage(error),
       });
     } finally {
       setIsTestingApiKey(false);
@@ -399,21 +380,7 @@ const Settings = () => {
             onClick={handleBack}
             aria-label="Back to main page"
           >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15 18L9 12L15 6"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <BackArrowIcon size={24} />
           </button>
           <h1 className="settings-title">Family Settings</h1>
           <div className="settings-header-spacer"></div>
@@ -461,21 +428,7 @@ const Settings = () => {
                   aria-label="Add new family member"
                 >
                   <div className="add-member-icon">
-                    <svg
-                      width="32"
-                      height="32"
-                      viewBox="0 0 32 32"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M16 8V24M8 16H24"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                    <PlusIcon size={32} />
                   </div>
                   <span className="add-member-text">Add Member</span>
                 </button>
