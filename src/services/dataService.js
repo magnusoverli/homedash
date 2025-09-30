@@ -239,6 +239,14 @@ class DataService {
     return this.handleResponse(response);
   }
 
+  // Spond Activities Sync Status Check
+  async checkSpondSyncStatus(memberId, maxAgeMinutes = 5) {
+    const response = await fetch(
+      `${API_URL}/api/spond-activities/${memberId}/sync-status?maxAgeMinutes=${maxAgeMinutes}`
+    );
+    return this.handleResponse(response);
+  }
+
   // Spond Activities Sync
   async syncSpondActivities(memberId, startDate, endDate) {
     const response = await fetch(

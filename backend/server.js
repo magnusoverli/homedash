@@ -1686,6 +1686,60 @@ app.post('/api/spond-groups/:memberId/selections', async (req, res) => {
   }
 });
 
+// Check if Spond data needs syncing (based on last sync time)
+app.get('/api/spond-activities/:memberId/sync-status', async (req, res) => {
+  const { memberId } = req.params;
+  const { maxAgeMinutes = 5 } = req.query; // Default: sync if older than 5 minutes
+
+  try {
+    // Get the oldest last_synced_at from active groups for this member
+    const syncStatus = await getOne(
+      `SELECT 
+        MIN(last_synced_at) as oldest_sync,
+        COUNT(*) as active_groups_count
+      FROM spond_groups 
+      WHERE member_id = ? AND is_active = TRUE`,
+      [memberId]
+    );
+
+    if (!syncStatus || syncStatus.active_groups_count === 0) {
+      return res.json({
+        needsSync: false,
+        reason: 'No active groups',
+        activeGroupsCount: 0,
+      });
+    }
+
+    // If never synced, needs sync
+    if (!syncStatus.oldest_sync) {
+      return res.json({
+        needsSync: true,
+        reason: 'Never synced',
+        activeGroupsCount: syncStatus.active_groups_count,
+      });
+    }
+
+    // Check if data is stale
+    const lastSyncDate = new Date(syncStatus.oldest_sync);
+    const minutesSinceSync = (Date.now() - lastSyncDate.getTime()) / (1000 * 60);
+    const needsSync = minutesSinceSync > maxAgeMinutes;
+
+    res.json({
+      needsSync,
+      reason: needsSync ? `Data is ${Math.round(minutesSinceSync)} minutes old` : 'Data is fresh',
+      lastSyncedAt: syncStatus.oldest_sync,
+      minutesSinceSync: Math.round(minutesSinceSync),
+      activeGroupsCount: syncStatus.active_groups_count,
+    });
+  } catch (error) {
+    console.error('Error checking sync status:', error);
+    res.status(500).json({ 
+      error: 'Failed to check sync status',
+      needsSync: true, // Fail-safe: sync on error
+    });
+  }
+});
+
 // Fetch Spond activities for authenticated member's selected groups
 app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
   const { memberId } = req.params;

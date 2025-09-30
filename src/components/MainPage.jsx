@@ -115,21 +115,29 @@ const MainPage = ({ currentWeek }) => {
           });
         });
 
-        // Sync Spond activities for each family member (in background)
+        // Smart Spond sync: only sync if data is stale (>5 minutes old)
         if (familyMembers.length > 0) {
           const syncPromises = familyMembers.map(async member => {
             try {
-              await dataService.syncSpondActivities(
-                member.id,
-                startDateStr,
-                endDateStr
-              );
+              // Check if sync is needed
+              const syncStatus = await dataService.checkSpondSyncStatus(member.id, 5);
+              
+              if (syncStatus.needsSync) {
+                console.log(`🔄 Syncing Spond for ${member.name}: ${syncStatus.reason}`);
+                await dataService.syncSpondActivities(
+                  member.id,
+                  startDateStr,
+                  endDateStr
+                );
+              } else {
+                console.log(`✅ Spond data fresh for ${member.name}: ${syncStatus.reason}`);
+              }
             } catch (error) {
-              console.warn(`Background sync failed for ${member.name}:`, error);
+              console.warn(`Background sync check/update failed for ${member.name}:`, error);
             }
           });
 
-          // After all syncs complete, refresh activities to show new Spond data
+          // After all syncs complete (or skip), refresh activities to show any new Spond data
           Promise.all(syncPromises).then(async () => {
             try {
               const refreshedActivitiesData = await dataService.getActivities({
