@@ -1,6 +1,6 @@
 services:
   homedash-app:
-    image: ghcr.io/magnusoverli/homedash2-app:v1.0.0
+    image: ghcr.io/magnusoverli/homedash2-app:latest
     container_name: homedash-app
     restart: unless-stopped
     ports:
@@ -29,7 +29,7 @@ services:
       start_period: 40s
 
   homedash-backend:
-    image: ghcr.io/magnusoverli/homedash2-backend:v1.0.0
+    image: ghcr.io/magnusoverli/homedash2-backend:latest
     container_name: homedash-backend
     restart: unless-stopped
     ports:
