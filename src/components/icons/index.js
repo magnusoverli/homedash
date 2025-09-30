@@ -1,8 +1,8 @@
 /**
  * Icon Components Library
- * 
+ *
  * Centralized export of all icon components for easy importing
- * 
+ *
  * Usage:
  * import { CloseIcon, LoadingSpinner } from '@/components/icons';
  * import { CloseIcon, LoadingSpinner } from '../components/icons';
@@ -17,3 +17,4 @@ export { default as WarningIcon } from './WarningIcon';
 export { default as CheckmarkIcon } from './CheckmarkIcon';
 export { default as PlusIcon } from './PlusIcon';
 export { default as SettingsIcon } from './SettingsIcon';
+export { default as PaletteIcon } from './PaletteIcon';

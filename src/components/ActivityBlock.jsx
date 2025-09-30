@@ -176,6 +176,11 @@ const ActivityBlock = ({
 
   const handleDelete = e => {
     e.stopPropagation();
+    console.log(
+      'Delete button clicked for activity:',
+      activity.id,
+      activity.title
+    );
     onDelete();
   };
 
@@ -220,7 +225,9 @@ const ActivityBlock = ({
 
       {/* Municipal calendar event emoji in lower right */}
       {isMunicipalCalendarActivity(activity) && (
-        <div className="municipal-event-emoji">{getMunicipalEventIcon(activity)}</div>
+        <div className="municipal-event-emoji">
+          {getMunicipalEventIcon(activity)}
+        </div>
       )}
 
       {showActions && activity.title && (

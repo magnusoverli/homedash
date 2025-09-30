@@ -39,9 +39,19 @@ Extract daily time information from this school schedule image, organizing it in
 - **Normalize terms:**
   - PE/sports activities: Use "Gym" for any PE/sports activities
   - Homework help: Use "Leksehjelp" when detected in the schedule
+  - Field trips: Use "Turdag" for any field trip/outdoor excursion (tur, høst-tur, vår-tur, vintertur, utflukt, ekskursjon, besøk til, etc.)
 - **Always note "Leksehjelp"**: If "Leksehjelp" appears in a day's schedule, include it in that day's notes
 - **Multiple notes format**: When multiple special activities occur on the same day, separate them with commas (e.g., "Gym, Leksehjelp")
 - Use empty string "" if no special notes found
+
+**Field Trip Pattern Recognition & Deduplication:**
+- **CRITICAL**: Recognize ALL variations of field trips and normalize to "Turdag"
+- **Common patterns**: "Turdag", "tur", "Høst-tur", "Vår-tur", "Vintertur", "utflukt", "ekskursjon", "field trip"
+- **With descriptors**: "Høst-tur med...", "Tur til...", "Utflukt til...", "besøk til..."
+- **In Husk section**: "Turdag(fredag)", "Turdag (onsdag)", etc. - extract day mentioned in parentheses
+- **Deduplication rule**: If the same field trip is mentioned BOTH in the timetable grid for a specific day AND in the "Husk:" or notes section for the same day → Extract only ONCE as "Turdag" note
+- **Validation**: Always check the day mentioned in "Husk:" section matches the day in the timetable grid before deduplicating
+- **Example**: "Høst-tur med GodtPåFjellet" in Friday column + "Turdag(fredag)" in Husk section = ONE "Turdag" note for Friday (not two)
 
 ### 2. School Activities Dataset
 **⚠️ CRITICAL INCLUSION CRITERIA:**
@@ -115,6 +125,7 @@ Dataset 3 - school_homework:
 - Tuesday "Gym 10:00-11:00" in timetable grid → Tuesday notes: "Gym"  
 - Wednesday "Uteskole 09:00-12:00" in timetable grid → Wednesday notes: "Uteskole"
 - Thursday no special activities → Thursday notes: ""
+- **Friday "Høst-tur med GodtPåFjellet" in grid + "Turdag(fredag)" in Husk section → Friday notes: "Turdag" (deduplicated, same event)**
 - **Monday with multiple activities**: "Gym 10:00-11:00" and "Leksehjelp 14:15-15:15" → Monday notes: "Gym, Leksehjelp"
 - Any special subject in the grid gets noted for that specific day
 
@@ -150,6 +161,12 @@ Dataset 3 - school_homework:
 
 4. **📅 DATE HANDLING**: Always set specific_date to null for one-time events
 
+5. **🔄 DEDUPLICATION CHECK**: For special notes (Gym, Turdag, Uteskole, etc.)
+   - Check if the same activity is mentioned in BOTH timetable grid AND notes/Husk sections
+   - Verify the day matches in both mentions (e.g., "Turdag(fredag)" in Husk must match Friday in grid)
+   - If same activity + same day → Extract only ONCE as a note
+   - Example: "Høst-tur" on Friday grid + "Turdag(fredag)" in Husk = One "Turdag" note for Friday, not two
+
 **⚠️ DOUBLE-CHECK**: If you see potential activities, first check if they're in the timetable grid. If they are, they're part of the school day!
 
 ## PROCESSING WORKFLOW
@@ -165,7 +182,11 @@ Dataset 3 - school_homework:
      - If "Leksehjelp" appears → Add "Leksehjelp" to that day's notes
      - If "Gym"/"Kroppsøving"/"PE" appears → Add "Gym" to that day's notes
      - If "Uteskole" appears → Add "Uteskole" to that day's notes
+     - If "Turdag"/"tur"/"field trip" appears → Add "Turdag" to that day's notes
      - **For multiple notes**: Separate with commas (e.g., "Gym, Leksehjelp")
+   - **Check for duplicate mentions**: Before finalizing notes, scan "Husk:" section
+     - If "Turdag(day)" mentioned in Husk, verify it matches the grid day
+     - Don't double-count the same activity - the grid mention is sufficient
    - Calculate school day duration from start to end of grid activities
 
 3. **Next**: Look for activities OUTSIDE the timetable grid
