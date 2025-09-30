@@ -13,6 +13,7 @@ import { useToast } from '../contexts/ToastContext';
 import API_ENDPOINTS from '../config/api';
 import { AVATAR_COLORS } from '../constants/colors';
 import { getInitials } from '../utils/stringUtils';
+import { getAccessToken } from '../services/authService';
 import { validateImageFile } from '../utils/fileValidation';
 import { getApiErrorMessage } from '../utils/errorUtils';
 import './EditMemberModal.css';
@@ -159,8 +160,18 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
     setIsLoadingSpondState(true);
 
     try {
+      const headers = {};
+      const token = getAccessToken();
+      if (token) {
+        headers['x-access-token'] = token;
+      }
+      
       const response = await fetch(
-        `${API_ENDPOINTS.SPOND_CREDENTIALS}/${member.id}`
+        `${API_ENDPOINTS.SPOND_CREDENTIALS}/${member.id}`,
+        {
+          method: 'GET',
+          headers,
+        }
       );
       const data = await response.json();
 
@@ -330,13 +341,19 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
     setGroupsError(null);
 
     try {
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      const token = getAccessToken();
+      if (token) {
+        headers['x-access-token'] = token;
+      }
+      
       const response = await fetch(
         `${API_ENDPOINTS.SPOND_GROUPS}/${member.id}`,
         {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
         }
       );
 
@@ -396,10 +413,17 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       // Clear stored credentials when disabling
       if (member?.id && spondAuthState.hasCredentials) {
         try {
+          const headers = {};
+          const token = getAccessToken();
+          if (token) {
+            headers['x-access-token'] = token;
+          }
+          
           const response = await fetch(
             `${API_ENDPOINTS.SPOND_CREDENTIALS}/${member.id}`,
             {
               method: 'DELETE',
+              headers,
             }
           );
 
@@ -433,13 +457,19 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
     setIsImportingCalendar(true);
 
     try {
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      const token = getAccessToken();
+      if (token) {
+        headers['x-access-token'] = token;
+      }
+      
       const response = await fetch(
         `${API_ENDPOINTS.FAMILY_MEMBERS}/${member.id}/import-calendar`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify({
             calendarUrl: calendarUrl.trim(),
           }),
@@ -475,10 +505,17 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
     setIsRemovingCalendar(true);
 
     try {
+      const headers = {};
+      const token = getAccessToken();
+      if (token) {
+        headers['x-access-token'] = token;
+      }
+      
       const response = await fetch(
         `${API_ENDPOINTS.FAMILY_MEMBERS}/${member.id}/remove-calendar`,
         {
           method: 'DELETE',
+          headers,
         }
       );
 
@@ -515,11 +552,17 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
     setIsTestingSpondCredentials(true);
 
     try {
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      const token = getAccessToken();
+      if (token) {
+        headers['x-access-token'] = token;
+      }
+      
       const response = await fetch(API_ENDPOINTS.TEST_SPOND_CREDENTIALS, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           email: spondEmail,
           password: spondPassword,
@@ -532,13 +575,19 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
         // Store credentials after successful authentication
         if (data.responseData && member?.id) {
           try {
+            const storeHeaders = {
+              'Content-Type': 'application/json',
+            };
+            const token = getAccessToken();
+            if (token) {
+              storeHeaders['x-access-token'] = token;
+            }
+            
             const storeResponse = await fetch(
               `${API_ENDPOINTS.SPOND_CREDENTIALS}/${member.id}`,
               {
                 method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
+                headers: storeHeaders,
                 body: JSON.stringify({
                   email: spondEmail,
                   password: spondPassword,
@@ -1388,13 +1437,19 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                         };
                       });
 
+                      const saveHeaders = {
+                        'Content-Type': 'application/json',
+                      };
+                      const token = getAccessToken();
+                      if (token) {
+                        saveHeaders['x-access-token'] = token;
+                      }
+                      
                       const response = await fetch(
                         `${API_ENDPOINTS.SPOND_GROUP_SELECTIONS}/${member.id}/selections`,
                         {
                           method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
+                          headers: saveHeaders,
                           body: JSON.stringify({
                             selectedProfileGroups: selectedPairs,
                           }),

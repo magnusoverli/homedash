@@ -9,6 +9,7 @@ import { getApiErrorMessage } from '../utils/errorUtils';
 import API_ENDPOINTS from '../config/api';
 import dataService from '../services/dataService';
 import { saveSetting } from '../utils/settingsUtils';
+import { getAccessToken } from '../services/authService';
 import './Settings.css';
 
 const Settings = () => {
@@ -139,11 +140,17 @@ const Settings = () => {
       console.log('🚀 Starting models fetch request...');
       console.log(`📡 Request URL: ${API_ENDPOINTS.MODELS}`);
       
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      const token = getAccessToken();
+      if (token) {
+        headers['x-access-token'] = token;
+      }
+      
       const response = await fetch(API_ENDPOINTS.MODELS, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ apiKey }),
       });
 
@@ -365,11 +372,17 @@ const Settings = () => {
       console.log('📤 Request method: POST');
       console.log('📤 Request headers: Content-Type: application/json');
       
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      const token = getAccessToken();
+      if (token) {
+        headers['x-access-token'] = token;
+      }
+      
       const response = await fetch(API_ENDPOINTS.TEST_KEY, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ apiKey }),
       });
 

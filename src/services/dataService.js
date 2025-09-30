@@ -36,7 +36,12 @@ class DataService {
       } else if (response.status === 401) {
         // Check if this is an auth error vs API key error
         if (errorData.message?.includes('access token')) {
-          errorMessage = `Session expired. Please refresh the page and login again.`;
+          // Clear invalid token and reload to show login
+          import('./authService').then(({ clearAccessToken }) => {
+            clearAccessToken();
+            window.location.reload();
+          });
+          errorMessage = `Session expired. Please login again.`;
         } else {
           errorMessage = `Invalid API key. Please check your API key in Settings.`;
         }
@@ -210,9 +215,16 @@ class DataService {
       formData.append('selected_model', selectedModel);
     }
 
+    const headers = {};
+    const token = getAccessToken();
+    if (token) {
+      headers['x-access-token'] = token;
+    }
+
     const response = await fetch(`${API_URL}/api/extract-school-plan`, {
       method: 'POST',
-      body: formData, // No Content-Type header for FormData
+      headers: headers, // Don't set Content-Type for FormData, but include auth token
+      body: formData,
     });
     return this.handleResponse(response);
   }
