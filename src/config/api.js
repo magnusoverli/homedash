@@ -6,10 +6,11 @@ const getApiUrl = () => {
     return import.meta.env.VITE_API_URL;
   }
 
-  // In production, use the same hostname as the frontend but on port 3001
+  // In production, use the same hostname/protocol as the frontend but on port 3001
   if (import.meta.env.PROD) {
+    const protocol = window.location.protocol;
     const hostname = window.location.hostname;
-    return `http://${hostname}:3001`;
+    return `${protocol}//${hostname}:3001`;
   }
 
   // In development, use localhost

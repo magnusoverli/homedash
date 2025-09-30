@@ -10,7 +10,7 @@ services:
     environment:
       - NODE_ENV=production
       - TZ=Europe/Oslo
-      # Removed VITE_API_URL to enable dynamic detection based on hostname
+      # Backend is accessible at port 3001 on the production host
     depends_on:
       - homedash-backend
     healthcheck:

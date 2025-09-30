@@ -267,8 +267,12 @@ PORT=3001
 - **Internal Network**: Services communicate via `homedash-network` bridge network
 - **Frontend → Backend**: Uses `http://homedash-backend:3001` internally
 - **External Access**:
-  - Frontend: `http://localhost:3000`
-  - Backend API: `http://localhost:3001`
+  - Frontend: `http://localhost:3000` (or custom port via docker-compose)
+  - Backend API: `http://localhost:3001` (fixed port)
+- **Dynamic API URL Detection**: 
+  - The frontend automatically detects the backend URL at runtime using `window.location.protocol` and `window.location.hostname`
+  - Works on any port mapping (e.g., `3000:3000`, `3030:3000`, `8080:3000`)
+  - Backend must always be accessible on port 3001 of the same hostname
 
 ### Backend Proxy Features
 
