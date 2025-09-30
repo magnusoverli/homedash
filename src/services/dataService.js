@@ -1,6 +1,20 @@
 import { API_URL } from '../config/api';
+import { getAccessToken } from './authService';
 
 class DataService {
+  getHeaders() {
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+
+    const token = getAccessToken();
+    if (token) {
+      headers['x-access-token'] = token;
+    }
+
+    return headers;
+  }
+
   async handleResponse(response) {
     if (!response.ok) {
       const errorData = await response
@@ -20,7 +34,12 @@ class DataService {
       if (response.status === 529) {
         errorMessage = `Anthropic API is currently overloaded (Error 529). Please try again in a few moments.`;
       } else if (response.status === 401) {
-        errorMessage = `Invalid API key. Please check your API key in Settings.`;
+        // Check if this is an auth error vs API key error
+        if (errorData.message?.includes('access token')) {
+          errorMessage = `Session expired. Please refresh the page and login again.`;
+        } else {
+          errorMessage = `Invalid API key. Please check your API key in Settings.`;
+        }
       } else if (response.status === 429) {
         errorMessage = `Rate limit exceeded. Please wait a moment before trying again.`;
       } else if (response.status >= 500) {
@@ -39,9 +58,7 @@ class DataService {
   async getFamilyMembers() {
     const response = await fetch(`${API_URL}/api/family-members`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getHeaders(),
     });
     return this.handleResponse(response);
   }
@@ -49,9 +66,7 @@ class DataService {
   async createFamilyMember(memberData) {
     const response = await fetch(`${API_URL}/api/family-members`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getHeaders(),
       body: JSON.stringify(memberData),
     });
     return this.handleResponse(response);
@@ -60,9 +75,7 @@ class DataService {
   async updateFamilyMember(id, memberData) {
     const response = await fetch(`${API_URL}/api/family-members/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getHeaders(),
       body: JSON.stringify(memberData),
     });
     return this.handleResponse(response);
@@ -71,9 +84,7 @@ class DataService {
   async deleteFamilyMember(id) {
     const response = await fetch(`${API_URL}/api/family-members/${id}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getHeaders(),
     });
     return this.handleResponse(response);
   }
@@ -89,9 +100,7 @@ class DataService {
     const url = `${API_URL}/api/activities${params.toString() ? '?' + params.toString() : ''}`;
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getHeaders(),
     });
     return this.handleResponse(response);
   }
@@ -99,9 +108,7 @@ class DataService {
   async createActivity(activityData) {
     const response = await fetch(`${API_URL}/api/activities`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getHeaders(),
       body: JSON.stringify(activityData),
     });
     return this.handleResponse(response);
@@ -110,9 +117,7 @@ class DataService {
   async updateActivity(id, activityData) {
     const response = await fetch(`${API_URL}/api/activities/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getHeaders(),
       body: JSON.stringify(activityData),
     });
     return this.handleResponse(response);
@@ -121,9 +126,7 @@ class DataService {
   async deleteActivity(id) {
     const response = await fetch(`${API_URL}/api/activities/${id}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getHeaders(),
     });
     return this.handleResponse(response);
   }
@@ -132,9 +135,7 @@ class DataService {
   async getSettings() {
     const response = await fetch(`${API_URL}/api/settings`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getHeaders(),
     });
     return this.handleResponse(response);
   }
@@ -142,9 +143,7 @@ class DataService {
   async updateSetting(key, value) {
     const response = await fetch(`${API_URL}/api/settings/${key}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getHeaders(),
       body: JSON.stringify({ value }),
     });
     return this.handleResponse(response);
@@ -153,9 +152,7 @@ class DataService {
   async getPromptContent() {
     const response = await fetch(`${API_URL}/api/prompt-content`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getHeaders(),
     });
     return this.handleResponse(response);
   }
@@ -170,9 +167,7 @@ class DataService {
     const url = `${API_URL}/api/homework${params.toString() ? '?' + params.toString() : ''}`;
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getHeaders(),
     });
     return this.handleResponse(response);
   }
@@ -180,9 +175,7 @@ class DataService {
   async createHomework(homeworkData) {
     const response = await fetch(`${API_URL}/api/homework`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getHeaders(),
       body: JSON.stringify(homeworkData),
     });
     return this.handleResponse(response);
@@ -191,9 +184,7 @@ class DataService {
   async updateHomework(id, homeworkData) {
     const response = await fetch(`${API_URL}/api/homework/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getHeaders(),
       body: JSON.stringify(homeworkData),
     });
     return this.handleResponse(response);
@@ -202,9 +193,7 @@ class DataService {
   async deleteHomework(id) {
     const response = await fetch(`${API_URL}/api/homework/${id}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getHeaders(),
     });
     return this.handleResponse(response);
   }
@@ -232,9 +221,7 @@ class DataService {
   async deleteSchoolSchedule(memberId) {
     const response = await fetch(`${API_URL}/api/school-schedule/${memberId}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getHeaders(),
     });
     return this.handleResponse(response);
   }
@@ -242,7 +229,11 @@ class DataService {
   // Spond Activities Sync Status Check
   async checkSpondSyncStatus(memberId, maxAgeMinutes = 5) {
     const response = await fetch(
-      `${API_URL}/api/spond-activities/${memberId}/sync-status?maxAgeMinutes=${maxAgeMinutes}`
+      `${API_URL}/api/spond-activities/${memberId}/sync-status?maxAgeMinutes=${maxAgeMinutes}`,
+      {
+        method: 'GET',
+        headers: this.getHeaders(),
+      }
     );
     return this.handleResponse(response);
   }
@@ -253,9 +244,7 @@ class DataService {
       `${API_URL}/api/spond-activities/${memberId}/sync`,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getHeaders(),
         body: JSON.stringify({ startDate, endDate }),
       }
     );

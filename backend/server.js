@@ -5,12 +5,30 @@ import fetch from 'node-fetch';
 import multer from 'multer';
 import ical from 'node-ical';
 import axios from 'axios';
+import crypto from 'crypto';
 import { initDatabase, runQuery, getAll, getOne } from './database.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Access control configuration
+const ACCESS_PASSWORD = process.env.ACCESS_PASSWORD;
+const ACCESS_CONTROL_ENABLED = !!ACCESS_PASSWORD;
+
+// Simple in-memory session store (tokens are valid until server restart)
+const validTokens = new Set();
+
+// Generate a session token
+function generateToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+// Verify session token
+function verifyToken(token) {
+  return validTokens.has(token);
+}
 
 initDatabase().catch(console.error);
 
@@ -58,10 +76,82 @@ app.use(
 );
 app.use(express.json());
 
-// Health check endpoint
+// Access control middleware
+function requireAuth(req, res, next) {
+  // Skip auth if access control is disabled
+  if (!ACCESS_CONTROL_ENABLED) {
+    return next();
+  }
+
+  const token = req.headers['x-access-token'];
+  
+  if (!token || !verifyToken(token)) {
+    return res.status(401).json({ 
+      error: 'Unauthorized',
+      message: 'Valid access token required' 
+    });
+  }
+
+  next();
+}
+
+// Health check endpoint (no auth required)
 app.get('/api/health', (_, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// Auth status endpoint (no auth required)
+app.get('/api/auth/status', (_, res) => {
+  res.json({ 
+    enabled: ACCESS_CONTROL_ENABLED
+  });
+});
+
+// Login endpoint (no auth required)
+app.post('/api/auth/login', (req, res) => {
+  if (!ACCESS_CONTROL_ENABLED) {
+    return res.status(400).json({ 
+      error: 'Access control is not enabled' 
+    });
+  }
+
+  const { password } = req.body;
+
+  if (!password) {
+    return res.status(400).json({ 
+      error: 'Password is required' 
+    });
+  }
+
+  if (password !== ACCESS_PASSWORD) {
+    return res.status(401).json({ 
+      error: 'Invalid password' 
+    });
+  }
+
+  // Generate and store token
+  const token = generateToken();
+  validTokens.add(token);
+
+  res.json({ 
+    success: true,
+    token 
+  });
+});
+
+// Logout endpoint
+app.post('/api/auth/logout', (req, res) => {
+  const token = req.headers['x-access-token'];
+  
+  if (token) {
+    validTokens.delete(token);
+  }
+
+  res.json({ success: true });
+});
+
+// Apply auth middleware to all subsequent routes
+app.use(requireAuth);
 
 // Test API key endpoint
 app.post('/api/test-key', async (req, res) => {

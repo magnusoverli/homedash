@@ -310,6 +310,57 @@ The backend proxy (`backend/server.js`) provides secure API integration followin
 2. **API Key Handling**: API keys are never stored on the server, passed through from frontend
 3. **CORS Configuration**: Properly configured for production/development environments
 4. **Health Checks**: Automatic container restart on failure
+5. **Access Control**: Optional password protection for UI access (see Access Control section below)
+
+### Access Control (Optional)
+
+HomeDash supports optional password protection for the entire UI. This is controlled by a single environment variable that both enables/disables the feature and serves as the password.
+
+#### How It Works
+
+1. **Disabled by Default**: If `ACCESS_PASSWORD` is not set, the UI is accessible without any authentication
+2. **Enable with Password**: Set `ACCESS_PASSWORD` in docker-compose.yml to enable protection
+3. **Session-Based**: Uses secure tokens that are valid until server restart
+4. **Automatic Detection**: Frontend automatically detects if auth is required
+
+#### Setup
+
+In `docker-compose.yml`, uncomment and set the `ACCESS_PASSWORD` variable:
+
+```yaml
+environment:
+  - NODE_ENV=production
+  - PORT=3001
+  - TZ=Europe/Oslo
+  - ACCESS_PASSWORD=your_secure_password_here
+```
+
+#### How Authentication Works
+
+1. **Backend**: 
+   - Checks for `ACCESS_PASSWORD` environment variable
+   - If set, requires `x-access-token` header on all API requests (except health, auth status, and login endpoints)
+   - Issues session tokens on successful password validation
+   - Tokens are stored in-memory (cleared on server restart)
+
+2. **Frontend**:
+   - On load, checks `/api/auth/status` to see if auth is required
+   - If required, shows login screen before rendering the app
+   - Stores token in localStorage after successful login
+   - Automatically includes token in all API requests via `x-access-token` header
+
+3. **Endpoints**:
+   - `GET /api/auth/status` - Check if access control is enabled (no auth required)
+   - `POST /api/auth/login` - Login with password, returns session token (no auth required)
+   - `POST /api/auth/logout` - Invalidate session token
+   - All other endpoints - Require valid `x-access-token` header if access control is enabled
+
+#### Security Notes
+
+- Tokens are in-memory only (lost on server restart, requiring re-login)
+- This is a simple protection mechanism suitable for trusted networks
+- For internet-facing deployments, consider adding HTTPS and more robust authentication
+- Password is set in plain text in docker-compose (use secrets or env files for better security)
 
 ### Troubleshooting
 

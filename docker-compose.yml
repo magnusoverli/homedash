@@ -45,6 +45,9 @@ services:
       - NODE_ENV=production
       - PORT=3001
       - TZ=Europe/Oslo
+      # Optional: Enable access control by setting a password
+      # Uncomment the line below and set your desired password
+      # - ACCESS_PASSWORD=your_password_here
     volumes:
       - homedash-data:/app/data
     healthcheck:
