@@ -1,0 +1,65 @@
+services:
+  homedash-app:
+    image: ghcr.io/magnusoverli/homedash2-app:v1.0.0
+    container_name: homedash-app
+    restart: unless-stopped
+    ports:
+      - '3030:3000'
+    networks:
+      - homedash-network
+    environment:
+      - NODE_ENV=production
+      - TZ=Europe/Oslo
+      # Removed VITE_API_URL to enable dynamic detection based on hostname
+    depends_on:
+      - homedash-backend
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '--no-verbose',
+          '--tries=1',
+          '--spider',
+          'http://localhost:3000',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  homedash-backend:
+    image: ghcr.io/magnusoverli/homedash2-backend:v1.0.0
+    container_name: homedash-backend
+    restart: unless-stopped
+    ports:
+      - '3001:3001'
+    networks:
+      - homedash-network
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - TZ=Europe/Oslo
+    volumes:
+      - homedash-data:/app/data
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '--no-verbose',
+          '--tries=1',
+          '--spider',
+          'http://localhost:3001/api/health',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  homedash-data:
+
+networks:
+  homedash-network:
+    driver: bridge
