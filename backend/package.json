@@ -1,6 +1,6 @@
 {
   "name": "homedash-backend",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "description": "Backend proxy for HomeDash LLM integration",
   "main": "server.js",
   "type": "module",
