@@ -67,7 +67,15 @@ app.get('/api/health', (_, res) => {
 app.post('/api/test-key', async (req, res) => {
   const { apiKey } = req.body;
 
+  console.log('=== ANTHROPIC API KEY VALIDATION ===');
+  console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
+  console.log(`🔑 API Key provided: ${apiKey ? 'YES' : 'NO'}`);
+  console.log(`🔑 API Key length: ${apiKey?.length || 0} characters`);
+  console.log(`🔑 API Key format: ${apiKey ? (apiKey.startsWith('sk-ant-') ? 'CORRECT (sk-ant-*)' : 'INCORRECT (should start with sk-ant-)') : 'N/A'}`);
+
   if (!apiKey) {
+    console.log('❌ No API key provided');
+    console.log('=== END API KEY VALIDATION ===');
     return res.status(400).json({
       valid: false,
       message: 'API key is required',
@@ -75,10 +83,20 @@ app.post('/api/test-key', async (req, res) => {
   }
 
   try {
+    console.log('🚀 Starting Anthropic API validation...');
+    console.log('📡 Testing with Messages API endpoint');
+    
     // Use a simple message endpoint to validate the API key
     // This is more reliable than trying to use non-existent admin endpoints
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+    console.log('📤 Request details:');
+    console.log('  - URL: https://api.anthropic.com/v1/messages');
+    console.log('  - Method: POST');
+    console.log('  - Headers: x-api-key, anthropic-version, Content-Type');
+    console.log('  - Body: test message with claude-3-haiku-20240307');
+    console.log('  - Timeout: 10 seconds');
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -97,12 +115,19 @@ app.post('/api/test-key', async (req, res) => {
 
     clearTimeout(timeoutId);
 
+    console.log(`📥 Messages API response status: ${response.status}`);
+    console.log(`📥 Messages API response status text: ${response.statusText}`);
+
     if (response.status === 401) {
+      console.log('❌ API key validation FAILED - 401 Unauthorized');
+      console.log('=== END API KEY VALIDATION ===');
       return res.json({
         valid: false,
         message: 'Invalid API key',
       });
     } else if (response.status === 400) {
+      console.log('✅ API key validation SUCCESS - 400 indicates valid key with malformed request');
+      console.log('=== END API KEY VALIDATION ===');
       // A 400 error might indicate the API key is valid but request is malformed
       // which is actually what we want for testing purposes
       return res.json({
@@ -110,11 +135,16 @@ app.post('/api/test-key', async (req, res) => {
         message: 'API key is valid!',
       });
     } else if (response.ok) {
+      console.log('✅ API key validation SUCCESS - 200 OK with valid response');
+      console.log('=== END API KEY VALIDATION ===');
       return res.json({
         valid: true,
         message: 'API key is valid and working!',
       });
     } else {
+      console.log(`⚠️ Messages API returned unexpected status: ${response.status}`);
+      console.log('🔄 Trying fallback validation with Models API...');
+      
       // Try fallback with models endpoint
       const modelsResponse = await fetch(
         'https://api.anthropic.com/v1/models',
@@ -129,7 +159,12 @@ app.post('/api/test-key', async (req, res) => {
         }
       );
 
+      console.log(`📥 Models API response status: ${modelsResponse.status}`);
+      console.log(`📥 Models API response status text: ${modelsResponse.statusText}`);
+
       if (modelsResponse.status === 401) {
+        console.log('❌ API key validation FAILED - Models API returned 401');
+        console.log('=== END API KEY VALIDATION ===');
         return res.json({
           valid: false,
           message: 'Invalid API key',
@@ -137,18 +172,25 @@ app.post('/api/test-key', async (req, res) => {
       } else if (modelsResponse.ok) {
         const modelsData = await modelsResponse.json();
         const modelCount = modelsData.data ? modelsData.data.length : 0;
+        console.log(`✅ API key validation SUCCESS - Models API returned ${modelCount} models`);
+        console.log('=== END API KEY VALIDATION ===');
         return res.json({
           valid: true,
           message: `API key is valid! Found ${modelCount} available models.`,
         });
       } else {
+        console.log(`❌ Both APIs failed - Messages: ${response.status}, Models: ${modelsResponse.status}`);
+        console.log('=== END API KEY VALIDATION ===');
         return res.json({
           valid: false,
-          message: `Could not validate API key: ${response.status}`,
+          message: `Could not validate API key: Messages API ${response.status}, Models API ${modelsResponse.status}`,
         });
       }
     }
   } catch (error) {
+    console.log('💥 API key validation ERROR occurred');
+    console.error('🔍 Error details:');
+    console.error(`  - Type: ${error.constructor.name}`);
     console.error('Error testing API key:', error);
     console.error('Error name:', error.name);
     console.error('Error code:', error.code);
@@ -156,6 +198,8 @@ app.post('/api/test-key', async (req, res) => {
 
     // Check if it's a timeout error
     if (error.name === 'AbortError') {
+      console.log('⏰ Request timed out after 10 seconds');
+      console.log('=== END API KEY VALIDATION ===');
       return res.status(500).json({
         valid: false,
         message:
@@ -166,6 +210,8 @@ app.post('/api/test-key', async (req, res) => {
 
     // Check for DNS/network errors
     if (error.code === 'ENOTFOUND' || error.code === 'EAI_AGAIN') {
+      console.log('🌐 DNS resolution failed - cannot reach api.anthropic.com');
+      console.log('=== END API KEY VALIDATION ===');
       return res.status(500).json({
         valid: false,
         message:
@@ -175,6 +221,8 @@ app.post('/api/test-key', async (req, res) => {
     }
 
     if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+      console.log('🔌 Connection refused or timed out - network/firewall issue');
+      console.log('=== END API KEY VALIDATION ===');
       return res.status(500).json({
         valid: false,
         message:
@@ -183,6 +231,9 @@ app.post('/api/test-key', async (req, res) => {
       });
     }
 
+    console.log('❓ Unknown error type - check error details above');
+    console.log('=== END API KEY VALIDATION ===');
+    
     return res.status(500).json({
       valid: false,
       message:

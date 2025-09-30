@@ -119,17 +119,26 @@ const Settings = () => {
 
 
   const fetchAvailableModels = useCallback(async () => {
+    console.log('=== FRONTEND MODELS FETCH ===');
+    console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
+    console.log(`🔑 API Key provided: ${apiKey ? 'YES' : 'NO'}`);
+    
     setIsLoadingModels(true);
     setModelsError('');
 
     try {
       if (!apiKey || apiKey.trim().length === 0) {
+        console.log('❌ No API key provided for models fetch');
+        console.log('=== END FRONTEND MODELS FETCH ===');
         setModelsError('API key is required to show available models.');
         setAvailableModels([]);
         setIsLoadingModels(false);
         return;
       }
 
+      console.log('🚀 Starting models fetch request...');
+      console.log(`📡 Request URL: ${API_ENDPOINTS.MODELS}`);
+      
       const response = await fetch(API_ENDPOINTS.MODELS, {
         method: 'POST',
         headers: {
@@ -138,12 +147,22 @@ const Settings = () => {
         body: JSON.stringify({ apiKey }),
       });
 
+      console.log(`📥 Models response status: ${response.status}`);
+      console.log(`📥 Models response ok: ${response.ok}`);
+
       const data = await response.json();
+      console.log('📥 Models response data:', data);
 
       if (response.status === 401) {
+        console.log('❌ Models fetch FAILED - 401 Unauthorized');
+        console.log('=== END FRONTEND MODELS FETCH ===');
         setModelsError('Invalid API key. Please check your credentials.');
         setAvailableModels([]);
       } else if (response.ok && data.models) {
+        console.log(`✅ Models fetch SUCCESS - ${data.models.length} models found`);
+        console.log('📋 Available models:', data.models.map(m => m.id));
+        console.log('=== END FRONTEND MODELS FETCH ===');
+        
         setAvailableModels(data.models);
         
         // Show warning if API key validation failed but models are available
@@ -171,11 +190,21 @@ const Settings = () => {
           }
         }
       } else {
+        console.log(`❌ Models fetch FAILED - Status: ${response.status}`);
+        console.log(`❌ Error: ${data.error || 'Unknown error'}`);
+        console.log('=== END FRONTEND MODELS FETCH ===');
         setModelsError(data.error || 'Failed to load available models.');
         setAvailableModels([]);
       }
     } catch (error) {
+      console.log('💥 Frontend models fetch ERROR occurred');
+      console.error('🔍 Frontend models error details:');
+      console.error(`  - Type: ${error.constructor.name}`);
+      console.error(`  - Name: ${error.name}`);
+      console.error(`  - Message: ${error.message}`);
       console.error('Error fetching models:', error);
+      console.log('=== END FRONTEND MODELS FETCH ===');
+      
       setModelsError(getApiErrorMessage(error));
       setAvailableModels([]);
     } finally {
@@ -311,7 +340,15 @@ const Settings = () => {
   };
 
   const testApiKey = async () => {
+    console.log('=== FRONTEND API KEY TEST ===');
+    console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
+    console.log(`🔑 API Key provided: ${apiKey ? 'YES' : 'NO'}`);
+    console.log(`🔑 API Key length: ${apiKey?.length || 0} characters`);
+    console.log(`🔑 API Key format: ${apiKey ? (apiKey.startsWith('sk-ant-') ? 'CORRECT (sk-ant-*)' : 'INCORRECT (should start with sk-ant-)') : 'N/A'}`);
+
     if (!apiKey || apiKey.trim().length === 0) {
+      console.log('❌ No API key provided');
+      console.log('=== END FRONTEND API KEY TEST ===');
       setApiKeyTestResult({
         success: false,
         message: 'Please enter an API key first.',
@@ -323,6 +360,11 @@ const Settings = () => {
     setApiKeyTestResult(null);
 
     try {
+      console.log('🚀 Starting API key validation request...');
+      console.log(`📡 Request URL: ${API_ENDPOINTS.TEST_KEY}`);
+      console.log('📤 Request method: POST');
+      console.log('📤 Request headers: Content-Type: application/json');
+      
       const response = await fetch(API_ENDPOINTS.TEST_KEY, {
         method: 'POST',
         headers: {
@@ -331,14 +373,26 @@ const Settings = () => {
         body: JSON.stringify({ apiKey }),
       });
 
+      console.log(`📥 Response status: ${response.status}`);
+      console.log(`📥 Response status text: ${response.statusText}`);
+      console.log(`📥 Response ok: ${response.ok}`);
+
       const data = await response.json();
+      console.log('📥 Response data:', data);
 
       if (data.valid) {
+        console.log('✅ API key validation SUCCESS');
+        console.log('=== END FRONTEND API KEY TEST ===');
         setApiKeyTestResult({
           success: true,
           message: 'API key is valid! ✓',
         });
       } else {
+        console.log('❌ API key validation FAILED');
+        console.log(`❌ Error message: ${data.message}`);
+        console.log(`❌ Error code: ${data.error || 'N/A'}`);
+        console.log(`❌ Error type: ${data.errorType || 'N/A'}`);
+        console.log('=== END FRONTEND API KEY TEST ===');
         setApiKeyTestResult({
           success: false,
           message:
@@ -346,7 +400,15 @@ const Settings = () => {
         });
       }
     } catch (error) {
+      console.log('💥 Frontend API key test ERROR occurred');
+      console.error('🔍 Frontend error details:');
+      console.error(`  - Type: ${error.constructor.name}`);
+      console.error(`  - Name: ${error.name}`);
+      console.error(`  - Message: ${error.message}`);
+      console.error(`  - Stack: ${error.stack}`);
       console.error('API key test error:', error);
+      console.log('=== END FRONTEND API KEY TEST ===');
+      
       setApiKeyTestResult({
         success: false,
         message: getApiErrorMessage(error),
