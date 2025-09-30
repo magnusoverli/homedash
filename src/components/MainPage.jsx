@@ -241,6 +241,11 @@ const MainPage = ({ currentWeek }) => {
       const weekStart = getWeekStart();
       const weekStartStr = formatLocalDate(weekStart);
 
+      console.log('🔍 DEBUG currentWeek:', currentWeek);
+      console.log('🔍 DEBUG weekStart:', weekStart);
+      console.log('🔍 DEBUG weekStart.getDay():', weekStart.getDay());
+      console.log('🔍 DEBUG weekStartStr:', weekStartStr);
+
       const homeworkData = {};
 
       // Load homework for each family member for the current week
