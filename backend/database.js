@@ -257,6 +257,7 @@ const initDatabase = () => {
                           id TEXT PRIMARY KEY,
                           group_id TEXT NOT NULL,
                           member_id INTEGER NOT NULL,
+                          profile_id TEXT NOT NULL,
                           title TEXT NOT NULL,
                           description TEXT,
                           start_timestamp DATETIME NOT NULL,
@@ -275,7 +276,7 @@ const initDatabase = () => {
                           raw_data TEXT,
                           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                          FOREIGN KEY (group_id, member_id) REFERENCES spond_groups (id, member_id) ON DELETE CASCADE,
+                          FOREIGN KEY (group_id, member_id, profile_id) REFERENCES spond_groups (id, member_id, profile_id) ON DELETE CASCADE,
                           FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
                         )`,
                   err => {

@@ -71,7 +71,9 @@ app.post('/api/test-key', async (req, res) => {
   console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
   console.log(`🔑 API Key provided: ${apiKey ? 'YES' : 'NO'}`);
   console.log(`🔑 API Key length: ${apiKey?.length || 0} characters`);
-  console.log(`🔑 API Key format: ${apiKey ? (apiKey.startsWith('sk-ant-') ? 'CORRECT (sk-ant-*)' : 'INCORRECT (should start with sk-ant-)') : 'N/A'}`);
+  console.log(
+    `🔑 API Key format: ${apiKey ? (apiKey.startsWith('sk-ant-') ? 'CORRECT (sk-ant-*)' : 'INCORRECT (should start with sk-ant-)') : 'N/A'}`
+  );
 
   if (!apiKey) {
     console.log('❌ No API key provided');
@@ -85,7 +87,7 @@ app.post('/api/test-key', async (req, res) => {
   try {
     console.log('🚀 Starting Anthropic API validation...');
     console.log('📡 Testing with Messages API endpoint');
-    
+
     // Use a simple message endpoint to validate the API key
     // This is more reliable than trying to use non-existent admin endpoints
     const controller = new AbortController();
@@ -126,7 +128,9 @@ app.post('/api/test-key', async (req, res) => {
         message: 'Invalid API key',
       });
     } else if (response.status === 400) {
-      console.log('✅ API key validation SUCCESS - 400 indicates valid key with malformed request');
+      console.log(
+        '✅ API key validation SUCCESS - 400 indicates valid key with malformed request'
+      );
       console.log('=== END API KEY VALIDATION ===');
       // A 400 error might indicate the API key is valid but request is malformed
       // which is actually what we want for testing purposes
@@ -142,9 +146,11 @@ app.post('/api/test-key', async (req, res) => {
         message: 'API key is valid and working!',
       });
     } else {
-      console.log(`⚠️ Messages API returned unexpected status: ${response.status}`);
+      console.log(
+        `⚠️ Messages API returned unexpected status: ${response.status}`
+      );
       console.log('🔄 Trying fallback validation with Models API...');
-      
+
       // Try fallback with models endpoint
       const modelsResponse = await fetch(
         'https://api.anthropic.com/v1/models',
@@ -160,7 +166,9 @@ app.post('/api/test-key', async (req, res) => {
       );
 
       console.log(`📥 Models API response status: ${modelsResponse.status}`);
-      console.log(`📥 Models API response status text: ${modelsResponse.statusText}`);
+      console.log(
+        `📥 Models API response status text: ${modelsResponse.statusText}`
+      );
 
       if (modelsResponse.status === 401) {
         console.log('❌ API key validation FAILED - Models API returned 401');
@@ -172,14 +180,18 @@ app.post('/api/test-key', async (req, res) => {
       } else if (modelsResponse.ok) {
         const modelsData = await modelsResponse.json();
         const modelCount = modelsData.data ? modelsData.data.length : 0;
-        console.log(`✅ API key validation SUCCESS - Models API returned ${modelCount} models`);
+        console.log(
+          `✅ API key validation SUCCESS - Models API returned ${modelCount} models`
+        );
         console.log('=== END API KEY VALIDATION ===');
         return res.json({
           valid: true,
           message: `API key is valid! Found ${modelCount} available models.`,
         });
       } else {
-        console.log(`❌ Both APIs failed - Messages: ${response.status}, Models: ${modelsResponse.status}`);
+        console.log(
+          `❌ Both APIs failed - Messages: ${response.status}, Models: ${modelsResponse.status}`
+        );
         console.log('=== END API KEY VALIDATION ===');
         return res.json({
           valid: false,
@@ -221,7 +233,9 @@ app.post('/api/test-key', async (req, res) => {
     }
 
     if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
-      console.log('🔌 Connection refused or timed out - network/firewall issue');
+      console.log(
+        '🔌 Connection refused or timed out - network/firewall issue'
+      );
       console.log('=== END API KEY VALIDATION ===');
       return res.status(500).json({
         valid: false,
@@ -233,7 +247,7 @@ app.post('/api/test-key', async (req, res) => {
 
     console.log('❓ Unknown error type - check error details above');
     console.log('=== END API KEY VALIDATION ===');
-    
+
     return res.status(500).json({
       valid: false,
       message:
@@ -1721,6 +1735,7 @@ app.post('/api/spond-groups/:memberId/selections', async (req, res) => {
          SELECT 1 FROM spond_groups 
          WHERE spond_groups.id = spond_activities.group_id 
          AND spond_groups.member_id = spond_activities.member_id 
+         AND spond_groups.profile_id = spond_activities.profile_id
          AND spond_groups.is_active = TRUE
        )`,
       [memberId]
@@ -1981,16 +1996,17 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
             // Convert Spond activity to our database format (using correct field names from documentation)
             await runQuery(
               `INSERT OR REPLACE INTO spond_activities (
-                id, group_id, member_id, title, description, 
+                id, group_id, member_id, profile_id, title, description, 
                 start_timestamp, end_timestamp, location_name, location_address,
                 location_latitude, location_longitude, activity_type, is_cancelled,
                 max_accepted, auto_accept, response_status, response_comment, organizer_name, raw_data,
                 updated_at
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
               [
                 activity.id,
                 group.id,
                 memberId,
+                group.profile_id,
                 activity.heading || activity.title || 'Untitled Activity',
                 activity.description || null,
                 activity.startTimestamp,
@@ -2062,8 +2078,8 @@ app.post('/api/spond-activities/:memberId/sync', async (req, res) => {
 
         // Update last synced timestamp for this group
         await runQuery(
-          'UPDATE spond_groups SET last_synced_at = CURRENT_TIMESTAMP WHERE id = ? AND member_id = ?',
-          [group.id, memberId]
+          'UPDATE spond_groups SET last_synced_at = CURRENT_TIMESTAMP WHERE id = ? AND member_id = ? AND profile_id = ?',
+          [group.id, memberId, group.profile_id]
         );
 
         syncResults.push({
