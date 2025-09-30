@@ -1076,6 +1076,38 @@
   box-shadow: none;
 }
 
+/* Remove Calendar Button */
+.calendar-remove-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(229, 229, 255, 0.1);
+}
+
+.remove-calendar-button {
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.remove-calendar-button:hover:not(:disabled) {
+  background: #991b1b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.remove-calendar-button:disabled {
+  background: rgba(220, 38, 38, 0.3);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 /* Groups Modal - Design Manual Compliant */
 .groups-modal-content {
   display: flex;

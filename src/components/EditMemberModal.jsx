@@ -71,6 +71,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
   const [calendarImportResult, setCalendarImportResult] = useState(null);
   const [calendarLastSynced, setCalendarLastSynced] = useState(null);
   const [calendarEventCount, setCalendarEventCount] = useState(0);
+  const [isRemovingCalendar, setIsRemovingCalendar] = useState(false);
 
   useEffect(() => {
     if (member) {
@@ -579,6 +580,53 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       showError('Network error while importing calendar');
     } finally {
       setIsImportingCalendar(false);
+    }
+  };
+
+  const handleRemoveCalendar = async () => {
+    if (!member?.id) return;
+
+    const confirmRemove = window.confirm(
+      'Are you sure you want to remove the school calendar? This will delete all imported school calendar events for this family member.'
+    );
+
+    if (!confirmRemove) return;
+
+    setIsRemovingCalendar(true);
+
+    try {
+      const response = await fetch(
+        `${API_ENDPOINTS.FAMILY_MEMBERS}/${member.id}/remove-calendar`,
+        {
+          method: 'DELETE',
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Clear local state
+        setCalendarUrl('');
+        setCalendarLastSynced(null);
+        setCalendarEventCount(0);
+        setCalendarImportResult({
+          success: true,
+          message: 'School calendar removed successfully',
+        });
+        showSuccess('School calendar removed successfully');
+
+        // Refresh the page or trigger a data reload
+        if (onUpdate) {
+          onUpdate();
+        }
+      } else {
+        showError(data.error || 'Failed to remove calendar');
+      }
+    } catch (error) {
+      console.error('Error removing calendar:', error);
+      showError('Network error while removing calendar');
+    } finally {
+      setIsRemovingCalendar(false);
     }
   };
 
@@ -1552,6 +1600,18 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                             </span>
                           </div>
                         )}
+                        <div className="calendar-remove-section">
+                          <button
+                            type="button"
+                            className="remove-calendar-button"
+                            onClick={handleRemoveCalendar}
+                            disabled={isRemovingCalendar}
+                          >
+                            {isRemovingCalendar
+                              ? 'Removing...'
+                              : 'Remove Calendar'}
+                          </button>
+                        </div>
                       </div>
                     )}
 

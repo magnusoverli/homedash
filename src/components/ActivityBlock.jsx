@@ -312,14 +312,9 @@ const ActivityBlock = ({
         <div className="spond-match-indicator">{getHomeAwayIndicator()}</div>
       )}
 
-      {/* Municipal calendar event indicator */}
-      {isMunicipalCalendarActivity() && height >= 40 && (
-        <div className="municipal-event-indicator">
-          <span className="municipal-icon">{getMunicipalEventIcon()}</span>
-          <span className="municipal-type">
-            {getMunicipalEventType()?.replace('_', ' ')}
-          </span>
-        </div>
+      {/* Municipal calendar event emoji in lower right */}
+      {isMunicipalCalendarActivity() && (
+        <div className="municipal-event-emoji">{getMunicipalEventIcon()}</div>
       )}
 
       {showActions && activity.title && (

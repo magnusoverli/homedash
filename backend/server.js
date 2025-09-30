@@ -2314,14 +2314,18 @@ app.post('/api/family-members/:id/import-calendar', async (req, res) => {
         const endDate = event.end;
 
         if (startDate) {
-          // Format dates for database
-          const dateStr = startDate.toISOString
-            ? startDate.toISOString().split('T')[0]
-            : new Date(startDate).toISOString().split('T')[0];
-
           // Extract key information from summary
           const summary = event.summary || 'School Event';
           const description = event.description || '';
+
+          // Skip SFO and kindergarten entries for planning days that affect all services
+          // We'll only keep the school entry to avoid triplicates
+          if (
+            summary.includes('SFO og barnehager stengt') &&
+            (summary.includes('(sfo)') || summary.includes('(barnehage)'))
+          ) {
+            continue; // Skip this entry, we'll only process the (skole) one
+          }
 
           // Determine activity type based on summary
           let activityType = 'school_event';
@@ -2359,35 +2363,101 @@ app.post('/api/family-members/:id/import-calendar', async (req, res) => {
             affectsServices.push('school');
           }
 
-          // Create activity entry
-          await runQuery(
-            `INSERT INTO activities 
-             (member_id, title, date, start_time, end_time, description, 
-              activity_type, source, notes) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-              id,
-              summary,
-              dateStr,
-              '00:00',
-              '23:59',
-              description,
-              activityType,
-              'municipal_calendar',
-              JSON.stringify({
-                affectsServices,
-                originalEvent: event.uid,
-              }),
-            ]
-          );
+          // Calculate date range for multi-day events
+          // Handle date-only events properly (they come with dateOnly: true flag)
+          let startDateObj, endDateObj;
 
-          importedCount++;
-          events.push({
-            title: summary,
-            date: dateStr,
-            type: activityType,
-            affects: affectsServices,
-          });
+          if (startDate.dateOnly) {
+            // For date-only events, the iCal library returns UTC time at 22:00 the day before
+            // We need to add hours to get the correct date in Oslo timezone (UTC+2 in summer, UTC+1 in winter)
+            // Since these are date-only events, we'll add 4 hours to be safe (gets us past midnight in any case)
+            const correctedStart = new Date(
+              startDate.getTime() + 4 * 60 * 60 * 1000
+            );
+            const startStr = correctedStart.toISOString().split('T')[0];
+            const [year, month, day] = startStr.split('-').map(Number);
+            startDateObj = new Date(year, month - 1, day, 12, 0, 0);
+
+            if (endDate) {
+              const correctedEnd = new Date(
+                endDate.getTime() + 4 * 60 * 60 * 1000
+              );
+              const endStr = correctedEnd.toISOString().split('T')[0];
+              const [endYear, endMonth, endDay] = endStr.split('-').map(Number);
+              endDateObj = new Date(endYear, endMonth - 1, endDay, 12, 0, 0);
+            } else {
+              endDateObj = new Date(startDateObj);
+            }
+          } else {
+            // For events with specific times, use them as-is
+            startDateObj = new Date(
+              startDate.toISOString ? startDate.toISOString() : startDate
+            );
+            endDateObj = endDate
+              ? new Date(endDate.toISOString ? endDate.toISOString() : endDate)
+              : new Date(startDateObj);
+          }
+
+          // For iCal, end date is exclusive (the day after the last day of the event)
+          // So we need to subtract one day from the end date
+          endDateObj.setDate(endDateObj.getDate() - 1);
+
+          // Create an activity for each day in the range
+          const currentDate = new Date(startDateObj);
+          while (currentDate <= endDateObj) {
+            // Format date properly for database (YYYY-MM-DD)
+            const year = currentDate.getFullYear();
+            const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+            const day = String(currentDate.getDate()).padStart(2, '0');
+            const dateStr = `${year}-${month}-${day}`;
+
+            // Create activity entry for this day
+            // School calendar events are shown as 2-hour morning blocks (08:00-10:00)
+            // to indicate that regular school is replaced by this event
+            try {
+              await runQuery(
+                `INSERT INTO activities 
+                 (member_id, title, date, start_time, end_time, description, 
+                  activity_type, source, notes) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                  id,
+                  summary,
+                  dateStr,
+                  '08:00', // Start at typical school start time
+                  '10:00', // 2-hour block to indicate school replacement
+                  description,
+                  activityType,
+                  'municipal_calendar',
+                  JSON.stringify({
+                    affectsServices,
+                    originalEvent: event.uid,
+                  }),
+                ]
+              );
+
+              importedCount++;
+              console.log(`Successfully inserted: ${summary} on ${dateStr}`);
+            } catch (insertError) {
+              console.error(
+                `Failed to insert event: ${summary} on ${dateStr}`,
+                insertError
+              );
+            }
+
+            // Only add first day to preview events array
+            if (currentDate.getTime() === startDateObj.getTime()) {
+              events.push({
+                title: summary,
+                date: dateStr,
+                type: activityType,
+                affects: affectsServices,
+              });
+            }
+
+            // Move to next day
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
         }
       }
     }
@@ -2410,6 +2480,46 @@ app.post('/api/family-members/:id/import-calendar', async (req, res) => {
     console.error('Error importing calendar:', error);
     res.status(500).json({
       error: 'Failed to import calendar',
+      details: error.message,
+    });
+  }
+});
+
+// Remove calendar endpoint - deletes all municipal calendar events for a member
+app.delete('/api/family-members/:id/remove-calendar', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Delete all municipal calendar events for this member
+    const deleteResult = await runQuery(
+      'DELETE FROM activities WHERE member_id = ? AND source = ?',
+      [id, 'municipal_calendar']
+    );
+
+    // Clear calendar URL and metadata from family member
+    await runQuery(
+      `UPDATE family_members 
+       SET calendar_url = NULL, 
+           calendar_last_synced = NULL, 
+           calendar_event_count = 0,
+           updated_at = CURRENT_TIMESTAMP 
+       WHERE id = ?`,
+      [id]
+    );
+
+    console.log(
+      `Removed ${deleteResult.changes} calendar events for member ${id}`
+    );
+
+    res.json({
+      success: true,
+      message: `Successfully removed school calendar`,
+      eventsRemoved: deleteResult.changes,
+    });
+  } catch (error) {
+    console.error('Error removing calendar:', error);
+    res.status(500).json({
+      error: 'Failed to remove calendar',
       details: error.message,
     });
   }
@@ -2482,7 +2592,8 @@ app.get('/api/activities', async (req, res) => {
     const combinedActivities = [
       ...regularActivities.map(activity => ({
         ...activity,
-        source: 'manual',
+        // Keep the original source if it exists, otherwise default to 'manual'
+        source: activity.source || 'manual',
       })),
       ...spondActivities.map(activity => ({
         ...activity,
