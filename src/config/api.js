@@ -6,11 +6,12 @@ const getApiUrl = () => {
     return import.meta.env.VITE_API_URL;
   }
 
-  // In production, use the same hostname/protocol as the frontend but on port 3001
+  // In production, use the same hostname/protocol as the frontend
+  // Cloudflare tunnel routes /api/* to the backend automatically
   if (import.meta.env.PROD) {
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
-    return `${protocol}//${hostname}:3001`;
+    return `${protocol}//${hostname}`;
   }
 
   // In development, use localhost
