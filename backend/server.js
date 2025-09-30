@@ -3090,24 +3090,13 @@ app.post(
     }
 
     try {
-      // Get the selected prompt version from settings
-      const promptVersionSetting = await getOne(
-        'SELECT value FROM settings WHERE key = ?',
-        ['selectedPromptVersion']
-      );
-      const selectedVersion = promptVersionSetting?.value || 'original';
-
-      // Read the appropriate prompt file
+      // Read the prompt file
       const path = await import('path');
       const fs = await import('fs');
-      const promptFileName =
-        selectedVersion === 'optimized'
-          ? 'llm_promt_optimized.md'
-          : 'llm_promt.md';
-      const promptPath = path.join(process.cwd(), promptFileName);
+      const promptPath = path.join(process.cwd(), 'llm_prompt.md');
       const prompt = fs.readFileSync(promptPath, 'utf8');
       console.log(
-        `📄 Prompt loaded successfully (${prompt.length} characters, version: ${selectedVersion})`
+        `📄 Prompt loaded successfully (${prompt.length} characters)`
       );
 
       // Convert image to base64
@@ -4018,43 +4007,16 @@ app.get('/api/prompt-content', async (req, res) => {
   const path = require('path');
 
   try {
-    // Get the selected prompt version from settings
-    const promptVersionSetting = await getOne(
-      'SELECT value FROM settings WHERE key = ?',
-      ['selectedPromptVersion']
-    );
-    const selectedVersion = promptVersionSetting?.value || 'original';
-
-    // Determine which prompt file to read
-    const promptFileName =
-      selectedVersion === 'optimized'
-        ? 'llm_promt_optimized.md'
-        : 'llm_promt.md';
-    const promptPath = path.join(__dirname, promptFileName);
-
-    // Read and return the prompt content
+    // Read the prompt file
+    const promptPath = path.join(__dirname, 'llm_prompt.md');
     const promptContent = await fs.readFile(promptPath, 'utf8');
 
     res.json({
-      version: selectedVersion,
       content: promptContent,
     });
   } catch (error) {
     console.error('Error reading prompt file:', error);
-
-    // Fallback to original prompt if optimized file doesn't exist or there's an error
-    try {
-      const fallbackPath = path.join(__dirname, 'llm_promt.md');
-      const fallbackContent = await fs.readFile(fallbackPath, 'utf8');
-
-      res.json({
-        version: 'original',
-        content: fallbackContent,
-      });
-    } catch (fallbackError) {
-      console.error('Error reading fallback prompt file:', fallbackError);
-      res.status(500).json({ error: 'Failed to read prompt content' });
-    }
+    res.status(500).json({ error: 'Failed to read prompt content' });
   }
 });
 
