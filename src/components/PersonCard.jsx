@@ -113,25 +113,13 @@ const PersonCard = ({
   return (
     <div className="person-card">
       <div className="person-card-header">
-        <div
-          className="person-avatar"
-          style={{ backgroundColor: member.avatarColor }}
-        >
-          <span className="person-initials">
-            {member.name
-              .split(' ')
-              .map(n => n[0])
-              .join('')
-              .toUpperCase()}
-          </span>
-        </div>
         <h2 className="person-name">{member.name}</h2>
         <button
           className="person-settings-button"
           onClick={() => setShowSettingsModal(true)}
           aria-label={`Settings for ${member.name}`}
         >
-          <SettingsIcon size={18} color="#b781ff" />
+          <SettingsIcon size={16} color="#b781ff" />
         </button>
       </div>
       
