@@ -1014,19 +1014,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                         </div>
                       </div>
                     )}
-
-                    <div className="calendar-help-text">
-                      <p>Common calendar sources:</p>
-                      <ul>
-                        <li>
-                          Bergen Kommune:
-                          webcal://www.bergen.kommune.no/rest/skoleruten/2025-2026.ics
-                        </li>
-                        <li>
-                          Oslo Kommune: Check kommune website for calendar URL
-                        </li>
-                      </ul>
-                    </div>
                   </div>
                 </div>
               </>
