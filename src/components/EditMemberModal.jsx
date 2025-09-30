@@ -723,10 +723,16 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
               Schedule
             </button>
             <button
+              className={`tab-button ${activeTab === 'integrations' ? 'active' : ''}`}
+              onClick={() => setActiveTab('integrations')}
+            >
+              Integrations
+            </button>
+            <button
               className={`tab-button ${activeTab === 'advanced' ? 'active' : ''}`}
               onClick={() => setActiveTab('advanced')}
             >
-              Integrations
+              Advanced
             </button>
           </div>
 
@@ -1317,7 +1323,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
               </>
             )}
 
-            {activeTab === 'advanced' && (
+            {activeTab === 'integrations' && (
               <>
                 {/* Spond Integration Section */}
                 <div className="modal-section">
@@ -1463,16 +1469,17 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                     )}
                   </div>
                 </div>
+              </>
+            )}
 
-                <div className="section-divider"></div>
-
-                {/* Advanced Settings Section */}
+            {activeTab === 'advanced' && (
+              <>
+                {/* Delete Member Section */}
                 <div className="modal-section">
                   <div className="section-header">
-                    <h3 className="section-title">⚠️ Advanced Settings</h3>
+                    <h3 className="section-title">⚠️ Delete Family Member</h3>
                     <p className="section-description">
-                      Dangerous operations that permanently affect this family
-                      member
+                      Permanently remove this family member and all associated data
                     </p>
                   </div>
 
