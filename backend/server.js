@@ -2608,10 +2608,52 @@ app.get('/api/activities', async (req, res) => {
       return dateA - dateB;
     });
 
+    // Filter out school_schedule activities when municipal_calendar events exist
+    // Municipal calendar events (vacations, holidays, planning days) take precedence
+    // and replace regular school schedule for those specific dates
+    const municipalCalendarDates = new Set();
+    combinedActivities.forEach(activity => {
+      if (activity.source === 'municipal_calendar') {
+        // Create a key combining member_id and date to handle per-member filtering
+        const key = `${activity.member_id}:${activity.date}`;
+        municipalCalendarDates.add(key);
+      }
+    });
+
+    // Filter out school_schedule activities for dates with municipal calendar events
+    const filteredActivities = combinedActivities.filter(activity => {
+      // Check if this is a school_schedule activity
+      const isSchoolSchedule =
+        activity.description?.includes('[TYPE:school_schedule]');
+      if (!isSchoolSchedule) {
+        return true; // Keep all non-school_schedule activities
+      }
+
+      // For school_schedule activities, check if there's a municipal calendar event
+      const key = `${activity.member_id}:${activity.date}`;
+      const hasMunicipalEvent = municipalCalendarDates.has(key);
+
+      if (hasMunicipalEvent) {
+        console.log(
+          `🗑️  Filtering out school_schedule for ${activity.date} (municipal calendar event exists)`
+        );
+        return false; // Remove school_schedule when municipal event exists
+      }
+
+      return true; // Keep school_schedule when no municipal event
+    });
+
+    const filteredCount = combinedActivities.length - filteredActivities.length;
+    if (filteredCount > 0) {
+      console.log(
+        `🔍 Filtered out ${filteredCount} school_schedule activities due to municipal calendar events`
+      );
+    }
+
     console.log(
-      `✅ Combined ${combinedActivities.length} total activities (${regularActivities.length} regular + ${spondActivities.length} Spond)`
+      `✅ Combined ${combinedActivities.length} total activities (${regularActivities.length} regular + ${spondActivities.length} Spond), ${filteredActivities.length} after filtering`
     );
-    res.json(combinedActivities);
+    res.json(filteredActivities);
   } catch (error) {
     console.error('Error fetching activities:', error);
     res.status(500).json({ error: 'Failed to fetch activities' });
