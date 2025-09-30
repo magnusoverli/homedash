@@ -32,7 +32,7 @@
 }
 
 .tab-button.active {
-  color: #6704ff;
+  color: #ffffff;
   border-bottom-color: #6704ff;
   background: rgba(103, 4, 255, 0.08);
 }
@@ -52,7 +52,46 @@
 .tab-content {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2.5rem;
+}
+
+/* Section Divider */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(103, 4, 255, 0.3),
+    transparent
+  );
+  margin: 0;
+}
+
+/* Modal Section Styling */
+.modal-section {
+  background: rgba(103, 4, 255, 0.03);
+  border: 1px solid rgba(103, 4, 255, 0.1);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+/* Section Headers */
+.section-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 0.5rem 0;
+}
+
+.section-description {
+  font-size: 0.9rem;
+  color: #b781ff;
+  margin: 0;
+  opacity: 0.8;
+}
+
+.section-header {
+  margin-bottom: 1.5rem;
 }
 
 /* Basic Information Section */
@@ -564,8 +603,11 @@
     rgba(185, 28, 28, 0.03) 100%
   );
   border: 1px solid rgba(239, 68, 68, 0.2);
+  border-top: 2px solid rgba(239, 68, 68, 0.4);
   border-radius: 5px;
   padding: 1.5rem;
+  padding-top: 2rem;
+  margin-top: 3rem;
 }
 
 .danger-zone-header {
@@ -823,7 +865,7 @@
   }
 
   .tab-content {
-    gap: 1.25rem;
+    gap: 2rem;
   }
 
   .avatar-preview-section {
@@ -866,6 +908,8 @@
 
   .danger-zone {
     padding: 1rem;
+    padding-top: 1.5rem;
+    margin-top: 2rem;
   }
 
   .danger-zone-header {

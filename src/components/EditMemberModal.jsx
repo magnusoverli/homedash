@@ -726,7 +726,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
               className={`tab-button ${activeTab === 'advanced' ? 'active' : ''}`}
               onClick={() => setActiveTab('advanced')}
             >
-              Advanced
+              Integrations
             </button>
           </div>
 
@@ -802,7 +802,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                 {/* School Plan Section */}
                 <div className="modal-section">
                   <div className="section-header">
-                    <h3 className="section-title">School Plan</h3>
+                    <h3 className="section-title">📅 School Plan</h3>
                     <p className="section-description">
                       Upload a picture of the weekly school schedule or plan
                     </p>
@@ -1207,6 +1207,113 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                     )}
                   </div>
                 )}
+
+                <div className="section-divider"></div>
+
+                {/* School Calendar Section */}
+                <div className="modal-section">
+                  <div className="section-header">
+                    <h3 className="section-title">📆 School Calendar</h3>
+                    <p className="section-description">
+                      Import school calendar with holidays, planning days, and
+                      vacations
+                    </p>
+                  </div>
+
+                  <div className="calendar-import-form">
+                    <div className="form-group">
+                      <label htmlFor="calendar-url" className="form-label">
+                        Calendar URL (iCal/webcal)
+                      </label>
+                      <div className="calendar-url-input-group">
+                        <input
+                          type="text"
+                          id="calendar-url"
+                          className="form-input"
+                          value={calendarUrl}
+                          onChange={e => setCalendarUrl(e.target.value)}
+                          placeholder="webcal://example.com/calendar.ics"
+                          disabled={isImportingCalendar}
+                        />
+                        <button
+                          type="button"
+                          className="import-calendar-button"
+                          onClick={handleImportCalendar}
+                          disabled={!calendarUrl.trim() || isImportingCalendar}
+                        >
+                          {isImportingCalendar
+                            ? 'Importing...'
+                            : 'Import Calendar'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Calendar Status */}
+                    {calendarLastSynced && (
+                      <div className="calendar-status-info">
+                        <div className="status-item">
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                          >
+                            <path
+                              d="M22 11.08V12a10 10 0 11-5.93-9.14"
+                              stroke="#22c55e"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <polyline
+                              points="22,4 12,14.01 9,11.01"
+                              stroke="#22c55e"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                          <span className="status-text">
+                            Last imported:{' '}
+                            {new Date(calendarLastSynced).toLocaleString()}
+                          </span>
+                        </div>
+                        {calendarEventCount > 0 && (
+                          <div className="status-item">
+                            <span className="status-text">
+                              {calendarEventCount} events imported
+                            </span>
+                          </div>
+                        )}
+                        <div className="calendar-remove-section">
+                          <button
+                            type="button"
+                            className="remove-calendar-button"
+                            onClick={handleRemoveCalendar}
+                            disabled={isRemovingCalendar}
+                          >
+                            {isRemovingCalendar
+                              ? 'Removing...'
+                              : 'Remove Calendar'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="calendar-help-text">
+                      <p>Common calendar sources:</p>
+                      <ul>
+                        <li>
+                          Bergen Kommune:
+                          webcal://www.bergen.kommune.no/rest/skoleruten/2025-2026.ics
+                        </li>
+                        <li>
+                          Oslo Kommune: Check kommune website for calendar URL
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
               </>
             )}
 
@@ -1215,7 +1322,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                 {/* Spond Integration Section */}
                 <div className="modal-section">
                   <div className="section-header">
-                    <h3 className="section-title">Spond Integration</h3>
+                    <h3 className="section-title">⚽ Spond Integration</h3>
                     <p className="section-description">
                       Connect with Spond to automatically sync activities from
                       sports clubs and organizations
@@ -1357,115 +1464,12 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                   </div>
                 </div>
 
-                {/* School Calendar Section */}
-                <div className="modal-section">
-                  <div className="section-header">
-                    <h3 className="section-title">School Calendar</h3>
-                    <p className="section-description">
-                      Import school calendar with holidays, planning days, and
-                      vacations
-                    </p>
-                  </div>
-
-                  <div className="calendar-import-form">
-                    <div className="form-group">
-                      <label htmlFor="calendar-url" className="form-label">
-                        Calendar URL (iCal/webcal)
-                      </label>
-                      <div className="calendar-url-input-group">
-                        <input
-                          type="text"
-                          id="calendar-url"
-                          className="form-input"
-                          value={calendarUrl}
-                          onChange={e => setCalendarUrl(e.target.value)}
-                          placeholder="webcal://example.com/calendar.ics"
-                          disabled={isImportingCalendar}
-                        />
-                        <button
-                          type="button"
-                          className="import-calendar-button"
-                          onClick={handleImportCalendar}
-                          disabled={!calendarUrl.trim() || isImportingCalendar}
-                        >
-                          {isImportingCalendar
-                            ? 'Importing...'
-                            : 'Import Calendar'}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Calendar Status */}
-                    {calendarLastSynced && (
-                      <div className="calendar-status-info">
-                        <div className="status-item">
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                          >
-                            <path
-                              d="M22 11.08V12a10 10 0 11-5.93-9.14"
-                              stroke="#22c55e"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                            <polyline
-                              points="22,4 12,14.01 9,11.01"
-                              stroke="#22c55e"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                          <span className="status-text">
-                            Last imported:{' '}
-                            {new Date(calendarLastSynced).toLocaleString()}
-                          </span>
-                        </div>
-                        {calendarEventCount > 0 && (
-                          <div className="status-item">
-                            <span className="status-text">
-                              {calendarEventCount} events imported
-                            </span>
-                          </div>
-                        )}
-                        <div className="calendar-remove-section">
-                          <button
-                            type="button"
-                            className="remove-calendar-button"
-                            onClick={handleRemoveCalendar}
-                            disabled={isRemovingCalendar}
-                          >
-                            {isRemovingCalendar
-                              ? 'Removing...'
-                              : 'Remove Calendar'}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="calendar-help-text">
-                      <p>Common calendar sources:</p>
-                      <ul>
-                        <li>
-                          Bergen Kommune:
-                          webcal://www.bergen.kommune.no/rest/skoleruten/2025-2026.ics
-                        </li>
-                        <li>
-                          Oslo Kommune: Check kommune website for calendar URL
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
+                <div className="section-divider"></div>
 
                 {/* Advanced Settings Section */}
                 <div className="modal-section">
                   <div className="section-header">
-                    <h3 className="section-title">Advanced Settings</h3>
+                    <h3 className="section-title">⚠️ Advanced Settings</h3>
                     <p className="section-description">
                       Dangerous operations that permanently affect this family
                       member
