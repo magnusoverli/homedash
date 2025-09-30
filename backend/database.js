@@ -232,14 +232,16 @@ const initDatabase = () => {
               `CREATE TABLE IF NOT EXISTS spond_groups (
                       id TEXT NOT NULL,
                       member_id INTEGER NOT NULL,
+                      profile_id TEXT NOT NULL,
                       name TEXT NOT NULL,
                       description TEXT,
                       image_url TEXT,
+                      profile_name TEXT,
                       is_active BOOLEAN DEFAULT FALSE,
                       last_synced_at DATETIME,
                       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                      PRIMARY KEY (id, member_id),
+                      PRIMARY KEY (id, member_id, profile_id),
                       FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
                     )`,
               err => {
