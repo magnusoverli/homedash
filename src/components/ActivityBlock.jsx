@@ -46,16 +46,6 @@ const ActivityBlock = ({
     }
   };
 
-  // Debug log for Spond activities
-  if (isSpondActivity(activity)) {
-    console.log('🎯 Spond activity detected:', {
-      title: activity.title,
-      source: activity.source,
-      hasRawData: !!activity.raw_data,
-      matchInfo: getSpondMatchInfo(),
-    });
-  }
-
   const getHomeAwayIndicator = () => {
     const matchInfo = getSpondMatchInfo();
     if (!matchInfo || !matchInfo.type) return null;

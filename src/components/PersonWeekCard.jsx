@@ -371,8 +371,6 @@ const PersonWeekCard = ({
             <h3 className="homework-title">Homework</h3>
           </div>
           <div className="homework-content">
-            {/* Debug: Log homework data */}
-            {console.log(`PersonWeekCard ${member.name} homework:`, homework)}
             {homework && homework.length > 0 ? (
               <div className="homework-list">
                 {homework.map((item, index) => (

@@ -157,15 +157,12 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
     if (!member?.id) return;
 
     setIsLoadingSpondState(true);
-    console.log(`🔍 Loading Spond auth state for member ${member.id}`);
 
     try {
       const response = await fetch(
         `${API_ENDPOINTS.SPOND_CREDENTIALS}/${member.id}`
       );
       const data = await response.json();
-
-      console.log('📥 Spond auth state loaded:', data);
 
       setSpondAuthState(data);
 
@@ -275,10 +272,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       // Use the new batch delete endpoint for optimal performance
       const result = await dataService.deleteSchoolSchedule(member.id);
 
-      console.log(
-        `🗑️ Batch delete completed: ${result.deletedCount} entries removed in ${result.executionTime}ms`
-      );
-
       setHasSchoolSchedule(false);
       setShowScheduleDeleteConfirm(false);
 
@@ -335,7 +328,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
 
     setIsLoadingGroups(true);
     setGroupsError(null);
-    console.log(`🔍 Fetching Spond groups for member ${member.id}`);
 
     try {
       const response = await fetch(
@@ -348,19 +340,8 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
         }
       );
 
-      console.log(`📊 Groups fetch response status: ${response.status}`);
-
       if (response.ok) {
         const data = await response.json();
-        console.log(`✅ Groups fetch successful:`, data);
-        console.log(
-          `📋 Full groups data from API:`,
-          data.groups?.map(g => ({
-            key: g.key,
-            displayName: g.displayName,
-            isActive: g.isActive,
-          }))
-        );
 
         setGroupsData(data.groups || []);
         setGroupsError(null);
@@ -371,21 +352,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
           .filter(g => Boolean(g.isActive))
           .map(g => g.key);
         setSelectedGroups(activeGroups);
-        console.log(
-          `📋 Found ${data.groups.length} groups, ${activeGroups.length} active groups:`,
-          activeGroups
-        );
-        console.log(
-          `📋 Active group names:`,
-          (data.groups || [])
-            .filter(g => Boolean(g.isActive))
-            .map(g => g.displayName)
-            .join(', ')
-        );
-
-        if (data.groups?.length === 0) {
-          console.log(`⚠️ No groups found for this member`);
-        }
       } else {
         const errorData = await response
           .json()
@@ -412,7 +378,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       setSelectedGroups([]); // Clear selections on error
     } finally {
       setIsLoadingGroups(false);
-      console.log(`🏁 Groups fetch completed`);
     }
   };
 
@@ -431,7 +396,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       // Clear stored credentials when disabling
       if (member?.id && spondAuthState.hasCredentials) {
         try {
-          console.log(`🗑️ Clearing Spond credentials for member ${member.id}`);
           const response = await fetch(
             `${API_ENDPOINTS.SPOND_CREDENTIALS}/${member.id}`,
             {
@@ -440,7 +404,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
           );
 
           if (response.ok) {
-            console.log('✅ Spond credentials cleared successfully');
             setSpondAuthState({
               hasCredentials: false,
               authenticated: false,
@@ -551,15 +514,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
 
     setIsTestingSpondCredentials(true);
 
-    // Enhanced logging for Spond authentication
-    console.log('=== SPOND AUTHENTICATION TEST STARTED ===');
-    console.log(`Email: ${spondEmail}`);
-    console.log(`Password length: ${spondPassword.length} characters`);
-    console.log(`Timestamp: ${new Date().toISOString()}`);
-
     try {
-      console.log('🔄 Making API call to backend for Spond authentication...');
-
       const response = await fetch(API_ENDPOINTS.TEST_SPOND_CREDENTIALS, {
         method: 'POST',
         headers: {
@@ -571,30 +526,12 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
         }),
       });
 
-      console.log(`📡 Backend response status: ${response.status}`);
-      console.log(`📡 Backend response status text: ${response.statusText}`);
-
       const data = await response.json();
-      console.log('📥 Backend response data:', data);
 
       if (response.ok && data.valid) {
-        console.log('✅ Spond authentication: SUCCESS');
-        console.log('📊 Authentication details:');
-        console.log(`  - Message: ${data.message}`);
-        if (data.responseData) {
-          console.log('  - Real Spond response data:', data.responseData);
-          if (data.responseData.user) {
-            console.log('  - User data:', data.responseData.user);
-          }
-          if (data.responseData.loginToken) {
-            console.log('  - Login token received: [PRESENT]');
-          }
-        }
-
         // Store credentials after successful authentication
         if (data.responseData && member?.id) {
-          console.log('💾 Storing successful Spond credentials...');
-          try {
+          try{
             const storeResponse = await fetch(
               `${API_ENDPOINTS.SPOND_CREDENTIALS}/${member.id}`,
               {
@@ -613,7 +550,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
             );
 
             if (storeResponse.ok) {
-              console.log('✅ Spond credentials stored successfully');
               // Reload auth state to reflect stored credentials
               await loadSpondAuthState();
 
@@ -621,39 +557,24 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
               showSuccess(
                 'Authentication successful! You can now select activities to sync.'
               );
-            } else {
-              console.error('❌ Failed to store Spond credentials');
             }
           } catch (storeError) {
-            console.error('❌ Error storing Spond credentials:', storeError);
+            console.error('Error storing Spond credentials:', storeError);
           }
         }
       } else {
-        console.log('❌ Spond authentication: FAILED');
-        console.log('📊 Error details:');
-        console.log(`  - Status: ${response.status}`);
-        console.log(`  - Error type: ${data.error || 'Unknown'}`);
-        console.log(`  - Message: ${data.message || 'Unknown error'}`);
-
         showError(
           data.message ||
             'Invalid Spond credentials. Please check your email and password.'
         );
       }
     } catch (error) {
-      console.error('❌ Spond authentication error:', error);
-      console.log('🔍 Error details:');
-      console.log(`  - Error name: ${error.name}`);
-      console.log(`  - Error message: ${error.message}`);
-      console.log(`  - Stack trace: ${error.stack}`);
+      console.error('Spond authentication error:', error);
 
       showError(
         'Network error while testing Spond credentials. Please try again.'
       );
     } finally {
-      const endTime = new Date().toISOString();
-      console.log(`⏱️ Authentication test completed at: ${endTime}`);
-      console.log('=== SPOND AUTHENTICATION TEST ENDED ===');
       setIsTestingSpondCredentials(false);
     }
   };
@@ -1461,11 +1382,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                 <button
                   className="button button-primary"
                   onClick={async () => {
-                    console.log(
-                      '💾 Saving selected activities:',
-                      selectedGroups
-                    );
-
                     try {
                       // Extract the profile-group pairs from the selected keys
                       const selectedPairs = selectedGroups.map(key => {
@@ -1476,11 +1392,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                           groupId: group?.groupId,
                         };
                       });
-
-                      console.log(
-                        '📤 Sending profile-group pairs:',
-                        selectedPairs
-                      );
 
                       const response = await fetch(
                         `${API_ENDPOINTS.SPOND_GROUP_SELECTIONS}/${member.id}/selections`,
@@ -1496,11 +1407,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                       );
 
                       if (response.ok) {
-                        const data = await response.json();
-                        console.log(
-                          '✅ Activity selections saved successfully:',
-                          data
-                        );
                         showSuccess(
                           `Saved selections for ${selectedGroups.length} activities`
                         );

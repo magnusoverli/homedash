@@ -333,7 +333,6 @@ class DataService {
         }
       }
 
-      console.log('Migration completed successfully');
       return { success: true };
     } catch (error) {
       console.error('Migration failed:', error);

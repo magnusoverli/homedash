@@ -88,9 +88,6 @@ const MainPage = ({ currentWeek }) => {
             activity.source === 'spond' &&
             activity.response_status === 'declined'
           ) {
-            console.log(
-              `🚫 Hiding declined activity: ${activity.title} for member ${activity.member_id}`
-            );
             return;
           }
 
@@ -127,7 +124,6 @@ const MainPage = ({ currentWeek }) => {
                 startDateStr,
                 endDateStr
               );
-              console.log(`✅ Background sync completed for ${member.name}`);
             } catch (error) {
               console.warn(`Background sync failed for ${member.name}:`, error);
             }
@@ -136,7 +132,6 @@ const MainPage = ({ currentWeek }) => {
           // After all syncs complete, refresh activities to show new Spond data
           Promise.all(syncPromises).then(async () => {
             try {
-              console.log('🔄 Refreshing activities after Spond sync...');
               const refreshedActivitiesData = await dataService.getActivities({
                 startDate: startDateStr,
                 endDate: endDateStr,
@@ -155,9 +150,6 @@ const MainPage = ({ currentWeek }) => {
                   activity.source === 'spond' &&
                   activity.response_status === 'declined'
                 ) {
-                  console.log(
-                    `🚫 Hiding declined activity: ${activity.title} for member ${activity.member_id}`
-                  );
                   return;
                 }
 
@@ -191,7 +183,6 @@ const MainPage = ({ currentWeek }) => {
               });
 
               setActivities(refreshedStructuredActivities);
-              console.log('✅ Activities refreshed after Spond sync');
             } catch (error) {
               console.error(
                 '❌ Error refreshing activities after sync:',
@@ -239,13 +230,8 @@ const MainPage = ({ currentWeek }) => {
           member_id: member.id,
           week_start_date: weekStartStr,
         });
-        console.log(
-          `MainPage loaded homework for ${member.name} (${member.id}) week ${weekStartStr}:`,
-          memberHomework
-        );
         homeworkData[member.id] = memberHomework;
       }
-      console.log('MainPage final homework data for week:', homeworkData);
       setHomework(homeworkData);
       setError('');
     } catch (error) {
