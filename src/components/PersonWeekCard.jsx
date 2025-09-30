@@ -104,7 +104,10 @@ const PersonWeekCard = ({
 
   const getDayActivities = date => {
     return activities.filter(activity => {
-      const activityDate = new Date(activity.date);
+      // Parse date as local date to avoid timezone issues
+      // activity.date is in format "YYYY-MM-DD"
+      const [year, month, day] = activity.date.split('-').map(Number);
+      const activityDate = new Date(year, month - 1, day);
       return activityDate.toDateString() === date.toDateString();
     });
   };

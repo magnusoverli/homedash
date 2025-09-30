@@ -3418,6 +3418,14 @@ function getSchoolYearRange(importDate = new Date()) {
   return { schoolYearStart, schoolYearEnd };
 }
 
+// Helper function to format a Date as YYYY-MM-DD in local timezone (no UTC conversion)
+function formatLocalDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // Helper function to get the start of the week (Monday) for a given date
 function getWeekStart(date) {
   const d = new Date(date);
@@ -3464,14 +3472,14 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
 
       // Step 1: Clean up existing school schedules from import week onwards
       console.log(
-        `🧹 Cleaning up existing school schedules from ${importWeekStart.toISOString().split('T')[0]} onwards...`
+        `🧹 Cleaning up existing school schedules from ${formatLocalDate(importWeekStart)} onwards...`
       );
       const deleteResult = await runQuery(
         `DELETE FROM activities 
          WHERE member_id = ? 
          AND description LIKE '%[TYPE:school_schedule]%' 
          AND date >= ?`,
-        [memberId, importWeekStart.toISOString().split('T')[0]]
+        [memberId, formatLocalDate(importWeekStart)]
       );
       console.log(
         `🗑️  Deleted ${deleteResult.changes || 0} existing school schedule entries`
@@ -3509,7 +3517,7 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
                 targetDate >= importWeekStart &&
                 targetDate <= schoolYearEnd
               ) {
-                const dateString = targetDate.toISOString().split('T')[0];
+                const dateString = formatLocalDate(targetDate);
                 const notes = times.notes || null;
 
                 // Add to batch entries array instead of individual insert
@@ -3522,7 +3530,7 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
                   'Regular school schedule [TYPE:school_schedule]',
                   'school_schedule',
                   'weekly',
-                  schoolYearEnd.toISOString().split('T')[0],
+                  formatLocalDate(schoolYearEnd),
                   notes,
                 ]);
                 entriesCreated++;
@@ -3592,14 +3600,14 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
 
       // Clean up existing school activities from import week onwards
       console.log(
-        `🧹 Cleaning up existing school activities from ${importWeekStart.toISOString().split('T')[0]} onwards...`
+        `🧹 Cleaning up existing school activities from ${formatLocalDate(importWeekStart)} onwards...`
       );
       const deleteActivitiesResult = await runQuery(
         `DELETE FROM activities 
          WHERE member_id = ? 
          AND description LIKE '%[TYPE:school_activity]%' 
          AND date >= ?`,
-        [memberId, importWeekStart.toISOString().split('T')[0]]
+        [memberId, formatLocalDate(importWeekStart)]
       );
       console.log(
         `🗑️  Deleted ${deleteActivitiesResult.changes || 0} existing school activity entries`
@@ -3628,7 +3636,7 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
               activityType === 'recurring' ? 'weekly' : 'none';
             const recurrenceEndDate =
               activityType === 'recurring'
-                ? schoolYearEnd.toISOString().split('T')[0]
+                ? formatLocalDate(schoolYearEnd)
                 : null;
 
             if (activityType === 'one_time') {
@@ -3642,14 +3650,14 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
               const dayDiff = dayNum - 1; // dayNum is 1-based, we need 0-based for date calculation
               targetDate.setDate(importWeekStart.getDate() + dayDiff);
               console.log(
-                `📍 Placing one-time activity on ${activity.day} of current week: ${targetDate.toISOString().split('T')[0]}`
+                `📍 Placing one-time activity on ${activity.day} of current week: ${formatLocalDate(targetDate)}`
               );
 
               if (
                 targetDate >= importWeekStart &&
                 targetDate <= schoolYearEnd
               ) {
-                const dateString = targetDate.toISOString().split('T')[0];
+                const dateString = formatLocalDate(targetDate);
 
                 // Add to batch entries
                 batchActivityEntries.push([
@@ -3679,7 +3687,7 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
                 );
               } else {
                 console.log(
-                  `⚠️  One-time activity date ${targetDate.toISOString().split('T')[0]} is outside school year range`
+                  `⚠️  One-time activity date ${formatLocalDate(targetDate)} is outside school year range`
                 );
               }
             } else {
@@ -3703,7 +3711,7 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
                   targetDate >= importWeekStart &&
                   targetDate <= schoolYearEnd
                 ) {
-                  const dateString = targetDate.toISOString().split('T')[0];
+                  const dateString = formatLocalDate(targetDate);
 
                   // Add to batch entries
                   batchActivityEntries.push([
@@ -3791,7 +3799,7 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
       );
 
       // Calculate the week start date for homework (same as import week)
-      const homeworkWeekStart = importWeekStart.toISOString().split('T')[0];
+      const homeworkWeekStart = formatLocalDate(importWeekStart);
       console.log(
         `📅 Assigning homework to week starting: ${homeworkWeekStart}`
       );
