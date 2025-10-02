@@ -5,11 +5,11 @@
 .mobile-overview {
   position: relative;
   width: 100%;
-  min-height: 100vh;
+  height: 100%;
   background: var(--mobile-bg-primary);
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* ============================================

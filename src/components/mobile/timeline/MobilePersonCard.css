@@ -7,7 +7,7 @@
   border-radius: var(--mobile-radius-card-large);
   box-shadow: var(--mobile-shadow-medium);
   overflow: hidden;
-  height: calc(100vh - var(--mobile-header-height) - var(--mobile-tab-bar-height) - var(--mobile-space-m) * 4);
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -136,10 +136,6 @@
 
 /* Landscape adjustments */
 @media (orientation: landscape) {
-  .mobile-person-card {
-    height: calc(100vh - 56px - 56px - var(--mobile-space-m) * 2);
-  }
-  
   .mobile-person-avatar {
     width: 48px;
     height: 48px;

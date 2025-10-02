@@ -4,8 +4,10 @@
 
 .mobile-today-view {
   width: 100%;
-  min-height: 100vh;
+  min-height: 100%;
   background: var(--mobile-bg-secondary);
+  display: flex;
+  flex-direction: column;
 }
 
 /* Header with time */
@@ -18,10 +20,14 @@
 
 /* Content */
 .today-content {
+  flex: 1;
   padding: var(--mobile-space-m);
+  padding-bottom: calc(var(--mobile-space-m) + var(--mobile-space-l));
   display: flex;
   flex-direction: column;
   gap: var(--mobile-space-l);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Section */

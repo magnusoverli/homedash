@@ -12,15 +12,21 @@
    ============================================ */
 
 .mobile-app {
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   width: 100vw;
-  min-height: 100vh;
+  height: 100vh;
   background: var(--mobile-bg-primary);
   color: var(--mobile-text-primary);
   font-family: var(--mobile-font-display);
   font-size: var(--mobile-text-body);
   line-height: var(--mobile-line-height-normal);
-  overflow-x: hidden;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   
   /* Prevent overscroll bounce on iOS */
   overscroll-behavior-y: none;
@@ -73,9 +79,12 @@
 }
 
 .mobile-content {
-  padding-bottom: calc(
-    var(--mobile-tab-bar-height) + env(safe-area-inset-bottom)
-  );
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  /* Account for bottom tab bar */
+  height: calc(100vh - var(--mobile-tab-bar-height) - env(safe-area-inset-bottom));
 }
 
 /* ============================================
