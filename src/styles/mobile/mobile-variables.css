@@ -1,0 +1,203 @@
+/**
+ * Mobile Design System Variables
+ * 
+ * Following HomeDash Design Manual specifications
+ * Optimized for mobile touch interfaces
+ */
+
+:root {
+  /* ============================================
+     MOBILE LAYOUT DIMENSIONS
+     ============================================ */
+  --mobile-tab-bar-height: 64px;
+  --mobile-header-height: 56px;
+  --mobile-touch-target: 48px;
+  --mobile-touch-target-large: 56px;
+  
+  /* Spacing System (4px base) */
+  --mobile-space-xxs: 4px;
+  --mobile-space-xs: 8px;
+  --mobile-space-s: 12px;
+  --mobile-space-m: 16px;
+  --mobile-space-l: 20px;
+  --mobile-space-xl: 24px;
+  --mobile-space-xxl: 32px;
+  
+  /* Content Padding */
+  --mobile-gutter: 16px;
+  --mobile-card-padding: 16px;
+  --mobile-section-padding: 20px;
+  
+  /* ============================================
+     BRAND COLORS (from Design Manual)
+     ============================================ */
+  
+  /* Primary Colors */
+  --mobile-color-primary-dark: #10011B;     /* Primary Brand */
+  --mobile-color-primary-purple: #6704FF;    /* Primary Purple */
+  --mobile-color-primary-dark-alt: #190030;  /* Primary Dark Alt */
+  
+  /* Secondary Purples */
+  --mobile-color-extra-dark-purple: #310268;
+  --mobile-color-dark-purple: #4D04B1;
+  --mobile-color-light-purple: #B781FF;
+  --mobile-color-extra-light-purple: #E5E5FF;
+  --mobile-color-extra-light-purple-bg: #F5F0FF;
+  
+  /* Neutral Colors */
+  --mobile-color-white: #FFFFFF;
+  --mobile-color-light-gray: #E5E5E5;
+  --mobile-color-gray: #DEDEDE;
+  --mobile-color-dark-gray: #9E9E9E;
+  
+  /* Pastel Colors (Activity Types & Avatars) */
+  --mobile-color-pastel-yellow: #FFF48D;
+  --mobile-color-pastel-orange: #FCDD8C;
+  --mobile-color-pastel-salmon: #F4B3BB;
+  --mobile-color-pastel-pink: #DEB2FA;
+  --mobile-color-pastel-light-purple: #B2AEFF;
+  --mobile-color-pastel-blue: #BADAF8;
+  --mobile-color-pastel-turquoise: #C1FDFD;
+  --mobile-color-pastel-green: #D2FCC3;
+  --mobile-color-pastel-gray: #ECECEC;
+  
+  /* Semantic Colors */
+  --mobile-color-success: var(--mobile-color-pastel-green);
+  --mobile-color-warning: var(--mobile-color-pastel-yellow);
+  --mobile-color-error: var(--mobile-color-pastel-salmon);
+  --mobile-color-danger: #FF4444;
+  
+  /* ============================================
+     TEXT COLORS
+     ============================================ */
+  --mobile-text-primary: var(--mobile-color-primary-dark);
+  --mobile-text-secondary: var(--mobile-color-dark-purple);
+  --mobile-text-tertiary: var(--mobile-color-dark-gray);
+  --mobile-text-inverse: var(--mobile-color-white);
+  --mobile-text-link: var(--mobile-color-primary-purple);
+  
+  /* ============================================
+     BACKGROUND COLORS
+     ============================================ */
+  --mobile-bg-primary: var(--mobile-color-white);
+  --mobile-bg-secondary: var(--mobile-color-extra-light-purple-bg);
+  --mobile-bg-dark: var(--mobile-color-primary-dark);
+  --mobile-bg-overlay: rgba(16, 1, 27, 0.6);
+  --mobile-bg-card: var(--mobile-color-white);
+  
+  /* ============================================
+     BORDER RADIUS SYSTEM (5px grid)
+     ============================================ */
+  --mobile-radius-small: 5px;
+  --mobile-radius-card: 8px;
+  --mobile-radius-card-large: 12px;
+  --mobile-radius-button: 24px;  /* Pill shape */
+  --mobile-radius-circle: 50%;
+  
+  /* ============================================
+     SHADOWS & ELEVATION
+     ============================================ */
+  --mobile-shadow-small: 0 2px 4px rgba(0, 0, 0, 0.06);
+  --mobile-shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --mobile-shadow-large: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --mobile-shadow-button: 0 2px 8px rgba(103, 4, 255, 0.24);
+  
+  /* ============================================
+     TYPOGRAPHY (Mobile-Optimized)
+     ============================================ */
+  
+  /* Font Families */
+  --mobile-font-display: 'TV 2 Sans Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mobile-font-condensed: 'TV 2 Sans Condensed', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  
+  /* Font Sizes */
+  --mobile-text-h1: 28px;        /* Page titles */
+  --mobile-text-h2: 22px;        /* Section headers */
+  --mobile-text-h3: 18px;        /* Card headers */
+  --mobile-text-body-large: 16px;
+  --mobile-text-body: 14px;
+  --mobile-text-body-small: 12px;
+  --mobile-text-label: 12px;
+  --mobile-text-time: 11px;
+  
+  /* Font Weights */
+  --mobile-weight-light: 300;
+  --mobile-weight-regular: 400;
+  --mobile-weight-medium: 500;
+  --mobile-weight-semibold: 600;
+  --mobile-weight-bold: 700;
+  
+  /* Line Heights */
+  --mobile-line-height-tight: 1.2;
+  --mobile-line-height-normal: 1.5;
+  --mobile-line-height-relaxed: 1.75;
+  
+  /* ============================================
+     TRANSITIONS & ANIMATIONS
+     ============================================ */
+  --mobile-transition-fast: 100ms;
+  --mobile-transition-normal: 200ms;
+  --mobile-transition-slow: 300ms;
+  --mobile-transition-page: 300ms;
+  
+  --mobile-ease-in-out: cubic-bezier(0.4, 0.0, 0.2, 1);
+  --mobile-ease-out: cubic-bezier(0.0, 0.0, 0.2, 1);
+  --mobile-ease-in: cubic-bezier(0.4, 0.0, 1, 1);
+  
+  /* ============================================
+     Z-INDEX LAYERS
+     ============================================ */
+  --mobile-z-base: 0;
+  --mobile-z-card: 1;
+  --mobile-z-sticky: 10;
+  --mobile-z-header: 20;
+  --mobile-z-nav: 30;
+  --mobile-z-modal-backdrop: 40;
+  --mobile-z-modal: 50;
+  --mobile-z-toast: 60;
+  
+  /* ============================================
+     TIMELINE SPECIFIC
+     ============================================ */
+  --mobile-timeline-hour-height: 60px;
+  --mobile-timeline-time-width: 40px;
+  --mobile-timeline-gutter: 8px;
+  
+  /* ============================================
+     CAROUSEL SPECIFIC
+     ============================================ */
+  --mobile-carousel-indicator-size: 8px;
+  --mobile-carousel-indicator-spacing: 8px;
+}
+
+/* ============================================
+   MOBILE-SPECIFIC MEDIA QUERIES
+   ============================================ */
+
+/* Small phones (<375px) */
+@media (max-width: 374px) {
+  :root {
+    --mobile-gutter: 12px;
+    --mobile-card-padding: 12px;
+    --mobile-text-h1: 24px;
+    --mobile-text-h2: 20px;
+    --mobile-text-h3: 16px;
+  }
+}
+
+/* Large phones (>414px) */
+@media (min-width: 415px) {
+  :root {
+    --mobile-gutter: 20px;
+  }
+}
+
+/* Landscape mode adjustments */
+@media (orientation: landscape) {
+  :root {
+    --mobile-header-height: 56px;
+    --mobile-tab-bar-height: 56px;
+  }
+}
+
+

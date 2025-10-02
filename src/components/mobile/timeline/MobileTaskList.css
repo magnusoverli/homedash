@@ -1,0 +1,163 @@
+/**
+ * Mobile Task List Styles
+ */
+
+.mobile-task-list {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--mobile-bg-secondary);
+  overflow: hidden;
+}
+
+/* Header */
+.mobile-task-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--mobile-space-m);
+  border-bottom: 1px solid var(--mobile-color-light-gray);
+  background: var(--mobile-bg-card);
+}
+
+.mobile-task-title {
+  margin: 0;
+  font-size: var(--mobile-text-h3);
+  font-weight: var(--mobile-weight-semibold);
+  color: var(--mobile-text-primary);
+}
+
+.mobile-task-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 var(--mobile-space-xs);
+  background: var(--mobile-color-primary-purple);
+  color: var(--mobile-text-inverse);
+  border-radius: 12px;
+  font-family: var(--mobile-font-condensed);
+  font-size: var(--mobile-text-body-small);
+  font-weight: var(--mobile-weight-bold);
+}
+
+/* Empty state */
+.mobile-task-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--mobile-space-xl);
+  text-align: center;
+}
+
+.mobile-task-empty-icon {
+  font-size: 48px;
+  margin-bottom: var(--mobile-space-m);
+}
+
+.mobile-task-empty-text {
+  margin: 0;
+  font-size: var(--mobile-text-body);
+  color: var(--mobile-text-tertiary);
+}
+
+/* Task items */
+.mobile-task-items {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-task-item {
+  position: relative;
+  background: var(--mobile-bg-card);
+  border-bottom: 1px solid var(--mobile-color-light-gray);
+  overflow: hidden;
+  transition: transform var(--mobile-transition-fast) var(--mobile-ease-in-out);
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+}
+
+.mobile-task-item--swiping {
+  transition: none;
+}
+
+.mobile-task-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mobile-space-m);
+  padding: var(--mobile-space-m);
+  background: var(--mobile-bg-card);
+}
+
+.mobile-task-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mobile-space-xxs);
+  min-width: 0;
+}
+
+.mobile-task-subject {
+  font-size: var(--mobile-text-body);
+  font-weight: var(--mobile-weight-semibold);
+  color: var(--mobile-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-task-description {
+  font-size: var(--mobile-text-body-small);
+  color: var(--mobile-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-task-date {
+  flex-shrink: 0;
+  font-family: var(--mobile-font-condensed);
+  font-size: var(--mobile-text-body-small);
+  font-weight: var(--mobile-weight-medium);
+  color: var(--mobile-text-secondary);
+  padding: var(--mobile-space-xxs) var(--mobile-space-xs);
+  background: var(--mobile-color-extra-light-purple-bg);
+  border-radius: var(--mobile-radius-small);
+}
+
+/* Delete background */
+.mobile-task-delete-bg {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 80px;
+  background: var(--mobile-color-danger);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+}
+
+/* Active/pressed state */
+.mobile-task-item:active .mobile-task-content {
+  background: var(--mobile-bg-secondary);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .mobile-task-item {
+    transition: none;
+  }
+}
+
+

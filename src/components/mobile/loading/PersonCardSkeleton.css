@@ -1,0 +1,72 @@
+/**
+ * Person Card Skeleton Styles
+ */
+
+.person-card-skeleton {
+  width: 100%;
+  padding: var(--mobile-space-l);
+  background: var(--mobile-bg-card);
+  border-radius: var(--mobile-radius-card-large);
+  display: flex;
+  flex-direction: column;
+  gap: var(--mobile-space-l);
+}
+
+/* Header */
+.person-card-skeleton-header {
+  display: flex;
+  align-items: center;
+  gap: var(--mobile-space-m);
+  padding-bottom: var(--mobile-space-m);
+  border-bottom: 1px solid var(--mobile-color-light-gray);
+}
+
+.person-card-skeleton-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mobile-space-xs);
+}
+
+/* Timeline */
+.person-card-skeleton-timeline {
+  flex: 1;
+  min-height: 300px;
+}
+
+.timeline-skeleton-grid {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: var(--mobile-space-m);
+}
+
+.timeline-skeleton-times {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mobile-space-l);
+  padding-top: var(--mobile-space-xs);
+}
+
+.timeline-skeleton-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mobile-space-s);
+}
+
+/* Tasks */
+.person-card-skeleton-tasks {
+  padding-top: var(--mobile-space-m);
+  border-top: 1px solid var(--mobile-color-light-gray);
+}
+
+.task-skeleton-title {
+  margin-bottom: var(--mobile-space-m);
+}
+
+.task-skeleton-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mobile-space-s);
+}
+
+

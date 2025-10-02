@@ -1,0 +1,275 @@
+/**
+ * Mobile Overview Screen Styles
+ */
+
+.mobile-overview {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  background: var(--mobile-bg-primary);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+
+/* Overview Header - now uses shared MobileHeader component */
+/* Custom styles for overview-specific header content */
+
+.mobile-overview-logo {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-overview-week {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mobile-space-xs);
+}
+
+.mobile-week-nav-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--mobile-text-inverse);
+  cursor: pointer;
+  border-radius: var(--mobile-radius-small);
+  transition: all var(--mobile-transition-fast) var(--mobile-ease-in-out);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-week-nav-button:active {
+  transform: scale(0.9);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mobile-week-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+}
+
+.mobile-week-text {
+  font-family: var(--mobile-font-display);
+  font-size: var(--mobile-text-body);
+  font-weight: var(--mobile-weight-semibold);
+  color: var(--mobile-text-inverse);
+}
+
+.mobile-quick-add-button {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: var(--mobile-color-primary-purple);
+  color: var(--mobile-text-inverse);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: var(--mobile-shadow-button);
+  transition: all var(--mobile-transition-fast) var(--mobile-ease-in-out);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-quick-add-button:active {
+  transform: scale(0.95);
+}
+
+/* ============================================
+   PERSON CAROUSEL
+   ============================================ */
+
+.mobile-person-carousel {
+  padding: var(--mobile-space-m) 0;
+}
+
+.mobile-person-card {
+  margin: 0 var(--mobile-gutter);
+  background: var(--mobile-bg-card);
+  border-radius: var(--mobile-radius-card-large);
+  box-shadow: var(--mobile-shadow-medium);
+  overflow: hidden;
+}
+
+.mobile-person-header {
+  display: flex;
+  align-items: center;
+  gap: var(--mobile-space-m);
+  padding: var(--mobile-card-padding);
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.02) 0%,
+    transparent 100%
+  );
+}
+
+.mobile-person-avatar {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: var(--mobile-weight-bold);
+  color: var(--mobile-text-primary);
+  background: var(--mobile-color-pastel-light-purple);
+}
+
+.mobile-person-name {
+  flex: 1;
+  margin: 0;
+  font-size: var(--mobile-text-h2);
+  font-weight: var(--mobile-weight-semibold);
+  color: var(--mobile-text-primary);
+}
+
+/* Timeline placeholder */
+.mobile-timeline-placeholder {
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--mobile-space-xxl);
+}
+
+.mobile-placeholder-message {
+  text-align: center;
+}
+
+.mobile-placeholder-icon {
+  display: block;
+  font-size: 64px;
+  margin-bottom: var(--mobile-space-m);
+}
+
+.mobile-placeholder-message h3 {
+  margin: 0 0 var(--mobile-space-xs) 0;
+  font-size: var(--mobile-text-h3);
+  font-weight: var(--mobile-weight-semibold);
+  color: var(--mobile-text-primary);
+}
+
+.mobile-placeholder-message p {
+  margin: 0;
+  font-size: var(--mobile-text-body);
+  color: var(--mobile-text-tertiary);
+}
+
+/* Carousel indicators */
+.mobile-carousel-indicators {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mobile-carousel-indicator-spacing);
+  padding: var(--mobile-space-m) 0;
+}
+
+.mobile-carousel-dot {
+  width: var(--mobile-carousel-indicator-size);
+  height: var(--mobile-carousel-indicator-size);
+  border: none;
+  border-radius: 50%;
+  background: var(--mobile-color-light-gray);
+  cursor: pointer;
+  transition: all var(--mobile-transition-normal) var(--mobile-ease-in-out);
+  -webkit-tap-highlight-color: transparent;
+  padding: 0;
+}
+
+.mobile-carousel-dot--active {
+  background: var(--mobile-color-primary-purple);
+  transform: scale(1.25);
+}
+
+.mobile-carousel-dot:active {
+  transform: scale(1.1);
+}
+
+/* ============================================
+   TODAY FAB (Floating Action Button)
+   ============================================ */
+
+.mobile-today-fab {
+  position: fixed;
+  bottom: calc(var(--mobile-tab-bar-height) + var(--mobile-space-m));
+  right: var(--mobile-space-m);
+  z-index: var(--mobile-z-sticky);
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: var(--mobile-color-primary-purple);
+  color: var(--mobile-text-inverse);
+  box-shadow: var(--mobile-shadow-large);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--mobile-transition-normal) var(--mobile-ease-in-out);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-today-fab:active {
+  transform: scale(0.9);
+}
+
+@media (hover: hover) {
+  .mobile-today-fab:hover {
+    transform: scale(1.05);
+  }
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (orientation: landscape) {
+  .mobile-person-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 374px) {
+  .mobile-week-display {
+    min-width: 100px;
+  }
+  
+  .mobile-week-text {
+    font-size: var(--mobile-text-body-small);
+  }
+  
+  .mobile-person-header {
+    padding: var(--mobile-space-s);
+  }
+  
+  .mobile-person-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+  }
+  
+  .mobile-person-name {
+    font-size: var(--mobile-text-h3);
+  }
+}
+

@@ -1,0 +1,388 @@
+/**
+ * Mobile App Base Styles
+ * 
+ * Root styles for mobile application
+ * Follows HomeDash Design System
+ */
+
+@import './mobile-variables.css';
+
+/* ============================================
+   MOBILE APP ROOT
+   ============================================ */
+
+.mobile-app {
+  position: relative;
+  width: 100vw;
+  min-height: 100vh;
+  background: var(--mobile-bg-primary);
+  color: var(--mobile-text-primary);
+  font-family: var(--mobile-font-display);
+  font-size: var(--mobile-text-body);
+  line-height: var(--mobile-line-height-normal);
+  overflow-x: hidden;
+  
+  /* Prevent overscroll bounce on iOS */
+  overscroll-behavior-y: none;
+  
+  /* Smooth scrolling */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Content area (excludes bottom tab bar) */
+.mobile-content {
+  position: relative;
+  width: 100%;
+  min-height: calc(100vh - var(--mobile-tab-bar-height));
+  padding-bottom: var(--mobile-tab-bar-height);
+}
+
+/* ============================================
+   TOUCH OPTIMIZATIONS
+   ============================================ */
+
+/* Disable text selection on interactive elements */
+.mobile-app button,
+.mobile-app .touchable {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Fast tap response */
+.mobile-app button,
+.mobile-app a,
+.mobile-app [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Improve scroll performance */
+.mobile-app [data-scroll] {
+  -webkit-overflow-scrolling: touch;
+  overflow-scrolling: touch;
+}
+
+/* ============================================
+   SAFE AREA SUPPORT (iPhone notch, etc.)
+   ============================================ */
+
+.mobile-app {
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.mobile-content {
+  padding-bottom: calc(
+    var(--mobile-tab-bar-height) + env(safe-area-inset-bottom)
+  );
+}
+
+/* ============================================
+   COMMON MOBILE COMPONENTS
+   ============================================ */
+
+/* Mobile Header (used across screens) */
+.mobile-header {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--mobile-z-header);
+  height: var(--mobile-header-height);
+  background: linear-gradient(135deg, var(--mobile-color-primary-dark) 0%, var(--mobile-color-primary-dark-alt) 100%);
+  padding: 0 var(--mobile-gutter);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--mobile-shadow-small);
+}
+
+.mobile-header-title {
+  font-family: var(--mobile-font-display);
+  font-size: var(--mobile-text-h3);
+  font-weight: var(--mobile-weight-semibold);
+  color: var(--mobile-text-inverse);
+}
+
+.mobile-header-icon {
+  width: 32px;
+  height: 32px;
+  color: var(--mobile-text-inverse);
+}
+
+/* Mobile Section */
+.mobile-section {
+  padding: var(--mobile-section-padding) var(--mobile-gutter);
+}
+
+.mobile-section-header {
+  margin-bottom: var(--mobile-space-m);
+}
+
+.mobile-section-title {
+  font-size: var(--mobile-text-h2);
+  font-weight: var(--mobile-weight-semibold);
+  color: var(--mobile-text-primary);
+  margin: 0 0 var(--mobile-space-xs) 0;
+}
+
+.mobile-section-subtitle {
+  font-size: var(--mobile-text-body-small);
+  color: var(--mobile-text-tertiary);
+  margin: 0;
+}
+
+/* Mobile Card */
+.mobile-card {
+  background: var(--mobile-bg-card);
+  border-radius: var(--mobile-radius-card-large);
+  padding: var(--mobile-card-padding);
+  box-shadow: var(--mobile-shadow-medium);
+  border: 1px solid var(--mobile-color-light-gray);
+}
+
+/* Mobile Button (touchable) */
+.mobile-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--mobile-touch-target);
+  padding: 0 var(--mobile-space-l);
+  border: none;
+  border-radius: var(--mobile-radius-button);
+  font-family: var(--mobile-font-display);
+  font-size: var(--mobile-text-body);
+  font-weight: var(--mobile-weight-semibold);
+  cursor: pointer;
+  transition: all var(--mobile-transition-fast) var(--mobile-ease-in-out);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-button:active {
+  transform: scale(0.96);
+}
+
+/* Button variants */
+.mobile-button--primary {
+  background: var(--mobile-color-primary-purple);
+  color: var(--mobile-text-inverse);
+  box-shadow: var(--mobile-shadow-button);
+}
+
+.mobile-button--secondary {
+  background: transparent;
+  color: var(--mobile-color-primary-purple);
+  border: 2px solid var(--mobile-color-primary-purple);
+}
+
+.mobile-button--danger {
+  background: var(--mobile-color-danger);
+  color: var(--mobile-text-inverse);
+}
+
+/* Icon button */
+.mobile-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--mobile-touch-target);
+  height: var(--mobile-touch-target);
+  min-width: var(--mobile-touch-target);
+  min-height: var(--mobile-touch-target);
+  padding: 0;
+  border: none;
+  border-radius: var(--mobile-radius-circle);
+  background: var(--mobile-color-extra-light-purple-bg);
+  color: var(--mobile-color-primary-purple);
+  cursor: pointer;
+  transition: all var(--mobile-transition-fast) var(--mobile-ease-in-out);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-icon-button:active {
+  transform: scale(0.96);
+  background: var(--mobile-color-extra-light-purple);
+}
+
+/* ============================================
+   LOADING STATES
+   ============================================ */
+
+.mobile-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: var(--mobile-space-xxl);
+}
+
+.mobile-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--mobile-color-light-gray);
+  border-top-color: var(--mobile-color-primary-purple);
+  border-radius: 50%;
+  animation: mobile-spin 1s linear infinite;
+}
+
+@keyframes mobile-spin {
+  to { transform: rotate(360deg); }
+}
+
+.mobile-loading-text {
+  margin-top: var(--mobile-space-m);
+  font-size: var(--mobile-text-body);
+  color: var(--mobile-text-tertiary);
+}
+
+/* ============================================
+   EMPTY STATES
+   ============================================ */
+
+.mobile-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: var(--mobile-space-xxl);
+  text-align: center;
+}
+
+.mobile-empty-icon {
+  font-size: 48px;
+  margin-bottom: var(--mobile-space-m);
+}
+
+.mobile-empty-title {
+  font-size: var(--mobile-text-h3);
+  font-weight: var(--mobile-weight-semibold);
+  color: var(--mobile-text-primary);
+  margin: 0 0 var(--mobile-space-xs) 0;
+}
+
+.mobile-empty-subtitle {
+  font-size: var(--mobile-text-body);
+  color: var(--mobile-text-tertiary);
+  margin: 0 0 var(--mobile-space-l) 0;
+}
+
+/* ============================================
+   UTILITIES
+   ============================================ */
+
+/* Thumb-zone indicator (bottom 1/3 of screen) */
+.mobile-thumb-zone {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 33vh;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Debug: show thumb zone (remove in production) */
+.mobile-thumb-zone--debug {
+  background: rgba(103, 4, 255, 0.1);
+  border-top: 2px dashed var(--mobile-color-primary-purple);
+}
+
+/* Hide scrollbar but keep functionality */
+.mobile-hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.mobile-hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Text truncation */
+.mobile-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+/* Focus visible (keyboard navigation) */
+.mobile-app *:focus-visible {
+  outline: 2px solid var(--mobile-color-primary-purple);
+  outline-offset: 2px;
+}
+
+/* Skip to content link */
+.mobile-skip-link {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  background: var(--mobile-color-primary-purple);
+  color: var(--mobile-text-inverse);
+  padding: var(--mobile-space-m);
+  z-index: 9999;
+}
+
+.mobile-skip-link:focus {
+  top: 0;
+}
+
+/* Screen reader only */
+.mobile-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ============================================
+   ORIENTATION SPECIFIC
+   ============================================ */
+
+@media (orientation: landscape) {
+  .mobile-header {
+    height: 56px;
+  }
+  
+  .mobile-content {
+    min-height: calc(100vh - 56px);
+    padding-bottom: 56px;
+  }
+}
+
+/* ============================================
+   REDUCED MOTION
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-app *,
+  .mobile-app *::before,
+  .mobile-app *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+

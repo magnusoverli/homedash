@@ -1,0 +1,151 @@
+/* Mobile Header Component Styles */
+
+.mobile-header {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--mobile-z-header);
+  background-color: var(--mobile-color-bg-header);
+  color: var(--mobile-color-text-on-dark);
+  padding: var(--mobile-space-m);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mobile-space-m);
+  min-height: 56px;
+  box-shadow: var(--mobile-shadow-small);
+}
+
+/* Support for safe area (notches, etc.) */
+.mobile-header {
+  padding-top: max(var(--mobile-space-m), env(safe-area-inset-top));
+  padding-left: max(var(--mobile-space-m), env(safe-area-inset-left));
+  padding-right: max(var(--mobile-space-m), env(safe-area-inset-right));
+}
+
+/* Default variant - centered title with optional side slots */
+.mobile-header--default {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  gap: var(--mobile-space-m);
+}
+
+/* Back variant - back button on left */
+.mobile-header--back {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  gap: var(--mobile-space-m);
+}
+
+/* Overview variant - custom layout for overview screen */
+.mobile-header--overview {
+  background: linear-gradient(
+    135deg,
+    var(--mobile-color-primary-dark) 0%,
+    var(--mobile-color-primary) 100%
+  );
+}
+
+.mobile-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: var(--mobile-space-m);
+}
+
+/* Header title */
+.mobile-header-title {
+  font-size: var(--mobile-font-size-h2);
+  font-weight: var(--mobile-font-weight-bold);
+  margin: 0;
+  text-align: center;
+  color: currentColor;
+  line-height: 1.2;
+}
+
+/* Icon slots */
+.mobile-header-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Logo slot */
+.mobile-header-logo {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Icon button */
+.mobile-icon-button {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: currentColor;
+  cursor: pointer;
+  border-radius: var(--mobile-radius-small);
+  transition: var(--mobile-transition-standard);
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.mobile-icon-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mobile-icon-button:active {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(0.95);
+}
+
+.mobile-icon-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Accessibility */
+.mobile-icon-button:focus-visible {
+  outline: 2px solid var(--mobile-color-focus);
+  outline-offset: 2px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .mobile-header {
+    background-color: var(--mobile-color-bg-header);
+  }
+  
+  .mobile-header--overview {
+    background: linear-gradient(
+      135deg,
+      var(--mobile-color-primary-dark) 0%,
+      var(--mobile-color-primary) 100%
+    );
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) {
+  .mobile-header {
+    padding: var(--mobile-space-l);
+    min-height: 60px;
+  }
+  
+  .mobile-header-title {
+    font-size: var(--mobile-font-size-h1);
+  }
+}
+

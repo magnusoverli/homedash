@@ -1,0 +1,337 @@
+/**
+ * Activity Bottom Sheet Modal Styles
+ * 
+ * Sliding modal from bottom for creating/editing activities
+ */
+
+/* Backdrop */
+.activity-sheet-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--mobile-z-modal-backdrop);
+  background: var(--mobile-bg-overlay);
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn var(--mobile-transition-normal) var(--mobile-ease-out);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Sheet container */
+.activity-sheet {
+  width: 100%;
+  max-height: 85vh;
+  background: var(--mobile-bg-card);
+  border-radius: var(--mobile-radius-card-large) var(--mobile-radius-card-large) 0 0;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
+  animation: slideUp var(--mobile-transition-normal) var(--mobile-ease-out);
+  transition: transform var(--mobile-transition-fast) var(--mobile-ease-out);
+  overflow: hidden;
+}
+
+.activity-sheet--dragging {
+  transition: none;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Drag handle */
+.activity-sheet-handle {
+  flex-shrink: 0;
+  padding: var(--mobile-space-s) 0;
+  display: flex;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+}
+
+.activity-sheet-handle:active {
+  cursor: grabbing;
+}
+
+.activity-sheet-handle-bar {
+  width: 48px;
+  height: 4px;
+  background: var(--mobile-color-dark-gray);
+  border-radius: 2px;
+  opacity: 0.4;
+}
+
+/* Header */
+.activity-sheet-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--mobile-space-m) var(--mobile-space-l);
+  border-bottom: 1px solid var(--mobile-color-light-gray);
+}
+
+.activity-sheet-title {
+  margin: 0;
+  font-size: var(--mobile-text-h2);
+  font-weight: var(--mobile-weight-semibold);
+  color: var(--mobile-text-primary);
+}
+
+.activity-sheet-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  color: var(--mobile-text-tertiary);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all var(--mobile-transition-fast) var(--mobile-ease-in-out);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.activity-sheet-close:active {
+  background: var(--mobile-color-light-gray);
+  transform: scale(0.95);
+}
+
+/* Content */
+.activity-sheet-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--mobile-space-l);
+}
+
+/* Form */
+.activity-sheet-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mobile-space-l);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mobile-space-xs);
+}
+
+.form-group--half {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-row {
+  display: flex;
+  gap: var(--mobile-space-m);
+}
+
+.form-label {
+  font-size: var(--mobile-text-body);
+  font-weight: var(--mobile-weight-semibold);
+  color: var(--mobile-text-primary);
+}
+
+.required {
+  color: var(--mobile-color-danger);
+}
+
+/* Form inputs */
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  min-height: var(--mobile-touch-target);
+  padding: var(--mobile-space-s) var(--mobile-space-m);
+  border: 2px solid var(--mobile-color-light-gray);
+  border-radius: var(--mobile-radius-card);
+  font-family: var(--mobile-font-display);
+  font-size: var(--mobile-text-body);
+  color: var(--mobile-text-primary);
+  background: var(--mobile-bg-card);
+  transition: border-color var(--mobile-transition-fast) var(--mobile-ease-in-out);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--mobile-color-primary-purple);
+}
+
+.form-input--error {
+  border-color: var(--mobile-color-danger);
+}
+
+.form-textarea {
+  min-height: 80px;
+  resize: vertical;
+  font-family: var(--mobile-font-display);
+}
+
+.form-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239E9E9E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--mobile-space-m) center;
+  background-size: 20px;
+  padding-right: 40px;
+}
+
+/* Time inputs on iOS */
+input[type="time"],
+input[type="date"] {
+  cursor: pointer;
+}
+
+/* Form errors */
+.form-error {
+  font-size: var(--mobile-text-body-small);
+  color: var(--mobile-color-danger);
+  margin-top: var(--mobile-space-xxs);
+}
+
+.form-error--submit {
+  padding: var(--mobile-space-s) var(--mobile-space-m);
+  background: rgba(255, 68, 68, 0.1);
+  border-radius: var(--mobile-radius-card);
+  margin-top: 0;
+}
+
+/* Category grid */
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: var(--mobile-space-s);
+}
+
+.category-pill {
+  padding: var(--mobile-space-s) var(--mobile-space-m);
+  border: 2px solid;
+  border-radius: var(--mobile-radius-button);
+  font-family: var(--mobile-font-display);
+  font-size: var(--mobile-text-body-small);
+  font-weight: var(--mobile-weight-semibold);
+  color: var(--mobile-text-primary);
+  background: transparent;
+  cursor: pointer;
+  transition: all var(--mobile-transition-fast) var(--mobile-ease-in-out);
+  -webkit-tap-highlight-color: transparent;
+  text-align: center;
+}
+
+.category-pill--active {
+  color: var(--mobile-text-primary);
+  transform: scale(1.05);
+}
+
+.category-pill:active {
+  transform: scale(0.98);
+}
+
+/* Footer */
+.activity-sheet-footer {
+  flex-shrink: 0;
+  display: flex;
+  gap: var(--mobile-space-m);
+  padding: var(--mobile-space-l);
+  border-top: 1px solid var(--mobile-color-light-gray);
+  background: var(--mobile-bg-card);
+}
+
+.activity-sheet-button {
+  flex: 1;
+  min-height: var(--mobile-touch-target);
+  padding: 0 var(--mobile-space-l);
+  border: none;
+  border-radius: var(--mobile-radius-button);
+  font-family: var(--mobile-font-display);
+  font-size: var(--mobile-text-body);
+  font-weight: var(--mobile-weight-semibold);
+  cursor: pointer;
+  transition: all var(--mobile-transition-fast) var(--mobile-ease-in-out);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.activity-sheet-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.activity-sheet-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.activity-sheet-button--primary {
+  background: var(--mobile-color-primary-purple);
+  color: var(--mobile-text-inverse);
+  box-shadow: var(--mobile-shadow-button);
+}
+
+.activity-sheet-button--secondary {
+  background: transparent;
+  color: var(--mobile-text-secondary);
+  border: 2px solid var(--mobile-color-light-gray);
+}
+
+/* Safe area support */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .activity-sheet-footer {
+    padding-bottom: calc(var(--mobile-space-l) + env(safe-area-inset-bottom));
+  }
+}
+
+/* Responsive */
+@media (max-width: 374px) {
+  .activity-sheet-content {
+    padding: var(--mobile-space-m);
+  }
+  
+  .activity-sheet-footer {
+    padding: var(--mobile-space-m);
+  }
+  
+  .category-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: var(--mobile-space-xs);
+  }
+}
+
+@media (orientation: landscape) {
+  .activity-sheet {
+    max-height: 90vh;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .activity-sheet-backdrop,
+  .activity-sheet {
+    animation: none;
+  }
+  
+  .activity-sheet {
+    transition: none;
+  }
+}
+
+

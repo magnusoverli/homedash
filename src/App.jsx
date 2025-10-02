@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Header from './components/Header';
-import MainPage from './components/MainPage';
-import Settings from './components/Settings';
+import { BrowserRouter as Router } from 'react-router-dom';
+import DesktopApp from './apps/DesktopApp';
+import MobileApp from './apps/MobileApp';
 import Login from './components/Login';
 import { ToastProvider } from './contexts/ToastContext';
 import ToastContainer from './components/ToastContainer';
@@ -14,7 +13,6 @@ import {
 import { useDeviceDetection } from './hooks/useDeviceDetection';
 import { API_URL } from './config/api';
 import './styles/globals.css';
-import './App.css';
 
 function App() {
   const [currentWeek, setCurrentWeek] = useState(new Date());
@@ -84,36 +82,21 @@ function App() {
   }
 
   // Authenticated or auth not required
+  // Route to appropriate app based on device type
+  const AppComponent = isMobile ? MobileApp : DesktopApp;
+
   return (
     <ToastProvider>
       <Router>
         <div
-          className="app"
+          className="app-root"
           data-device-type={deviceType}
           data-mobile={isMobile}
           data-tablet={isTablet}
           data-touch={isTouch}
           data-orientation={orientation}
         >
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <div className="app-layout">
-                  <Header
-                    currentWeek={currentWeek}
-                    onWeekChange={setCurrentWeek}
-                    showWeekSelector={true}
-                  />
-                  <MainPage
-                    currentWeek={currentWeek}
-                    onWeekChange={setCurrentWeek}
-                  />
-                </div>
-              }
-            />
-            <Route path="/settings" element={<Settings />} />
-          </Routes>
+          <AppComponent initialWeek={currentWeek} />
           <ToastContainer />
         </div>
       </Router>

@@ -1,0 +1,152 @@
+/**
+ * Bottom Tab Bar Styles
+ * 
+ * Touch-optimized navigation bar
+ * Following HomeDash Design Manual specifications
+ */
+
+.mobile-tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--mobile-z-nav);
+  height: var(--mobile-tab-bar-height);
+  background: var(--mobile-bg-dark);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 var(--mobile-space-xs);
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* Tab Button */
+.mobile-tab-button {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mobile-space-xxs);
+  min-height: var(--mobile-touch-target);
+  padding: var(--mobile-space-xs);
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all var(--mobile-transition-normal) var(--mobile-ease-in-out);
+  -webkit-tap-highlight-color: transparent;
+  border-radius: var(--mobile-radius-small);
+}
+
+/* Active state */
+.mobile-tab-button--active {
+  color: var(--mobile-color-primary-purple);
+}
+
+/* Hover state (for devices with hover capability) */
+@media (hover: hover) {
+  .mobile-tab-button:hover:not(.mobile-tab-button--active) {
+    color: rgba(255, 255, 255, 0.8);
+  }
+}
+
+/* Active/pressed state */
+.mobile-tab-button:active {
+  transform: scale(0.95);
+}
+
+/* Icon */
+.mobile-tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  transition: transform var(--mobile-transition-normal) var(--mobile-ease-in-out);
+}
+
+.mobile-tab-button--active .mobile-tab-icon {
+  transform: translateY(-2px);
+}
+
+.mobile-tab-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Label */
+.mobile-tab-label {
+  font-family: var(--mobile-font-condensed);
+  font-size: 11px;
+  font-weight: var(--mobile-weight-medium);
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+/* Active indicator (subtle glow) */
+.mobile-tab-button--active::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  background: radial-gradient(
+    circle,
+    rgba(103, 4, 255, 0.15) 0%,
+    transparent 70%
+  );
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Focus visible (accessibility) */
+.mobile-tab-button:focus-visible {
+  outline: 2px solid var(--mobile-color-primary-purple);
+  outline-offset: -2px;
+}
+
+/* Landscape mode adjustments */
+@media (orientation: landscape) {
+  .mobile-tab-bar {
+    height: 56px;
+  }
+  
+  .mobile-tab-button {
+    min-height: 40px;
+  }
+  
+  .mobile-tab-icon {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .mobile-tab-label {
+    font-size: 10px;
+  }
+}
+
+/* Small screens */
+@media (max-width: 374px) {
+  .mobile-tab-bar {
+    padding: 0 var(--mobile-space-xxs);
+  }
+  
+  .mobile-tab-button {
+    padding: var(--mobile-space-xxs);
+  }
+  
+  .mobile-tab-icon {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .mobile-tab-label {
+    font-size: 10px;
+  }
+}
+
+

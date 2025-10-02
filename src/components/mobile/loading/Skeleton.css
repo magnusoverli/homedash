@@ -1,0 +1,75 @@
+/**
+ * Skeleton Styles
+ * 
+ * Base styles for skeleton loading placeholders.
+ * Shimmer animation for smooth loading experience.
+ */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 0%,
+    #e8e8e8 20%,
+    #e8e8e8 40%,
+    #f0f0f0 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  display: block;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Skeleton variants */
+.skeleton-circle {
+  border-radius: 50%;
+}
+
+.skeleton-text {
+  height: 14px;
+  border-radius: 4px;
+}
+
+.skeleton-text-large {
+  height: 18px;
+  border-radius: 4px;
+}
+
+.skeleton-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+}
+
+.skeleton-avatar-large {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+}
+
+.skeleton-button {
+  height: 48px;
+  border-radius: var(--mobile-radius-button);
+}
+
+.skeleton-card {
+  height: 120px;
+  border-radius: var(--mobile-radius-card);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    background: #f0f0f0;
+  }
+}
+
+

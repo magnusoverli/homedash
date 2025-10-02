@@ -141,3 +141,77 @@ export const getMunicipalEventIcon = activity => {
       return '📅';
   }
 };
+
+/**
+ * Get the display color for an activity
+ * Uses pastel colors from design system based on activity type
+ * 
+ * @param {Object} activity - The activity object
+ * @returns {string} HEX color code
+ */
+export const getActivityColor = activity => {
+  const type = getActivityType(activity);
+  
+  // Color mapping from design manual
+  const colorMap = {
+    // Source-based
+    manual: '#B2AEFF',           // Pastell Light Purple
+    spond: '#D2FCC3',            // Pastell Green
+    municipal_calendar: '#FCDD8C', // Pastell Orange
+    
+    // School types
+    school_schedule: '#BADAF8',  // Pastell Blue
+    school_activity: '#DEB2FA',  // Pastell Pink
+    
+    // Category-based
+    category_work: '#B2AEFF',    // Pastell Light Purple
+    category_exercise: '#D2FCC3', // Pastell Green
+    category_family: '#DEB2FA',   // Pastell Pink
+    category_meal: '#FCDD8C',     // Pastell Orange
+    category_personal: '#BADAF8', // Pastell Blue
+    category_medical: '#F4B3BB',  // Pastell Salmon
+    category_social: '#FFF48D',   // Pastell Yellow
+    category_chores: '#ECECEC',   // Pastell Gray
+  };
+  
+  return colorMap[type] || '#B2AEFF'; // Default to light purple
+};
+
+/**
+ * Get the display icon for an activity
+ * Returns emoji icon based on activity type
+ * 
+ * @param {Object} activity - The activity object
+ * @returns {string} Emoji icon
+ */
+export const getActivityIcon = activity => {
+  const type = getActivityType(activity);
+  
+  // Special handling for municipal events
+  if (type === 'municipal_calendar') {
+    return getMunicipalEventIcon(activity);
+  }
+  
+  // Icon mapping
+  const iconMap = {
+    // Source-based
+    manual: '✏️',
+    spond: '⚽',
+    
+    // School types
+    school_schedule: '🏫',
+    school_activity: '🎓',
+    
+    // Category-based
+    category_work: '💼',
+    category_exercise: '🏃',
+    category_family: '👨‍👩‍👧',
+    category_meal: '🍽️',
+    category_personal: '⭐',
+    category_medical: '🏥',
+    category_social: '👥',
+    category_chores: '🧹',
+  };
+  
+  return iconMap[type] || '📅'; // Default icon
+};
