@@ -6,15 +6,27 @@ export const getApiUrl = () => {
     return import.meta.env.VITE_API_URL;
   }
 
-  // In production, use the same hostname/protocol as the frontend
-  // Cloudflare tunnel routes /api/* to the backend automatically
+  // Get current hostname
+  const protocol = window.location.protocol;
+  const hostname = window.location.hostname;
+
+  // In production mode
   if (import.meta.env.PROD) {
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
+    // If accessing via network IP, add port 3001
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      return `${protocol}//${hostname}:3001`;
+    }
+    // For Cloudflare tunnel or same-port setups
     return `${protocol}//${hostname}`;
   }
 
-  // In development, use localhost
+  // In development, check if we're accessing via network IP (not localhost)
+  // If hostname is an IP address or not localhost, use that IP for backend too
+  if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+    return `${protocol}//${hostname}:3001`;
+  }
+
+  // Default: localhost for local development
   return 'http://localhost:3001';
 };
 

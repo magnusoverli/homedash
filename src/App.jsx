@@ -11,6 +11,8 @@ import {
   getAccessToken,
   setAccessToken,
 } from './services/authService';
+import { useDeviceDetection } from './hooks/useDeviceDetection';
+import { API_URL } from './config/api';
 import './styles/globals.css';
 import './App.css';
 
@@ -18,6 +20,30 @@ function App() {
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [authRequired, setAuthRequired] = useState(null); // null = checking, true/false = determined
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // Device detection for future mobile UI implementation
+  const { isMobile, isTablet, isTouch, deviceType, orientation } =
+    useDeviceDetection();
+
+  // Send device detection to server for logging
+  useEffect(() => {
+    if (deviceType) {
+      fetch(`${API_URL}/api/debug/device-info`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          isMobile,
+          isTablet,
+          isTouch,
+          deviceType,
+          orientation,
+          userAgent: navigator.userAgent,
+          screenWidth: window.innerWidth,
+          screenHeight: window.innerHeight,
+        }),
+      }).catch(() => {}); // Silently fail if endpoint doesn't exist yet
+    }
+  }, [isMobile, isTablet, isTouch, deviceType, orientation]);
 
   useEffect(() => {
     async function checkAuth() {
@@ -61,7 +87,14 @@ function App() {
   return (
     <ToastProvider>
       <Router>
-        <div className="app">
+        <div
+          className="app"
+          data-device-type={deviceType}
+          data-mobile={isMobile}
+          data-tablet={isTablet}
+          data-touch={isTouch}
+          data-orientation={orientation}
+        >
           <Routes>
             <Route
               path="/"

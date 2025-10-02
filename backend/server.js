@@ -100,6 +100,22 @@ app.get('/api/health', (_, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Debug endpoint to log device info (no auth required)
+app.post('/api/debug/device-info', (req, res) => {
+  const deviceInfo = req.body;
+  console.log('\n📱 DEVICE DETECTION:');
+  console.log('==================');
+  console.log(`Device Type: ${deviceInfo.deviceType}`);
+  console.log(`Is Mobile: ${deviceInfo.isMobile}`);
+  console.log(`Is Tablet: ${deviceInfo.isTablet}`);
+  console.log(`Is Touch: ${deviceInfo.isTouch}`);
+  console.log(`Orientation: ${deviceInfo.orientation}`);
+  console.log(`Screen Size: ${deviceInfo.screenWidth}x${deviceInfo.screenHeight}`);
+  console.log(`User Agent: ${deviceInfo.userAgent}`);
+  console.log('==================\n');
+  res.json({ received: true });
+});
+
 // Auth status endpoint (no auth required)
 app.get('/api/auth/status', (_, res) => {
   res.json({ 
