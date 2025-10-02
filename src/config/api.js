@@ -12,11 +12,12 @@ export const getApiUrl = () => {
 
   // In production mode
   if (import.meta.env.PROD) {
-    // If accessing via network IP, add port 3001
-    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+    // If accessing via local network IP (e.g., 192.168.x.x), add port 3001
+    const isLocalNetworkIP = /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/;
+    if (isLocalNetworkIP.test(hostname)) {
       return `${protocol}//${hostname}:3001`;
     }
-    // For Cloudflare tunnel or same-port setups
+    // For Cloudflare tunnel, domain names, or localhost - use same host without port
     return `${protocol}//${hostname}`;
   }
 
