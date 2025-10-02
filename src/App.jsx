@@ -22,12 +22,12 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   // Device detection for future mobile UI implementation
-  const { isMobile, isTablet, isTouch, deviceType, orientation } =
+  const { isMobile, isTablet, isTouch, deviceType, orientation, isInitialized } =
     useDeviceDetection();
 
-  // Send device detection to server for logging
+  // Send device detection to server for logging (only after proper detection)
   useEffect(() => {
-    if (deviceType) {
+    if (isInitialized) {
       fetch(`${API_URL}/api/debug/device-info`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -43,7 +43,7 @@ function App() {
         }),
       }).catch(() => {}); // Silently fail if endpoint doesn't exist yet
     }
-  }, [isMobile, isTablet, isTouch, deviceType, orientation]);
+  }, [isInitialized, isMobile, isTablet, isTouch, deviceType, orientation]);
 
   useEffect(() => {
     async function checkAuth() {

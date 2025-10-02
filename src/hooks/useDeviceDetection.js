@@ -42,6 +42,7 @@ export const useDeviceDetection = () => {
     canHover: true,
     deviceType: 'desktop',
     orientation: 'landscape',
+    isInitialized: false, // Track if detection has run
   });
 
   useEffect(() => {
@@ -61,6 +62,7 @@ export const useDeviceDetection = () => {
         canHover: hover,
         deviceType,
         orientation,
+        isInitialized: true, // Mark as initialized
       });
     };
 
