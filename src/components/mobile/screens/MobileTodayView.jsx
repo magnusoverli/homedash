@@ -12,15 +12,15 @@ import './MobileTodayView.css';
  * Mobile Today View
  * 
  * Focused view of current day's activities across all family members.
- * Groups activities by time: Now, Next Up, Later Today, Completed.
+ * Groups activities by time: Now, Next Up, Later Today.
  * Updates every minute to keep "Now" section accurate.
+ * Completed activities are automatically filtered out.
  */
 const MobileTodayView = () => {
   const [familyMembers, setFamilyMembers] = useState([]);
   const [activities, setActivities] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [showCompleted, setShowCompleted] = useState(false);
 
   // Update current time every minute
   useEffect(() => {
@@ -92,19 +92,23 @@ const MobileTodayView = () => {
     return currentTime.getHours() * 60 + currentTime.getMinutes();
   };
 
-  // Categorize activities
+  // Categorize activities (only show current and future)
   const categorizeActivities = () => {
     const now = getCurrentMinutes();
     const categories = {
       current: [],
       nextUp: [],
       laterToday: [],
-      completed: [],
     };
 
     activities.forEach(activity => {
       const start = getMinutesSinceMidnight(activity.startTime);
       const end = getMinutesSinceMidnight(activity.endTime);
+
+      // Skip completed activities
+      if (end <= now) {
+        return;
+      }
 
       if (now >= start && now < end) {
         // Currently happening
@@ -115,9 +119,6 @@ const MobileTodayView = () => {
       } else if (start > now + 120) {
         // Later today
         categories.laterToday.push(activity);
-      } else if (end <= now) {
-        // Completed
-        categories.completed.push(activity);
       }
     });
 
@@ -299,51 +300,6 @@ const MobileTodayView = () => {
                       <div className="today-card-compact-title">{activity.title}</div>
                       <div className="today-card-compact-meta">
                         {activity.member?.name} • {activity.startTime}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </section>
-        )}
-
-        {/* COMPLETED Section */}
-        {categories.completed.length > 0 && (
-          <section className="today-section today-section--completed">
-            <button
-              className="today-section-toggle"
-              onClick={() => setShowCompleted(!showCompleted)}
-            >
-              <h2 className="today-section-title">
-                Completed ({categories.completed.length})
-              </h2>
-              <svg 
-                width="20" 
-                height="20" 
-                viewBox="0 0 24 24" 
-                fill="none"
-                style={{ 
-                  transform: showCompleted ? 'rotate(180deg)' : 'rotate(0)',
-                  transition: 'transform 200ms'
-                }}
-              >
-                <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </button>
-
-            {showCompleted && categories.completed.map(activity => (
-              <div
-                key={activity.id}
-                className="today-card today-card--completed"
-              >
-                <div className="today-card-compact-content">
-                  <div className="today-card-compact-left">
-                    <div className="today-card-checkmark">✓</div>
-                    <div className="today-card-compact-info">
-                      <div className="today-card-compact-title">{activity.title}</div>
-                      <div className="today-card-compact-meta">
-                        {activity.member?.name} • {activity.startTime} - {activity.endTime}
                       </div>
                     </div>
                   </div>

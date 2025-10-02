@@ -47,28 +47,11 @@
   margin-bottom: 0;
 }
 
-.today-section--completed {
-  opacity: 0.7;
-}
-
 .today-section-title {
   margin: 0;
   font-size: var(--mobile-text-h3);
   font-weight: var(--mobile-weight-semibold);
   color: var(--mobile-text-primary);
-}
-
-.today-section-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  gap: var(--mobile-space-m);
 }
 
 /* Current Activity Card (Large) */
@@ -228,28 +211,6 @@
   color: var(--mobile-text-tertiary);
 }
 
-/* Completed Cards */
-.today-card--completed {
-  background: transparent;
-  border: 1px solid var(--mobile-color-light-gray);
-  box-shadow: none;
-  opacity: 0.6;
-}
-
-.today-card-checkmark {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--mobile-color-success);
-  color: var(--mobile-text-primary);
-  font-size: 18px;
-  font-weight: var(--mobile-weight-bold);
-}
-
 /* Responsive */
 @media (max-width: 374px) {
   .today-content {
@@ -274,10 +235,6 @@
 @media (prefers-reduced-motion: reduce) {
   .today-card-badge--current {
     animation: none;
-  }
-  
-  .today-section-toggle svg {
-    transition: none;
   }
 }
 

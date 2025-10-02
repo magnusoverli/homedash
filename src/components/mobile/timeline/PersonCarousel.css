@@ -11,8 +11,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: var(--mobile-space-m) 0;
-  padding-bottom: var(--mobile-space-xl);
+  padding: 6px 0;
+  padding-bottom: 6px;
 }
 
 /* Carousel scroll container */
@@ -64,8 +64,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--mobile-carousel-indicator-spacing);
-  padding: var(--mobile-space-m) 0;
-  margin-top: var(--mobile-space-xs);
+  padding: 8px 0;
 }
 
 .person-carousel-dot {

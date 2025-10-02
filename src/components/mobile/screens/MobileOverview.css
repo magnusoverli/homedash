@@ -61,6 +61,18 @@
   align-items: center;
   justify-content: center;
   min-width: 120px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: var(--mobile-space-xs) var(--mobile-space-s);
+  border-radius: var(--mobile-radius-small);
+  transition: all var(--mobile-transition-fast) var(--mobile-ease-in-out);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-week-display:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .mobile-week-text {
@@ -201,40 +213,6 @@
 
 .mobile-carousel-dot:active {
   transform: scale(1.1);
-}
-
-/* ============================================
-   TODAY FAB (Floating Action Button)
-   ============================================ */
-
-.mobile-today-fab {
-  position: fixed;
-  bottom: calc(var(--mobile-tab-bar-height) + var(--mobile-space-m));
-  right: var(--mobile-space-m);
-  z-index: var(--mobile-z-sticky);
-  width: 56px;
-  height: 56px;
-  border: none;
-  border-radius: 50%;
-  background: var(--mobile-color-primary-purple);
-  color: var(--mobile-text-inverse);
-  box-shadow: var(--mobile-shadow-large);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--mobile-transition-normal) var(--mobile-ease-in-out);
-  -webkit-tap-highlight-color: transparent;
-}
-
-.mobile-today-fab:active {
-  transform: scale(0.9);
-}
-
-@media (hover: hover) {
-  .mobile-today-fab:hover {
-    transform: scale(1.05);
-  }
 }
 
 /* ============================================

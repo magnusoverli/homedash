@@ -136,8 +136,6 @@ const MobilePersonCard = ({
             activities={activities}
             weekStart={weekStart}
             onAddActivity={onAddActivity}
-            onEditActivity={onEditActivity}
-            onDeleteActivity={onDeleteActivity}
             isActive={isActive}
           />
         </div>

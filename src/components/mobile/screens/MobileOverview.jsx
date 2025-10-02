@@ -371,9 +371,13 @@ const MobileOverview = ({ currentWeek, onWeekChange }) => {
               </svg>
             </button>
             
-            <div className="mobile-week-display">
+            <button 
+              className="mobile-week-display"
+              onClick={handleToday}
+              aria-label="Go to today"
+            >
               <span className="mobile-week-text">{getWeekDisplay()}</span>
-            </div>
+            </button>
             
             <button 
               className="mobile-week-nav-button"
@@ -427,18 +431,6 @@ const MobileOverview = ({ currentWeek, onWeekChange }) => {
           />
         )}
       />
-
-      {/* Today Quick Access Button */}
-      <button 
-        className="mobile-today-fab"
-        onClick={handleToday}
-        aria-label="Go to today"
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-          <circle cx="12" cy="12" r="3" fill="currentColor"/>
-        </svg>
-      </button>
 
       {/* Activity Bottom Sheet Modal */}
       <ActivityBottomSheet

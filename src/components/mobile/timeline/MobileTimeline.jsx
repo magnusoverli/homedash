@@ -7,15 +7,13 @@ import './MobileTimeline.css';
  * Mobile Timeline
  * 
  * Touch-optimized weekly timeline with hourly time scale.
- * Shows activities as colored blocks, supports tap-to-create and long-press actions.
+ * Shows activities as colored blocks, supports tap-to-create.
  * 
  * @param {Object} props
  * @param {Object} props.member - Family member object
  * @param {Array} props.activities - Activities to display
  * @param {Date} props.weekStart - Start of current week
  * @param {Function} props.onAddActivity - Callback to add activity
- * @param {Function} props.onEditActivity - Callback to edit activity
- * @param {Function} props.onDeleteActivity - Callback to delete activity
  * @param {boolean} props.isActive - Whether this timeline is active
  */
 const MobileTimeline = ({
@@ -23,8 +21,6 @@ const MobileTimeline = ({
   activities = [],
   weekStart,
   onAddActivity,
-  onEditActivity,
-  onDeleteActivity,
   isActive,
 }) => {
   const timelineRef = useRef(null);
@@ -76,6 +72,7 @@ const MobileTimeline = ({
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
   // Get activities for a specific date and hour
+  // Only return activities that START in this hour (not those that span it)
   const getActivitiesForSlot = (date, hour) => {
     const dateStr = formatLocalDate(date);
     
@@ -83,18 +80,9 @@ const MobileTimeline = ({
       if (activity.date !== dateStr) return false;
       
       const startHour = parseInt(activity.startTime?.split(':')[0] || '0');
-      const endHour = parseInt(activity.endTime?.split(':')[0] || '0');
-      const startMinute = parseInt(activity.startTime?.split(':')[1] || '0');
       
-      // Activity starts in this hour
-      if (startHour === hour) return true;
-      
-      // Activity spans this hour
-      if (startHour < hour && (endHour > hour || (endHour === hour && startMinute > 0))) {
-        return true;
-      }
-      
-      return false;
+      // Only show activity in the hour it starts
+      return startHour === hour;
     });
   };
 
@@ -181,8 +169,6 @@ const MobileTimeline = ({
                   <MobileActivityBlock
                     key={activity.id}
                     activity={activity}
-                    onEdit={() => onEditActivity(activity)}
-                    onDelete={() => onDeleteActivity(activity.id)}
                   />
                 ))}
               </div>

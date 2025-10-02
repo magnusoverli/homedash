@@ -77,14 +77,8 @@
   background: var(--mobile-bg-card);
   border-bottom: 1px solid var(--mobile-color-light-gray);
   overflow: hidden;
-  transition: transform var(--mobile-transition-fast) var(--mobile-ease-in-out);
   user-select: none;
   -webkit-user-select: none;
-  cursor: pointer;
-}
-
-.mobile-task-item--swiping {
-  transition: none;
 }
 
 .mobile-task-content {
@@ -132,32 +126,6 @@
   padding: var(--mobile-space-xxs) var(--mobile-space-xs);
   background: var(--mobile-color-extra-light-purple-bg);
   border-radius: var(--mobile-radius-small);
-}
-
-/* Delete background */
-.mobile-task-delete-bg {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 80px;
-  background: var(--mobile-color-danger);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 0;
-}
-
-/* Active/pressed state */
-.mobile-task-item:active .mobile-task-content {
-  background: var(--mobile-bg-secondary);
-}
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .mobile-task-item {
-    transition: none;
-  }
 }
 
 
