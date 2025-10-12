@@ -60,18 +60,8 @@ const ActivityBlock = ({
     if (isSpondActivity(activity)) {
       if (height < 30) {
         return getActivityIcon();
-      } else if (height < 50) {
-        // For very small heights, still abbreviate
-        const words = title.split(' ');
-        if (words.length > 1) {
-          return words
-            .map(w => w[0])
-            .join('')
-            .toUpperCase();
-        }
-        return title.substring(0, 12);
       }
-      // For heights >= 50, return full title (will wrap with CSS)
+      // For heights >= 30, return full title (will wrap with CSS)
       return title;
     }
 
