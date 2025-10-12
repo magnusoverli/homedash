@@ -204,7 +204,13 @@ class DataService {
   }
 
   // School Plan Extraction
-  async extractSchoolPlan(memberId, imageFile, apiKey, selectedModel = null) {
+  async extractSchoolPlan(
+    memberId,
+    imageFile,
+    apiKey,
+    selectedModel = null,
+    weekStartDate = null
+  ) {
     const formData = new FormData();
     formData.append('member_id', memberId);
     formData.append('api_key', apiKey);
@@ -213,6 +219,11 @@ class DataService {
     // Pass the selected model if provided
     if (selectedModel) {
       formData.append('selected_model', selectedModel);
+    }
+
+    // Pass the week start date if provided
+    if (weekStartDate) {
+      formData.append('week_start_date', weekStartDate);
     }
 
     const headers = {};

@@ -24,6 +24,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
     name: '',
     avatarColor: '#FFF48D',
     schoolPlanImage: null,
+    selectedWeekDate: null, // Week start date for schedule import
   });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
@@ -75,6 +76,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
         name: member.name || '',
         avatarColor: member.avatarColor || member.color || '#FFF48D',
         schoolPlanImage: member.schoolPlanImage || null,
+        selectedWeekDate: null, // Reset week selection when member changes
       });
     }
     setShowDeleteConfirm(false);
@@ -203,6 +205,55 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
     }));
   };
 
+  // Helper function to get Monday of a given date's week
+  const getMonday = date => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+    d.setDate(diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  };
+
+  // Helper function to format date as YYYY-MM-DD
+  const formatDate = date => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Helper function to format date for display (e.g., "Week of Oct 14, 2025")
+  const formatWeekDisplay = dateString => {
+    const date = new Date(dateString);
+    const options = { month: 'short', day: 'numeric', year: 'numeric' };
+    return `Week of ${date.toLocaleDateString('en-US', options)}`;
+  };
+
+  // Generate week options (current week and next 8 weeks)
+  const getWeekOptions = () => {
+    const options = [];
+    const today = new Date();
+    
+    for (let i = 0; i < 9; i++) {
+      const weekDate = new Date(today);
+      weekDate.setDate(today.getDate() + i * 7);
+      const monday = getMonday(weekDate);
+      const dateString = formatDate(monday);
+      
+      let label = formatWeekDisplay(dateString);
+      if (i === 0) {
+        label += ' (This week)';
+      } else if (i === 1) {
+        label += ' (Next week)';
+      }
+      
+      options.push({ value: dateString, label });
+    }
+    
+    return options;
+  };
+
   const handleFileUpload = event => {
     const file = event.target.files[0];
     if (file) {
@@ -233,6 +284,11 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       return;
     }
 
+    if (!formData.selectedWeekDate) {
+      showError('Please select which week this schedule is for');
+      return;
+    }
+
     setIsExtracting(true);
 
     try {
@@ -240,7 +296,8 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
         member.id,
         formData.schoolPlanImage,
         llmSettings.apiKey,
-        llmSettings.selectedModel
+        llmSettings.selectedModel,
+        formData.selectedWeekDate
       );
 
       // Refresh school schedule status
@@ -745,6 +802,27 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                     </p>
                   </div>
 
+                  {/* Week Selector */}
+                  <div className="week-selector-container">
+                    <label className="form-label">
+                      Which week is this schedule for?
+                    </label>
+                    <select
+                      className="week-selector"
+                      value={formData.selectedWeekDate || ''}
+                      onChange={e =>
+                        handleInputChange('selectedWeekDate', e.target.value)
+                      }
+                    >
+                      <option value="">Select a week...</option>
+                      {getWeekOptions().map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   <div className="school-plan-form">
                     {formData.schoolPlanImage ? (
                       <div className="image-preview-container">
@@ -778,7 +856,9 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                                 className="button-extract"
                                 onClick={handleExtractSchoolPlan}
                                 disabled={
-                                  isExtracting || !formData.schoolPlanImage
+                                  isExtracting ||
+                                  !formData.schoolPlanImage ||
+                                  !formData.selectedWeekDate
                                 }
                                 aria-label="Import data from school plan"
                               >
@@ -929,6 +1009,45 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                       </span>
                     </div>
                   )}
+
+                  {llmSettings.enabled &&
+                    formData.schoolPlanImage &&
+                    !formData.selectedWeekDate && (
+                      <div className="extraction-status info">
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          />
+                          <path
+                            d="M12 16v-4"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M12 8h.01"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <span>
+                          Please select which week this schedule is for before
+                          importing
+                        </span>
+                      </div>
+                    )}
                 </div>
 
                 {/* School Schedule Management */}

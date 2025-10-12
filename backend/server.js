@@ -3275,7 +3275,7 @@ app.post(
   '/api/extract-school-plan',
   upload.single('schoolPlanImage'),
   async (req, res) => {
-    const { member_id, api_key, selected_model } = req.body;
+    const { member_id, api_key, selected_model, week_start_date } = req.body;
     const imageFile = req.file;
 
     console.log('=== SCHOOL PLAN EXTRACTION STARTED ===');
@@ -3290,6 +3290,9 @@ app.post(
     );
     console.log(
       `Selected model: ${selected_model || 'Not specified (will use default)'}`
+    );
+    console.log(
+      `Week start date: ${week_start_date || 'Not specified (will use current week)'}`
     );
 
     if (!member_id || !api_key || !imageFile) {
@@ -3425,7 +3428,8 @@ app.post(
       const savedData = await saveExtractedSchoolPlan(
         member_id,
         extractedData,
-        imageFile.originalname
+        imageFile.originalname,
+        week_start_date
       );
       console.log('✅ Data saved successfully');
       console.log(`📈 Saved records:`);
@@ -3737,7 +3741,12 @@ function getWeekStart(date) {
 }
 
 // Helper function to save extracted data to database
-async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
+async function saveExtractedSchoolPlan(
+  memberId,
+  extractedData,
+  imageFileName,
+  weekStartDate = null
+) {
   console.log(`💾 Starting database save for member ${memberId}`);
 
   const savedData = {
@@ -3748,9 +3757,12 @@ async function saveExtractedSchoolPlan(memberId, extractedData, imageFileName) {
 
   try {
     // Get school year range and import week start (used for both schedules and activities)
-    const importDate = new Date();
+    // If weekStartDate is provided, use it; otherwise use current date
+    const importDate = weekStartDate ? new Date(weekStartDate) : new Date();
     const { schoolYearStart, schoolYearEnd } = getSchoolYearRange(importDate);
-    const importWeekStart = getWeekStart(importDate);
+    const importWeekStart = weekStartDate
+      ? new Date(weekStartDate)
+      : getWeekStart(importDate);
 
     // Day mapping used for both schedules and activities
     const dayMapping = {
