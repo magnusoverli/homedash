@@ -1,5 +1,12 @@
 FROM node:20-alpine
 
+# Add OCI labels for GitHub Container Registry linking
+LABEL org.opencontainers.image.source="https://github.com/magnusoverli/homedash"
+LABEL org.opencontainers.image.description="HomeDash - A modern home dashboard application (Backend API)"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.title="HomeDash Backend"
+LABEL org.opencontainers.image.vendor="magnusoverli"
+
 WORKDIR /app
 
 # Install timezone data
