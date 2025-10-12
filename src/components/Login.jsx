@@ -6,6 +6,7 @@ import './Login.css';
 
 function Login({ onLogin }) {
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -24,7 +25,7 @@ function Login({ onLogin }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, rememberMe }),
       });
 
       console.log('Login: Response status:', response.status);
@@ -35,6 +36,8 @@ function Login({ onLogin }) {
       if (response.ok && data.token) {
         // Store token and notify parent
         localStorage.setItem('access_token', data.token);
+        localStorage.setItem('token_expires_at', data.expiresAt);
+        localStorage.setItem('remember_me', data.rememberMe);
         onLogin(data.token);
       } else {
         setError(data.error || 'Invalid password');
@@ -66,6 +69,18 @@ function Login({ onLogin }) {
               autoFocus
               disabled={loading}
             />
+          </div>
+
+          <div className="login-checkbox-group">
+            <label className="login-checkbox-label">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                disabled={loading}
+              />
+              <span>Remember me for 7 days</span>
+            </label>
           </div>
 
           {error && <div className="login-error">{error}</div>}

@@ -17,20 +17,87 @@ const PORT = process.env.PORT || 3001;
 const ACCESS_PASSWORD = process.env.ACCESS_PASSWORD;
 const ACCESS_CONTROL_ENABLED = !!ACCESS_PASSWORD;
 
-// Simple in-memory session store (tokens are valid until server restart)
-const validTokens = new Set();
+// Token expiration constants (in milliseconds)
+const TOKEN_EXPIRY_SHORT = 12 * 60 * 60 * 1000; // 12 hours
+const TOKEN_EXPIRY_LONG = 7 * 24 * 60 * 60 * 1000; // 7 days
+const TOKEN_REFRESH_THRESHOLD = 30 * 60 * 1000; // 30 minutes
 
 // Generate a session token
 function generateToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
-// Verify session token
-function verifyToken(token) {
-  return validTokens.has(token);
+// Create and store token
+async function createToken(rememberMe, userAgent = null, ipAddress = null) {
+  const token = generateToken();
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + (rememberMe ? TOKEN_EXPIRY_LONG : TOKEN_EXPIRY_SHORT));
+  
+  await runQuery(
+    `INSERT INTO auth_tokens (token, remember_me, created_at, expires_at, last_used_at, user_agent, ip_address)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [token, rememberMe ? 1 : 0, now.toISOString(), expiresAt.toISOString(), now.toISOString(), userAgent, ipAddress]
+  );
+  
+  return { token, expiresAt: expiresAt.toISOString() };
 }
 
-initDatabase().catch(console.error);
+// Verify and update token
+async function verifyToken(token) {
+  const result = await getOne(
+    'SELECT * FROM auth_tokens WHERE token = ? AND expires_at > datetime("now")',
+    [token]
+  );
+  
+  if (!result) {
+    return null;
+  }
+  
+  // Update last_used_at
+  await runQuery(
+    'UPDATE auth_tokens SET last_used_at = ? WHERE token = ?',
+    [new Date().toISOString(), token]
+  );
+  
+  return result;
+}
+
+// Check if token needs refresh
+function needsRefresh(tokenData) {
+  const expiresAt = new Date(tokenData.expires_at);
+  const now = new Date();
+  const timeUntilExpiry = expiresAt - now;
+  
+  return timeUntilExpiry < TOKEN_REFRESH_THRESHOLD;
+}
+
+// Delete token
+async function deleteToken(token) {
+  await runQuery('DELETE FROM auth_tokens WHERE token = ?', [token]);
+}
+
+// Cleanup expired tokens (daily job)
+async function cleanupExpiredTokens() {
+  try {
+    const result = await runQuery(
+      'DELETE FROM auth_tokens WHERE expires_at < datetime("now")',
+      []
+    );
+    console.log(`🧹 Cleaned up ${result.changes} expired tokens`);
+  } catch (error) {
+    console.error('Error cleaning up expired tokens:', error);
+  }
+}
+
+// Initialize database first, then start cleanup
+initDatabase()
+  .then(() => {
+    // Run cleanup on startup after database is ready
+    cleanupExpiredTokens();
+    // Start cleanup job (run daily)
+    setInterval(cleanupExpiredTokens, 24 * 60 * 60 * 1000);
+  })
+  .catch(console.error);
 
 // Middleware
 app.use(
@@ -77,7 +144,7 @@ app.use(
 app.use(express.json());
 
 // Access control middleware
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
   // Skip auth if access control is disabled
   if (!ACCESS_CONTROL_ENABLED) {
     return next();
@@ -85,13 +152,24 @@ function requireAuth(req, res, next) {
 
   const token = req.headers['x-access-token'];
   
-  if (!token || !verifyToken(token)) {
+  if (!token) {
     return res.status(401).json({ 
       error: 'Unauthorized',
-      message: 'Valid access token required' 
+      message: 'Access token required' 
     });
   }
-
+  
+  const tokenData = await verifyToken(token);
+  
+  if (!tokenData) {
+    return res.status(401).json({ 
+      error: 'Unauthorized',
+      message: 'Invalid or expired token' 
+    });
+  }
+  
+  // Attach token data to request for refresh endpoint
+  req.tokenData = tokenData;
   next();
 }
 
@@ -124,14 +202,14 @@ app.get('/api/auth/status', (_, res) => {
 });
 
 // Login endpoint (no auth required)
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   if (!ACCESS_CONTROL_ENABLED) {
     return res.status(400).json({ 
       error: 'Access control is not enabled' 
     });
   }
 
-  const { password } = req.body;
+  const { password, rememberMe = false } = req.body;
 
   if (!password) {
     return res.status(400).json({ 
@@ -145,25 +223,69 @@ app.post('/api/auth/login', (req, res) => {
     });
   }
 
-  // Generate and store token
-  const token = generateToken();
-  validTokens.add(token);
+  // Generate and store token with expiration
+  const userAgent = req.headers['user-agent'];
+  const ipAddress = req.ip || req.connection.remoteAddress;
+  
+  const { token, expiresAt } = await createToken(rememberMe, userAgent, ipAddress);
 
   res.json({ 
     success: true,
-    token 
+    token,
+    expiresAt,
+    rememberMe
   });
 });
 
 // Logout endpoint
-app.post('/api/auth/logout', (req, res) => {
+app.post('/api/auth/logout', async (req, res) => {
   const token = req.headers['x-access-token'];
   
   if (token) {
-    validTokens.delete(token);
+    await deleteToken(token);
   }
 
   res.json({ success: true });
+});
+
+// Token refresh endpoint
+app.post('/api/auth/refresh', async (req, res) => {
+  if (!ACCESS_CONTROL_ENABLED) {
+    return res.status(400).json({ 
+      error: 'Access control is not enabled' 
+    });
+  }
+
+  const oldToken = req.headers['x-access-token'];
+  
+  if (!oldToken) {
+    return res.status(401).json({ 
+      error: 'Token required for refresh' 
+    });
+  }
+
+  const tokenData = await verifyToken(oldToken);
+  
+  if (!tokenData) {
+    return res.status(401).json({ 
+      error: 'Invalid or expired token' 
+    });
+  }
+
+  // Delete old token
+  await deleteToken(oldToken);
+  
+  // Create new token with same rememberMe setting
+  const userAgent = req.headers['user-agent'];
+  const ipAddress = req.ip || req.connection.remoteAddress;
+  const { token, expiresAt } = await createToken(!!tokenData.remember_me, userAgent, ipAddress);
+
+  res.json({ 
+    success: true,
+    token,
+    expiresAt,
+    rememberMe: !!tokenData.remember_me
+  });
 });
 
 // Apply auth middleware to all subsequent routes

@@ -192,6 +192,26 @@ const initDatabase = () => {
         }
       );
 
+      db.run(
+        `
+        CREATE TABLE IF NOT EXISTS auth_tokens (
+          token TEXT PRIMARY KEY,
+          remember_me BOOLEAN NOT NULL DEFAULT FALSE,
+          created_at DATETIME NOT NULL,
+          expires_at DATETIME NOT NULL,
+          last_used_at DATETIME NOT NULL,
+          user_agent TEXT,
+          ip_address TEXT
+        )
+      `,
+        err => {
+          if (err) {
+            console.error('Error creating auth_tokens table:', err);
+            return reject(err);
+          }
+        }
+      );
+
       db.run(`
         CREATE INDEX IF NOT EXISTS idx_activities_member_date 
         ON activities(member_id, date)
@@ -210,6 +230,11 @@ const initDatabase = () => {
       db.run(`
         CREATE INDEX IF NOT EXISTS idx_homework_week 
         ON homework(member_id, week_start_date)
+      `);
+
+      db.run(`
+        CREATE INDEX IF NOT EXISTS idx_auth_tokens_expires 
+        ON auth_tokens(expires_at)
       `);
 
       // Create Spond tables sequentially - temporarily disable foreign keys for creation

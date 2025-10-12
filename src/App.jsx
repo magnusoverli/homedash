@@ -9,6 +9,10 @@ import {
   checkAuthStatus,
   getAccessToken,
   setAccessToken,
+  isTokenExpired,
+  clearAccessToken,
+  startTokenRefresh,
+  stopTokenRefresh,
 } from './services/authService';
 import { useDeviceDetection } from './hooks/useDeviceDetection';
 import { API_URL } from './config/api';
@@ -49,21 +53,37 @@ function App() {
       setAuthRequired(required);
 
       if (required) {
-        // Check if we have a valid token
         const token = getAccessToken();
-        setIsAuthenticated(!!token);
+        if (token) {
+          // Check if token is expired
+          if (isTokenExpired()) {
+            clearAccessToken();
+            setIsAuthenticated(false);
+          } else {
+            setIsAuthenticated(true);
+            // Start automatic token refresh
+            startTokenRefresh();
+          }
+        } else {
+          setIsAuthenticated(false);
+        }
       } else {
-        // No auth required, proceed
         setIsAuthenticated(true);
       }
     }
 
     checkAuth();
+    
+    // Cleanup on unmount
+    return () => {
+      stopTokenRefresh();
+    };
   }, []);
 
   const handleLogin = (token) => {
     setAccessToken(token);
     setIsAuthenticated(true);
+    startTokenRefresh();
   };
 
   // Still checking auth status
