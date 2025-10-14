@@ -17,8 +17,9 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: var(--mobile-space-m);
-  padding: var(--mobile-card-padding);
+  gap: var(--mobile-space-xs);
+  height: 48px;
+  padding: 0 var(--mobile-card-padding);
   background: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0.02) 0%,
@@ -27,47 +28,13 @@
   border-bottom: 1px solid var(--mobile-color-light-gray);
 }
 
-.mobile-person-avatar {
-  flex-shrink: 0;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  font-weight: var(--mobile-weight-bold);
-  color: var(--mobile-text-primary);
-  text-transform: uppercase;
-}
-
 .mobile-person-name {
   flex: 1;
   margin: 0;
-  font-size: var(--mobile-text-h2);
+  font-size: var(--mobile-text-h3);
   font-weight: var(--mobile-weight-semibold);
   color: var(--mobile-text-primary);
-}
-
-.mobile-person-menu {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: none;
-  background: transparent;
-  color: var(--mobile-text-tertiary);
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all var(--mobile-transition-fast) var(--mobile-ease-in-out);
-  -webkit-tap-highlight-color: transparent;
-}
-
-.mobile-person-menu:active {
-  background: var(--mobile-color-light-gray);
-  transform: scale(0.95);
+  line-height: 1;
 }
 
 /* Content area */
@@ -136,31 +103,25 @@
 
 /* Landscape adjustments */
 @media (orientation: landscape) {
-  .mobile-person-avatar {
-    width: 48px;
-    height: 48px;
-    font-size: 20px;
+  .mobile-person-header {
+    height: 44px;
   }
-  
+
   .mobile-person-name {
-    font-size: var(--mobile-text-h3);
+    font-size: var(--mobile-text-body-large);
   }
 }
 
 /* Small screens */
 @media (max-width: 374px) {
   .mobile-person-header {
-    padding: var(--mobile-space-s);
+    height: 44px;
+    padding: 0 var(--mobile-space-s);
+    gap: var(--mobile-space-xxs);
   }
-  
-  .mobile-person-avatar {
-    width: 48px;
-    height: 48px;
-    font-size: 20px;
-  }
-  
+
   .mobile-person-name {
-    font-size: var(--mobile-text-h3);
+    font-size: var(--mobile-text-body-large);
   }
 }
 
@@ -171,5 +132,3 @@
     transition: none;
   }
 }
-
-

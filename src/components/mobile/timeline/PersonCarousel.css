@@ -45,7 +45,7 @@
   width: 100%;
   scroll-snap-align: center;
   scroll-snap-stop: always;
-  padding: 0 var(--mobile-gutter);
+  padding: 0 8px;
   box-sizing: border-box;
   opacity: 0.6;
   transform: scale(0.95);

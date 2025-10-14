@@ -16,8 +16,8 @@
 .mobile-day-selector {
   flex-shrink: 0;
   display: flex;
-  gap: var(--mobile-space-xs);
-  padding: var(--mobile-space-s) var(--mobile-space-m);
+  gap: 6px;
+  padding: 8px;
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -35,9 +35,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--mobile-space-xxs);
+  gap: 2px;
   min-width: 48px;
-  padding: var(--mobile-space-xs) var(--mobile-space-s);
+  padding: 6px 8px;
   border: 1px solid var(--mobile-color-light-gray);
   border-radius: var(--mobile-radius-card);
   background: var(--mobile-bg-card);
@@ -69,11 +69,6 @@
   font-weight: var(--mobile-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-}
-
-.mobile-day-date {
-  font-size: var(--mobile-text-body);
-  font-weight: var(--mobile-weight-bold);
 }
 
 /* ============================================
@@ -191,31 +186,28 @@
 
 @media (orientation: landscape) {
   .mobile-day-selector {
-    padding: var(--mobile-space-xs) var(--mobile-space-s);
+    padding: 6px;
   }
   
   .mobile-day-tab {
     min-width: 42px;
-    padding: var(--mobile-space-xxs) var(--mobile-space-xs);
+    padding: 4px 6px;
   }
   
   .mobile-day-name {
     font-size: 10px;
   }
-  
-  .mobile-day-date {
-    font-size: var(--mobile-text-body-small);
-  }
 }
 
 @media (max-width: 374px) {
   .mobile-day-selector {
-    gap: var(--mobile-space-xxs);
-    padding: var(--mobile-space-xs) var(--mobile-space-s);
+    gap: 4px;
+    padding: 6px;
   }
   
   .mobile-day-tab {
     min-width: 42px;
+    padding: 6px;
   }
 }
 

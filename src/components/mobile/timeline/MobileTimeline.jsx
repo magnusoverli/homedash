@@ -136,7 +136,6 @@ const MobileTimeline = ({
               onClick={() => setSelectedDay(index)}
             >
               <span className="mobile-day-name">{dayNames[dayNum]}</span>
-              <span className="mobile-day-date">{day.getDate()}</span>
             </button>
           );
         })}

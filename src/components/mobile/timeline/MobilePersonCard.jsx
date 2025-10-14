@@ -5,10 +5,10 @@ import './MobilePersonCard.css';
 
 /**
  * Mobile Person Card
- * 
+ *
  * Card containing a person's weekly schedule with timeline and tasks.
  * Includes drag-to-resize functionality for timeline/task split.
- * 
+ *
  * @param {Object} props
  * @param {Object} props.member - Family member object
  * @param {Array} props.activities - Activities for this member
@@ -41,11 +41,11 @@ const MobilePersonCard = ({
   const [startRatio, setStartRatio] = useState(70);
 
   // Handle drag start
-  const handleDragStart = (e) => {
+  const handleDragStart = e => {
     setIsDragging(true);
     setStartY(e.type === 'mousedown' ? e.clientY : e.touches[0].clientY);
     setStartRatio(splitRatio);
-    
+
     // Haptic feedback
     if (navigator.vibrate) {
       navigator.vibrate(10);
@@ -53,36 +53,36 @@ const MobilePersonCard = ({
   };
 
   // Handle drag move
-  const handleDragMove = (e) => {
+  const handleDragMove = e => {
     if (!isDragging) return;
-    
+
     e.preventDefault();
     const currentY = e.type === 'mousemove' ? e.clientY : e.touches[0].clientY;
     const deltaY = currentY - startY;
-    
+
     // Calculate available height (viewport - header - tab bar)
     const availableHeight = window.innerHeight - 72 - 64;
     const deltaPercent = (deltaY / availableHeight) * 100;
-    
+
     // Calculate new ratio (constrained between 50 and 90)
     let newRatio = startRatio + deltaPercent;
     newRatio = Math.max(50, Math.min(90, newRatio));
-    
+
     // Snap to common values
     const snapPoints = [50, 60, 70, 80, 90];
-    const closestSnap = snapPoints.reduce((prev, curr) => 
+    const closestSnap = snapPoints.reduce((prev, curr) =>
       Math.abs(curr - newRatio) < Math.abs(prev - newRatio) ? curr : prev
     );
-    
+
     if (Math.abs(closestSnap - newRatio) < 3) {
       newRatio = closestSnap;
-      
+
       // Haptic feedback at snap points
       if (newRatio !== splitRatio && navigator.vibrate) {
         navigator.vibrate(5);
       }
     }
-    
+
     setSplitRatio(Math.round(newRatio));
   };
 
@@ -90,10 +90,10 @@ const MobilePersonCard = ({
   const handleDragEnd = () => {
     if (isDragging) {
       setIsDragging(false);
-      
+
       // Save preference
       localStorage.setItem(`mobile-split-${member.id}`, splitRatio.toString());
-      
+
       // Haptic feedback
       if (navigator.vibrate) {
         navigator.vibrate(10);
@@ -105,29 +105,13 @@ const MobilePersonCard = ({
     <div className="mobile-person-card">
       {/* Header */}
       <div className="mobile-person-header">
-        <div 
-          className="mobile-person-avatar"
-          style={{ backgroundColor: member.avatarColor || '#B2AEFF' }}
-        >
-          {member.name?.charAt(0) || '?'}
-        </div>
         <h2 className="mobile-person-name">{member.name}</h2>
-        <button 
-          className="mobile-person-menu"
-          aria-label={`${member.name} options`}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="5" r="2" fill="currentColor"/>
-            <circle cx="12" cy="12" r="2" fill="currentColor"/>
-            <circle cx="12" cy="19" r="2" fill="currentColor"/>
-          </svg>
-        </button>
       </div>
 
       {/* Content area with split view */}
       <div className="mobile-person-content">
         {/* Timeline section */}
-        <div 
+        <div
           className="mobile-person-timeline-section"
           style={{ height: `${splitRatio}%` }}
         >
@@ -161,7 +145,7 @@ const MobilePersonCard = ({
         </div>
 
         {/* Tasks section */}
-        <div 
+        <div
           className="mobile-person-tasks-section"
           style={{ height: `${100 - splitRatio}%` }}
         >
@@ -178,5 +162,3 @@ const MobilePersonCard = ({
 };
 
 export default MobilePersonCard;
-
-

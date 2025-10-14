@@ -112,7 +112,6 @@
 }
 
 .mobile-person-card {
-  margin: 0 var(--mobile-gutter);
   background: var(--mobile-bg-card);
   border-radius: var(--mobile-radius-card-large);
   box-shadow: var(--mobile-shadow-medium);
