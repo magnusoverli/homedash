@@ -27,10 +27,10 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  
+
   /* Prevent overscroll bounce on iOS */
   overscroll-behavior-y: none;
-  
+
   /* Smooth scrolling */
   -webkit-overflow-scrolling: touch;
 }
@@ -39,8 +39,7 @@
 .mobile-content {
   position: relative;
   width: 100%;
-  min-height: calc(100vh - var(--mobile-tab-bar-height));
-  padding-bottom: var(--mobile-tab-bar-height);
+  height: calc(100vh - var(--mobile-tab-bar-height));
 }
 
 /* ============================================
@@ -58,7 +57,7 @@
 /* Fast tap response */
 .mobile-app button,
 .mobile-app a,
-.mobile-app [role="button"] {
+.mobile-app [role='button'] {
   touch-action: manipulation;
 }
 
@@ -78,15 +77,6 @@
   padding-right: env(safe-area-inset-right);
 }
 
-.mobile-content {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  /* Account for bottom tab bar */
-  height: calc(100vh - var(--mobile-tab-bar-height) - env(safe-area-inset-bottom));
-}
-
 /* ============================================
    COMMON MOBILE COMPONENTS
    ============================================ */
@@ -99,7 +89,11 @@
   right: 0;
   z-index: var(--mobile-z-header);
   height: var(--mobile-header-height);
-  background: linear-gradient(135deg, var(--mobile-color-primary-dark) 0%, var(--mobile-color-primary-dark-alt) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--mobile-color-primary-dark) 0%,
+    var(--mobile-color-primary-dark-alt) 100%
+  );
   padding: 0 var(--mobile-gutter);
   display: flex;
   align-items: center;
@@ -241,7 +235,9 @@
 }
 
 @keyframes mobile-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .mobile-loading-text {
@@ -373,10 +369,9 @@
   .mobile-header {
     height: 56px;
   }
-  
+
   .mobile-content {
-    min-height: calc(100vh - 56px);
-    padding-bottom: 56px;
+    height: calc(100vh - 56px);
   }
 }
 
@@ -393,5 +388,3 @@
     transition-duration: 0.01ms !important;
   }
 }
-
-

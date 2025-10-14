@@ -9,11 +9,11 @@
   /* ============================================
      MOBILE LAYOUT DIMENSIONS
      ============================================ */
-  --mobile-tab-bar-height: 64px;
+  --mobile-tab-bar-height: 56px;
   --mobile-header-height: 56px;
   --mobile-touch-target: 48px;
   --mobile-touch-target-large: 56px;
-  
+
   /* Spacing System (4px base) */
   --mobile-space-xxs: 4px;
   --mobile-space-xs: 8px;
@@ -22,51 +22,51 @@
   --mobile-space-l: 20px;
   --mobile-space-xl: 24px;
   --mobile-space-xxl: 32px;
-  
+
   /* Content Padding */
   --mobile-gutter: 16px;
   --mobile-card-padding: 16px;
   --mobile-section-padding: 20px;
-  
+
   /* ============================================
      BRAND COLORS (from Design Manual)
      ============================================ */
-  
+
   /* Primary Colors */
-  --mobile-color-primary-dark: #10011B;     /* Primary Brand */
-  --mobile-color-primary-purple: #6704FF;    /* Primary Purple */
-  --mobile-color-primary-dark-alt: #190030;  /* Primary Dark Alt */
-  
+  --mobile-color-primary-dark: #10011b; /* Primary Brand */
+  --mobile-color-primary-purple: #6704ff; /* Primary Purple */
+  --mobile-color-primary-dark-alt: #190030; /* Primary Dark Alt */
+
   /* Secondary Purples */
   --mobile-color-extra-dark-purple: #310268;
-  --mobile-color-dark-purple: #4D04B1;
-  --mobile-color-light-purple: #B781FF;
-  --mobile-color-extra-light-purple: #E5E5FF;
-  --mobile-color-extra-light-purple-bg: #F5F0FF;
-  
+  --mobile-color-dark-purple: #4d04b1;
+  --mobile-color-light-purple: #b781ff;
+  --mobile-color-extra-light-purple: #e5e5ff;
+  --mobile-color-extra-light-purple-bg: #f5f0ff;
+
   /* Neutral Colors */
-  --mobile-color-white: #FFFFFF;
-  --mobile-color-light-gray: #E5E5E5;
-  --mobile-color-gray: #DEDEDE;
-  --mobile-color-dark-gray: #9E9E9E;
-  
+  --mobile-color-white: #ffffff;
+  --mobile-color-light-gray: #e5e5e5;
+  --mobile-color-gray: #dedede;
+  --mobile-color-dark-gray: #9e9e9e;
+
   /* Pastel Colors (Activity Types & Avatars) */
-  --mobile-color-pastel-yellow: #FFF48D;
-  --mobile-color-pastel-orange: #FCDD8C;
-  --mobile-color-pastel-salmon: #F4B3BB;
-  --mobile-color-pastel-pink: #DEB2FA;
-  --mobile-color-pastel-light-purple: #B2AEFF;
-  --mobile-color-pastel-blue: #BADAF8;
-  --mobile-color-pastel-turquoise: #C1FDFD;
-  --mobile-color-pastel-green: #D2FCC3;
-  --mobile-color-pastel-gray: #ECECEC;
-  
+  --mobile-color-pastel-yellow: #fff48d;
+  --mobile-color-pastel-orange: #fcdd8c;
+  --mobile-color-pastel-salmon: #f4b3bb;
+  --mobile-color-pastel-pink: #deb2fa;
+  --mobile-color-pastel-light-purple: #b2aeff;
+  --mobile-color-pastel-blue: #badaf8;
+  --mobile-color-pastel-turquoise: #c1fdfd;
+  --mobile-color-pastel-green: #d2fcc3;
+  --mobile-color-pastel-gray: #ececec;
+
   /* Semantic Colors */
   --mobile-color-success: var(--mobile-color-pastel-green);
   --mobile-color-warning: var(--mobile-color-pastel-yellow);
   --mobile-color-error: var(--mobile-color-pastel-salmon);
-  --mobile-color-danger: #FF4444;
-  
+  --mobile-color-danger: #ff4444;
+
   /* ============================================
      TEXT COLORS
      ============================================ */
@@ -75,7 +75,7 @@
   --mobile-text-tertiary: var(--mobile-color-dark-gray);
   --mobile-text-inverse: var(--mobile-color-white);
   --mobile-text-link: var(--mobile-color-primary-purple);
-  
+
   /* ============================================
      BACKGROUND COLORS
      ============================================ */
@@ -84,16 +84,16 @@
   --mobile-bg-dark: var(--mobile-color-primary-dark);
   --mobile-bg-overlay: rgba(16, 1, 27, 0.6);
   --mobile-bg-card: var(--mobile-color-white);
-  
+
   /* ============================================
      BORDER RADIUS SYSTEM (5px grid)
      ============================================ */
   --mobile-radius-small: 5px;
   --mobile-radius-card: 8px;
   --mobile-radius-card-large: 12px;
-  --mobile-radius-button: 24px;  /* Pill shape */
+  --mobile-radius-button: 24px; /* Pill shape */
   --mobile-radius-circle: 50%;
-  
+
   /* ============================================
      SHADOWS & ELEVATION
      ============================================ */
@@ -101,37 +101,41 @@
   --mobile-shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.08);
   --mobile-shadow-large: 0 8px 24px rgba(0, 0, 0, 0.12);
   --mobile-shadow-button: 0 2px 8px rgba(103, 4, 255, 0.24);
-  
+
   /* ============================================
      TYPOGRAPHY (Mobile-Optimized)
      ============================================ */
-  
+
   /* Font Families */
-  --mobile-font-display: 'TV 2 Sans Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --mobile-font-condensed: 'TV 2 Sans Condensed', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  
+  --mobile-font-display:
+    'TV 2 Sans Display', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    sans-serif;
+  --mobile-font-condensed:
+    'TV 2 Sans Condensed', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    sans-serif;
+
   /* Font Sizes */
-  --mobile-text-h1: 28px;        /* Page titles */
-  --mobile-text-h2: 22px;        /* Section headers */
-  --mobile-text-h3: 18px;        /* Card headers */
+  --mobile-text-h1: 28px; /* Page titles */
+  --mobile-text-h2: 22px; /* Section headers */
+  --mobile-text-h3: 18px; /* Card headers */
   --mobile-text-body-large: 16px;
   --mobile-text-body: 14px;
   --mobile-text-body-small: 12px;
   --mobile-text-label: 12px;
   --mobile-text-time: 11px;
-  
+
   /* Font Weights */
   --mobile-weight-light: 300;
   --mobile-weight-regular: 400;
   --mobile-weight-medium: 500;
   --mobile-weight-semibold: 600;
   --mobile-weight-bold: 700;
-  
+
   /* Line Heights */
   --mobile-line-height-tight: 1.2;
   --mobile-line-height-normal: 1.5;
   --mobile-line-height-relaxed: 1.75;
-  
+
   /* ============================================
      TRANSITIONS & ANIMATIONS
      ============================================ */
@@ -139,11 +143,11 @@
   --mobile-transition-normal: 200ms;
   --mobile-transition-slow: 300ms;
   --mobile-transition-page: 300ms;
-  
-  --mobile-ease-in-out: cubic-bezier(0.4, 0.0, 0.2, 1);
-  --mobile-ease-out: cubic-bezier(0.0, 0.0, 0.2, 1);
-  --mobile-ease-in: cubic-bezier(0.4, 0.0, 1, 1);
-  
+
+  --mobile-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --mobile-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --mobile-ease-in: cubic-bezier(0.4, 0, 1, 1);
+
   /* ============================================
      Z-INDEX LAYERS
      ============================================ */
@@ -155,14 +159,14 @@
   --mobile-z-modal-backdrop: 40;
   --mobile-z-modal: 50;
   --mobile-z-toast: 60;
-  
+
   /* ============================================
      TIMELINE SPECIFIC
      ============================================ */
   --mobile-timeline-hour-height: 60px;
   --mobile-timeline-time-width: 40px;
   --mobile-timeline-gutter: 8px;
-  
+
   /* ============================================
      CAROUSEL SPECIFIC
      ============================================ */
@@ -199,5 +203,3 @@
     --mobile-tab-bar-height: 56px;
   }
 }
-
-

@@ -82,27 +82,6 @@
   color: var(--mobile-text-inverse);
 }
 
-.mobile-quick-add-button {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: none;
-  background: var(--mobile-color-primary-purple);
-  color: var(--mobile-text-inverse);
-  border-radius: 50%;
-  cursor: pointer;
-  box-shadow: var(--mobile-shadow-button);
-  transition: all var(--mobile-transition-fast) var(--mobile-ease-in-out);
-  -webkit-tap-highlight-color: transparent;
-}
-
-.mobile-quick-add-button:active {
-  transform: scale(0.95);
-}
-
 /* ============================================
    PERSON CAROUSEL
    ============================================ */
@@ -230,23 +209,22 @@
   .mobile-week-display {
     min-width: 100px;
   }
-  
+
   .mobile-week-text {
     font-size: var(--mobile-text-body-small);
   }
-  
+
   .mobile-person-header {
     padding: var(--mobile-space-s);
   }
-  
+
   .mobile-person-avatar {
     width: 48px;
     height: 48px;
     font-size: 20px;
   }
-  
+
   .mobile-person-name {
     font-size: var(--mobile-text-h3);
   }
 }
-

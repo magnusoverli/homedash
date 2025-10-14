@@ -11,8 +11,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 6px 0;
-  padding-bottom: 6px;
+  padding: 6px 0 0 0;
 }
 
 /* Carousel scroll container */
@@ -49,8 +48,9 @@
   box-sizing: border-box;
   opacity: 0.6;
   transform: scale(0.95);
-  transition: opacity var(--mobile-transition-normal) var(--mobile-ease-in-out),
-              transform var(--mobile-transition-normal) var(--mobile-ease-in-out);
+  transition:
+    opacity var(--mobile-transition-normal) var(--mobile-ease-in-out),
+    transform var(--mobile-transition-normal) var(--mobile-ease-in-out);
 }
 
 .person-carousel-card--active {
@@ -107,14 +107,12 @@
   .person-carousel {
     scroll-behavior: auto;
   }
-  
+
   .person-carousel-card {
     transition: none;
   }
-  
+
   .person-carousel-dot {
     transition: none;
   }
 }
-
-

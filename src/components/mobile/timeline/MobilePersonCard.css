@@ -18,7 +18,7 @@
   display: flex;
   align-items: center;
   gap: var(--mobile-space-xs);
-  height: 48px;
+  height: 40px;
   padding: 0 var(--mobile-card-padding);
   background: linear-gradient(
     to bottom,
@@ -104,7 +104,7 @@
 /* Landscape adjustments */
 @media (orientation: landscape) {
   .mobile-person-header {
-    height: 44px;
+    height: 36px;
   }
 
   .mobile-person-name {
@@ -115,7 +115,7 @@
 /* Small screens */
 @media (max-width: 374px) {
   .mobile-person-header {
-    height: 44px;
+    height: 36px;
     padding: 0 var(--mobile-space-s);
     gap: var(--mobile-space-xxs);
   }

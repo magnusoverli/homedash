@@ -17,7 +17,7 @@
   flex-shrink: 0;
   display: flex;
   gap: 6px;
-  padding: 8px;
+  padding: 4px 8px;
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -114,12 +114,6 @@
   height: var(--mobile-timeline-hour-height);
   border-bottom: 1px solid var(--mobile-color-light-gray);
   position: relative;
-  cursor: pointer;
-  transition: background var(--mobile-transition-fast) var(--mobile-ease-in-out);
-}
-
-.mobile-timeline-slot:active {
-  background: rgba(103, 4, 255, 0.05);
 }
 
 .mobile-timeline-slot--current {
@@ -150,7 +144,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 1;
   }
@@ -160,40 +155,20 @@
   }
 }
 
-/* Empty state hint */
-.mobile-timeline-slot:empty::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 24px;
-  height: 24px;
-  border: 2px dashed var(--mobile-color-light-gray);
-  border-radius: 50%;
-  opacity: 0;
-  transition: opacity var(--mobile-transition-fast) var(--mobile-ease-in-out);
-  pointer-events: none;
-}
-
-.mobile-timeline-slot:empty:active::after {
-  opacity: 1;
-}
-
 /* ============================================
    RESPONSIVE
    ============================================ */
 
 @media (orientation: landscape) {
   .mobile-day-selector {
-    padding: 6px;
+    padding: 4px 6px;
   }
-  
+
   .mobile-day-tab {
     min-width: 42px;
     padding: 4px 6px;
   }
-  
+
   .mobile-day-name {
     font-size: 10px;
   }
@@ -202,9 +177,9 @@
 @media (max-width: 374px) {
   .mobile-day-selector {
     gap: 4px;
-    padding: 6px;
+    padding: 4px 6px;
   }
-  
+
   .mobile-day-tab {
     min-width: 42px;
     padding: 6px;
@@ -219,11 +194,8 @@
   .mobile-current-time-dot {
     animation: none;
   }
-  
-  .mobile-day-tab,
-  .mobile-timeline-slot {
+
+  .mobile-day-tab {
     transition: none;
   }
 }
-
-

@@ -6,7 +6,7 @@ import ErrorState from '../../ErrorState';
 import EmptyState from '../../EmptyState';
 import PersonCarousel from '../timeline/PersonCarousel';
 import MobilePersonCard from '../timeline/MobilePersonCard';
-import ActivityBottomSheet from '../modals/ActivityBottomSheet';
+
 import PersonCardSkeleton from '../loading/PersonCardSkeleton';
 import dataService from '../../../services/dataService';
 import { formatLocalDate } from '../../../utils/timeUtils';
@@ -15,16 +15,16 @@ import './MobileOverview.css';
 
 /**
  * Mobile Overview Screen
- * 
+ *
  * Main view showing person carousel with weekly schedule.
  * Touch-optimized for mobile devices.
- * 
+ *
  * Features:
  * - Swipeable person carousel
  * - Timeline with hourly activity blocks
  * - Touch-to-create activities
  * - Drag-to-resize task section
- * 
+ *
  * @param {Object} props
  * @param {Date} props.currentWeek - Current week to display
  * @param {Function} props.onWeekChange - Callback when week changes
@@ -38,9 +38,6 @@ const MobileOverview = ({ currentWeek, onWeekChange }) => {
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
   const [error, setError] = useState('');
   const [currentPersonIndex, setCurrentPersonIndex] = useState(0);
-  const [showActivityModal, setShowActivityModal] = useState(false);
-  const [editingActivity, setEditingActivity] = useState(null);
-  const [modalPrefilledData, setModalPrefilledData] = useState({});
 
   // Get week start helper
   const getWeekStart = useCallback(() => {
@@ -76,7 +73,7 @@ const MobileOverview = ({ currentWeek, onWeekChange }) => {
   // Load activities and homework
   const loadData = useCallback(async () => {
     if (familyMembers.length === 0) return;
-    
+
     setIsLoadingActivities(true);
     try {
       const weekStart = getWeekStart();
@@ -86,55 +83,57 @@ const MobileOverview = ({ currentWeek, onWeekChange }) => {
       const startDateStr = formatLocalDate(weekStart);
       const endDateStr = formatLocalDate(weekEnd);
 
-        // Load activities
-        const activitiesData = await dataService.getActivities({
-          startDate: startDateStr,
-          endDate: endDateStr,
-        });
+      // Load activities
+      const activitiesData = await dataService.getActivities({
+        startDate: startDateStr,
+        endDate: endDateStr,
+      });
 
-        // Group by member
-        const activitiesByMember = {};
-        activitiesData.forEach(activity => {
-          if (activity.source === 'spond' && activity.response_status === 'declined') {
-            return;
-          }
-          
-          if (!activitiesByMember[activity.member_id]) {
-            activitiesByMember[activity.member_id] = [];
-          }
-          
-          activitiesByMember[activity.member_id].push({
-            id: activity.id,
-            memberId: activity.member_id,
-            title: activity.title,
-            date: activity.date,
-            startTime: activity.start_time,
-            endTime: activity.end_time,
-            description: activity.description,
-            source: activity.source || 'manual',
-            location_name: activity.location_name,
-            is_cancelled: activity.is_cancelled,
-          });
-        });
-
-        setActivities(activitiesByMember);
-
-        // Load homework
-        const homeworkData = {};
-        for (const member of familyMembers) {
-          const memberHomework = await dataService.getHomework({
-            member_id: member.id,
-            week_start_date: startDateStr,
-          });
-          homeworkData[member.id] = memberHomework;
+      // Group by member
+      const activitiesByMember = {};
+      activitiesData.forEach(activity => {
+        if (
+          activity.source === 'spond' &&
+          activity.response_status === 'declined'
+        ) {
+          return;
         }
-        setHomework(homeworkData);
-        
-      } catch (error) {
-        console.error('Error loading activities:', error);
-      } finally {
-        setIsLoadingActivities(false);
+
+        if (!activitiesByMember[activity.member_id]) {
+          activitiesByMember[activity.member_id] = [];
+        }
+
+        activitiesByMember[activity.member_id].push({
+          id: activity.id,
+          memberId: activity.member_id,
+          title: activity.title,
+          date: activity.date,
+          startTime: activity.start_time,
+          endTime: activity.end_time,
+          description: activity.description,
+          source: activity.source || 'manual',
+          location_name: activity.location_name,
+          is_cancelled: activity.is_cancelled,
+        });
+      });
+
+      setActivities(activitiesByMember);
+
+      // Load homework
+      const homeworkData = {};
+      for (const member of familyMembers) {
+        const memberHomework = await dataService.getHomework({
+          member_id: member.id,
+          week_start_date: startDateStr,
+        });
+        homeworkData[member.id] = memberHomework;
       }
+      setHomework(homeworkData);
+    } catch (error) {
+      console.error('Error loading activities:', error);
+    } finally {
+      setIsLoadingActivities(false);
+    }
   }, [familyMembers, getWeekStart]);
 
   useEffect(() => {
@@ -161,110 +160,18 @@ const MobileOverview = ({ currentWeek, onWeekChange }) => {
     const weekStart = getWeekStart();
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
-    
-    const formatDate = (date) => {
+
+    const formatDate = date => {
       return `${date.getDate()}/${date.getMonth() + 1}`;
     };
-    
+
     return `${formatDate(weekStart)} - ${formatDate(weekEnd)}`;
   };
 
-  // Activity handlers
-  const handleAddActivity = (activityData) => {
-    setEditingActivity(null);
-    setModalPrefilledData({
-      memberId: activityData.memberId,
-      date: activityData.date,
-      startTime: activityData.startTime,
-    });
-    setShowActivityModal(true);
-  };
-
-  const handleEditActivity = (activity) => {
-    setEditingActivity(activity);
-    setModalPrefilledData({});
-    setShowActivityModal(true);
-  };
-
-  const handleSaveActivity = async (activityData) => {
-    try {
-      let savedActivity;
-      
-      if (activityData.id) {
-        // Update existing activity
-        savedActivity = await dataService.updateActivity(activityData.id, {
-          title: activityData.title,
-          date: activityData.date,
-          start_time: activityData.startTime,
-          end_time: activityData.endTime,
-          description: activityData.description || '',
-          category: activityData.category || null,
-        });
-      } else {
-        // Create new activity
-        savedActivity = await dataService.createActivity({
-          member_id: activityData.memberId,
-          title: activityData.title,
-          date: activityData.date,
-          start_time: activityData.startTime,
-          end_time: activityData.endTime,
-          description: activityData.description || '',
-          category: activityData.category || null,
-        });
-      }
-
-      // Update local state
-      const formattedActivity = {
-        id: savedActivity.id,
-        memberId: savedActivity.member_id,
-        title: savedActivity.title,
-        date: savedActivity.date,
-        startTime: savedActivity.start_time,
-        endTime: savedActivity.end_time,
-        description: savedActivity.description,
-        category: savedActivity.category,
-        source: 'manual',
-      };
-
-      setActivities(prev => {
-        const updated = { ...prev };
-        const memberId = formattedActivity.memberId;
-        
-        if (!updated[memberId]) {
-          updated[memberId] = [];
-        }
-
-        if (activityData.id) {
-          // Update existing
-          updated[memberId] = updated[memberId].map(a =>
-            a.id === formattedActivity.id ? formattedActivity : a
-          );
-        } else {
-          // Add new
-          updated[memberId].push(formattedActivity);
-        }
-
-        return updated;
-      });
-
-      // Haptic feedback for success
-      if (navigator.vibrate) {
-        navigator.vibrate(10);
-      }
-
-      // Show success toast
-      showSuccess(activityData.id ? 'Activity updated' : 'Activity created');
-    } catch (error) {
-      console.error('Error saving activity:', error);
-      showError('Failed to save activity');
-      throw error; // Re-throw to let modal handle it
-    }
-  };
-
-  const handleDeleteActivity = async (activityId) => {
+  const handleDeleteActivity = async activityId => {
     try {
       await dataService.deleteActivity(activityId);
-      
+
       // Update local state
       setActivities(prev => {
         const updated = {};
@@ -284,7 +191,7 @@ const MobileOverview = ({ currentWeek, onWeekChange }) => {
   const handleDeleteTask = async (memberId, taskId) => {
     try {
       await dataService.deleteHomework(taskId);
-      
+
       // Update local state
       setHomework(prev => ({
         ...prev,
@@ -297,7 +204,6 @@ const MobileOverview = ({ currentWeek, onWeekChange }) => {
       showError('Failed to delete task');
     }
   };
-
 
   if (isLoading) {
     return (
@@ -361,55 +267,46 @@ const MobileOverview = ({ currentWeek, onWeekChange }) => {
         }
         centerSlot={
           <div className="mobile-overview-week">
-            <button 
+            <button
               className="mobile-week-nav-button"
               onClick={handlePreviousWeek}
               aria-label="Previous week"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                <path
+                  d="M15 18l-6-6 6-6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
               </svg>
             </button>
-            
-            <button 
+
+            <button
               className="mobile-week-display"
               onClick={handleToday}
               aria-label="Go to today"
             >
               <span className="mobile-week-text">{getWeekDisplay()}</span>
             </button>
-            
-            <button 
+
+            <button
               className="mobile-week-nav-button"
               onClick={handleNextWeek}
               aria-label="Next week"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                <path
+                  d="M9 18l6-6-6-6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
               </svg>
             </button>
           </div>
         }
-        rightSlot={
-          <button 
-            className="mobile-quick-add-button"
-            onClick={() => {
-              const currentMember = familyMembers[currentPersonIndex];
-              if (currentMember) {
-                handleAddActivity({
-                  memberId: currentMember.id,
-                  date: formatLocalDate(new Date()),
-                  startTime: new Date().getHours().toString().padStart(2, '0') + ':00',
-                });
-              }
-            }}
-            aria-label="Add activity"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-          </button>
-        }
+        rightSlot={<div style={{ width: '40px' }} />}
       />
 
       {/* Person Carousel */}
@@ -423,33 +320,14 @@ const MobileOverview = ({ currentWeek, onWeekChange }) => {
             activities={activities[member.id] || []}
             homework={homework[member.id] || []}
             weekStart={getWeekStart()}
-            onAddActivity={handleAddActivity}
-            onEditActivity={handleEditActivity}
             onDeleteActivity={handleDeleteActivity}
             onDeleteTask={handleDeleteTask}
             isActive={isActive}
           />
         )}
       />
-
-      {/* Activity Bottom Sheet Modal */}
-      <ActivityBottomSheet
-        isOpen={showActivityModal}
-        onClose={() => {
-          setShowActivityModal(false);
-          setEditingActivity(null);
-          setModalPrefilledData({});
-        }}
-        onSave={handleSaveActivity}
-        activity={editingActivity}
-        members={familyMembers}
-        selectedMemberId={modalPrefilledData.memberId}
-        prefilledDate={modalPrefilledData.date}
-        prefilledStartTime={modalPrefilledData.startTime}
-      />
     </div>
   );
 };
 
 export default MobileOverview;
-

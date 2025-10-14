@@ -8,14 +8,13 @@ import './MobilePersonCard.css';
  *
  * Card containing a person's weekly schedule with timeline and tasks.
  * Includes drag-to-resize functionality for timeline/task split.
+ * Read-only view for mobile devices.
  *
  * @param {Object} props
  * @param {Object} props.member - Family member object
  * @param {Array} props.activities - Activities for this member
  * @param {Array} props.homework - Homework/tasks for this member
  * @param {Date} props.weekStart - Start date of current week
- * @param {Function} props.onAddActivity - Callback to add activity
- * @param {Function} props.onEditActivity - Callback to edit activity
  * @param {Function} props.onDeleteActivity - Callback to delete activity
  * @param {Function} props.onDeleteTask - Callback to delete task
  * @param {boolean} props.isActive - Whether this card is currently visible
@@ -25,8 +24,6 @@ const MobilePersonCard = ({
   activities = [],
   homework = [],
   weekStart,
-  onAddActivity,
-  onEditActivity,
   onDeleteActivity,
   onDeleteTask,
   isActive = false,
@@ -61,7 +58,7 @@ const MobilePersonCard = ({
     const deltaY = currentY - startY;
 
     // Calculate available height (viewport - header - tab bar)
-    const availableHeight = window.innerHeight - 72 - 64;
+    const availableHeight = window.innerHeight - 56 - 56;
     const deltaPercent = (deltaY / availableHeight) * 100;
 
     // Calculate new ratio (constrained between 50 and 90)
@@ -119,7 +116,6 @@ const MobilePersonCard = ({
             member={member}
             activities={activities}
             weekStart={weekStart}
-            onAddActivity={onAddActivity}
             isActive={isActive}
           />
         </div>
