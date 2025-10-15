@@ -34,6 +34,7 @@ const MobilePersonCard = ({
     savedRatio ? parseInt(savedRatio) : 70
   );
   const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
   const [startY, setStartY] = useState(0);
   const [startRatio, setStartRatio] = useState(70);
 
@@ -42,6 +43,7 @@ const MobilePersonCard = ({
     setIsDragging(true);
     setStartY(e.type === 'mousedown' ? e.clientY : e.touches[0].clientY);
     setStartRatio(splitRatio);
+    setDragOffset(0);
 
     // Haptic feedback
     if (navigator.vibrate) {
@@ -53,7 +55,14 @@ const MobilePersonCard = ({
   const handleDragMove = e => {
     if (!isDragging) return;
 
+    // Prevent default to stop pull-to-refresh
     e.preventDefault();
+
+    // Also prevent pull-to-refresh on touch devices
+    if (e.cancelable) {
+      e.stopPropagation();
+    }
+
     const currentY = e.type === 'mousemove' ? e.clientY : e.touches[0].clientY;
     const deltaY = currentY - startY;
 
@@ -65,22 +74,8 @@ const MobilePersonCard = ({
     let newRatio = startRatio + deltaPercent;
     newRatio = Math.max(50, Math.min(90, newRatio));
 
-    // Snap to common values
-    const snapPoints = [50, 60, 70, 80, 90];
-    const closestSnap = snapPoints.reduce((prev, curr) =>
-      Math.abs(curr - newRatio) < Math.abs(prev - newRatio) ? curr : prev
-    );
-
-    if (Math.abs(closestSnap - newRatio) < 3) {
-      newRatio = closestSnap;
-
-      // Haptic feedback at snap points
-      if (newRatio !== splitRatio && navigator.vibrate) {
-        navigator.vibrate(5);
-      }
-    }
-
-    setSplitRatio(Math.round(newRatio));
+    // Store offset for transform (smooth visual update)
+    setDragOffset(deltaY);
   };
 
   // Handle drag end
@@ -88,8 +83,31 @@ const MobilePersonCard = ({
     if (isDragging) {
       setIsDragging(false);
 
+      // Calculate final ratio from drag offset
+      const availableHeight = window.innerHeight - 56 - 56;
+      const deltaPercent = (dragOffset / availableHeight) * 100;
+      let newRatio = startRatio + deltaPercent;
+      newRatio = Math.max(50, Math.min(90, newRatio));
+
+      // Snap to common values
+      const snapPoints = [50, 60, 70, 80, 90];
+      const closestSnap = snapPoints.reduce((prev, curr) =>
+        Math.abs(curr - newRatio) < Math.abs(prev - newRatio) ? curr : prev
+      );
+
+      if (Math.abs(closestSnap - newRatio) < 5) {
+        newRatio = closestSnap;
+      }
+
+      // Update final ratio
+      setSplitRatio(Math.round(newRatio));
+      setDragOffset(0);
+
       // Save preference
-      localStorage.setItem(`mobile-split-${member.id}`, splitRatio.toString());
+      localStorage.setItem(
+        `mobile-split-${member.id}`,
+        Math.round(newRatio).toString()
+      );
 
       // Haptic feedback
       if (navigator.vibrate) {
@@ -110,7 +128,12 @@ const MobilePersonCard = ({
         {/* Timeline section */}
         <div
           className="mobile-person-timeline-section"
-          style={{ height: `${splitRatio}%` }}
+          style={{
+            height: isDragging
+              ? `calc(${splitRatio}% + ${dragOffset}px)`
+              : `${splitRatio}%`,
+            transition: isDragging ? 'none' : 'height 200ms ease-in-out',
+          }}
         >
           <MobileTimeline
             member={member}
@@ -120,36 +143,37 @@ const MobilePersonCard = ({
           />
         </div>
 
-        {/* Drag handle */}
-        <div
-          className={`mobile-split-handle ${isDragging ? 'mobile-split-handle--dragging' : ''}`}
-          onMouseDown={handleDragStart}
-          onMouseMove={handleDragMove}
-          onMouseUp={handleDragEnd}
-          onMouseLeave={handleDragEnd}
-          onTouchStart={handleDragStart}
-          onTouchMove={handleDragMove}
-          onTouchEnd={handleDragEnd}
-          role="separator"
-          aria-orientation="horizontal"
-          aria-label="Resize timeline and tasks"
-          aria-valuenow={splitRatio}
-          aria-valuemin={50}
-          aria-valuemax={90}
-        >
-          <div className="mobile-split-handle-bar" />
-        </div>
-
-        {/* Tasks section */}
+        {/* Tasks section (with integrated drag handle in header) */}
         <div
           className="mobile-person-tasks-section"
-          style={{ height: `${100 - splitRatio}%` }}
+          style={{
+            height: isDragging
+              ? `calc(${100 - splitRatio}% - ${dragOffset}px)`
+              : `${100 - splitRatio}%`,
+            transition: isDragging ? 'none' : 'height 200ms ease-in-out',
+          }}
         >
           <MobileTaskList
             member={member}
             tasks={homework}
             onDeleteTask={onDeleteTask}
             isActive={isActive}
+            dragHandleProps={{
+              onMouseDown: handleDragStart,
+              onMouseMove: handleDragMove,
+              onMouseUp: handleDragEnd,
+              onMouseLeave: handleDragEnd,
+              onTouchStart: handleDragStart,
+              onTouchMove: handleDragMove,
+              onTouchEnd: handleDragEnd,
+              role: 'separator',
+              'aria-orientation': 'horizontal',
+              'aria-label': 'Resize timeline and homework',
+              'aria-valuenow': splitRatio,
+              'aria-valuemin': 50,
+              'aria-valuemax': 90,
+              className: isDragging ? 'mobile-task-header--dragging' : '',
+            }}
           />
         </div>
       </div>

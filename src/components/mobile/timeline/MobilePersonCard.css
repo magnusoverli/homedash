@@ -48,57 +48,12 @@
 
 .mobile-person-timeline-section {
   overflow: hidden;
-  transition: height var(--mobile-transition-normal) var(--mobile-ease-in-out);
+  will-change: transform, height;
 }
 
 .mobile-person-tasks-section {
   overflow: hidden;
-  transition: height var(--mobile-transition-normal) var(--mobile-ease-in-out);
-}
-
-/* Drag handle */
-.mobile-split-handle {
-  flex-shrink: 0;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: ns-resize;
-  user-select: none;
-  -webkit-user-select: none;
-  background: var(--mobile-bg-primary);
-  position: relative;
-  z-index: var(--mobile-z-sticky);
-  touch-action: none;
-}
-
-.mobile-split-handle-bar {
-  width: 48px;
-  height: 4px;
-  background: var(--mobile-color-light-gray);
-  border-radius: 2px;
-  transition: all var(--mobile-transition-fast) var(--mobile-ease-in-out);
-}
-
-.mobile-split-handle:active .mobile-split-handle-bar,
-.mobile-split-handle--dragging .mobile-split-handle-bar {
-  background: var(--mobile-color-primary-purple);
-  width: 64px;
-  height: 5px;
-}
-
-/* Hover state for devices with hover */
-@media (hover: hover) {
-  .mobile-split-handle:hover .mobile-split-handle-bar {
-    background: var(--mobile-color-dark-gray);
-    width: 56px;
-  }
-}
-
-/* Focus visible */
-.mobile-split-handle:focus-visible {
-  outline: 2px solid var(--mobile-color-primary-purple);
-  outline-offset: -2px;
+  will-change: transform, height;
 }
 
 /* Landscape adjustments */
@@ -122,13 +77,5 @@
 
   .mobile-person-name {
     font-size: var(--mobile-text-body-large);
-  }
-}
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .mobile-person-timeline-section,
-  .mobile-person-tasks-section {
-    transition: none;
   }
 }
