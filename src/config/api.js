@@ -14,12 +14,13 @@ export const getApiUrl = () => {
   if (import.meta.env.PROD) {
     // If accessing via localhost or local network IP, add port 3001
     const isLocalAccess = hostname === 'localhost' || hostname === '127.0.0.1';
-    const isLocalNetworkIP = /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|100\.)/.test(hostname);
-    
+    const isLocalNetworkIP =
+      /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|100\.)/.test(hostname);
+
     if (isLocalAccess || isLocalNetworkIP) {
       return `${protocol}//${hostname}:3001`;
     }
-    
+
     // For Cloudflare tunnel or domain names - use same host without port
     return `${protocol}//${hostname}`;
   }
@@ -41,20 +42,9 @@ export const API_URL = API_BASE_URL;
 export const API_ENDPOINTS = {
   TEST_KEY: `${API_BASE_URL}/api/test-key`,
   MODELS: `${API_BASE_URL}/api/models`,
-  MESSAGES: `${API_BASE_URL}/api/messages`,
-  HEALTH: `${API_BASE_URL}/api/health`,
-  // Data endpoints
   FAMILY_MEMBERS: `${API_BASE_URL}/api/family-members`,
-  ACTIVITIES: `${API_BASE_URL}/api/activities`,
-  SETTINGS: `${API_BASE_URL}/api/settings`,
-  // School plan endpoints
-  HOMEWORK: `${API_BASE_URL}/api/homework`,
-  EXTRACT_SCHOOL_PLAN: `${API_BASE_URL}/api/extract-school-plan`,
-  // Spond integration endpoints
   TEST_SPOND_CREDENTIALS: `${API_BASE_URL}/api/test-spond-credentials`,
   SPOND_CREDENTIALS: `${API_BASE_URL}/api/spond-credentials`,
-  VALIDATE_SPOND_TOKEN: `${API_BASE_URL}/api/validate-spond-token`,
-  SPOND_TOKEN_RESEARCH: `${API_BASE_URL}/api/spond-token-research`,
   SPOND_GROUPS: `${API_BASE_URL}/api/spond-groups`,
   SPOND_GROUP_SELECTIONS: `${API_BASE_URL}/api/spond-groups`,
 };

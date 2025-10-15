@@ -1,16 +1,16 @@
 /**
  * Error Handling Utilities
- * 
+ *
  * Centralized error message formatting and handling functions
  */
 
 /**
  * Get user-friendly error message from API error
- * 
+ *
  * @param {Error} error - Error object
  * @param {Response} response - Optional fetch Response object
  * @returns {string} User-friendly error message
- * 
+ *
  * @example
  * try {
  *   const response = await fetch(url);
@@ -21,12 +21,10 @@
  * }
  */
 export const getApiErrorMessage = (error, response = null) => {
-  // Network errors
   if (error.message?.toLowerCase().includes('network')) {
     return 'Network connection failed. Please check your internet connection.';
   }
 
-  // Timeout errors
   if (
     error.message?.toLowerCase().includes('timeout') ||
     error.message?.toLowerCase().includes('timed out')
@@ -34,12 +32,14 @@ export const getApiErrorMessage = (error, response = null) => {
     return 'Request timed out. Please try again.';
   }
 
-  // Anthropic API specific errors
   if (error.message?.includes('529')) {
     return 'Anthropic API is currently overloaded. Please try again in a few moments.';
   }
 
-  if (error.message?.includes('401') || error.message?.includes('Invalid API key')) {
+  if (
+    error.message?.includes('401') ||
+    error.message?.includes('Invalid API key')
+  ) {
     return 'Invalid API key. Please verify your API key in Settings.';
   }
 
@@ -47,21 +47,17 @@ export const getApiErrorMessage = (error, response = null) => {
     return 'Rate limit exceeded. Please wait a moment before trying again.';
   }
 
-  // Server errors
   if (response && response.status >= 500) {
     return `Server error (${response.status}). Please try again later.`;
   }
 
-  // Bad request errors
   if (response && response.status === 400) {
     return 'Invalid request. Please check your input and try again.';
   }
 
-  // Generic error with message
   if (error.message) {
     return error.message;
   }
 
-  // Fallback
   return 'An unexpected error occurred. Please try again.';
 };

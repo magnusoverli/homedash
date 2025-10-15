@@ -1,14 +1,14 @@
 /**
  * Device Detection Utilities
- * 
+ *
  * Provides reliable mobile device detection using multiple methods:
  * - Touch capability detection
  * - Viewport size detection
  * - User agent detection
- * 
+ *
  * @example
  * import { isMobilePhone, isTouchDevice, isTablet } from './utils/deviceDetection';
- * 
+ *
  * if (isMobilePhone()) {
  *   // Show mobile-specific UI
  * }
@@ -45,16 +45,6 @@ export const isTabletViewport = () => {
 };
 
 /**
- * Check if user agent indicates a mobile device
- * @returns {boolean} True if user agent matches mobile patterns
- */
-export const isMobileUserAgent = () => {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
-  );
-};
-
-/**
  * Check if user agent indicates a phone (not tablet)
  * @returns {boolean} True if user agent matches phone patterns
  */
@@ -67,7 +57,7 @@ export const isPhoneUserAgent = () => {
 /**
  * Comprehensive mobile phone detection
  * Combines touch detection, screen size, and user agent
- * 
+ *
  * @returns {boolean} True if device is likely a mobile phone
  */
 export const isMobilePhone = () => {
@@ -85,7 +75,7 @@ export const isMobilePhone = () => {
 
 /**
  * Comprehensive tablet detection
- * 
+ *
  * @returns {boolean} True if device is likely a tablet
  */
 export const isTablet = () => {
@@ -117,34 +107,9 @@ export const supportsHover = () => {
 };
 
 /**
- * Check if device has a coarse pointer (touch)
- * @returns {boolean} True if primary pointer is coarse
- */
-export const hasCoarsePointer = () => {
-  return window.matchMedia('(pointer: coarse)').matches;
-};
-
-/**
  * Get device orientation
  * @returns {'portrait' | 'landscape'} Current orientation
  */
 export const getOrientation = () => {
   return window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
 };
-
-/**
- * Check if device is in portrait mode
- * @returns {boolean} True if device is in portrait orientation
- */
-export const isPortrait = () => {
-  return getOrientation() === 'portrait';
-};
-
-/**
- * Check if device is in landscape mode
- * @returns {boolean} True if device is in landscape orientation
- */
-export const isLandscape = () => {
-  return getOrientation() === 'landscape';
-};
-

@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { CloseIcon, TrashIcon, WarningIcon, UploadIcon, LoadingSpinner } from '../../icons';
+import {
+  CloseIcon,
+  TrashIcon,
+  WarningIcon,
+  UploadIcon,
+  LoadingSpinner,
+} from '../../icons';
 import { AVATAR_COLORS } from '../../../constants/colors';
 import { validateImageFile } from '../../../utils/fileValidation';
 import { getApiErrorMessage } from '../../../utils/errorUtils';
@@ -10,7 +16,7 @@ import './PersonProfileModal.css';
 
 /**
  * Person Profile Modal (Bottom Sheet)
- * 
+ *
  * Sliding modal for creating and editing family members on mobile.
  * Features:
  * - Create new person or edit existing
@@ -18,7 +24,7 @@ import './PersonProfileModal.css';
  * - Form validation
  * - Delete confirmation
  * - Swipe-down to dismiss
- * 
+ *
  * @param {Object} props
  * @param {boolean} props.isOpen - Whether modal is open
  * @param {Function} props.onClose - Callback when modal closes
@@ -89,7 +95,7 @@ const PersonProfileModal = ({
   }, [person, isOpen]);
 
   // Load integration data
-  const loadIntegrationData = async (memberId) => {
+  const loadIntegrationData = async memberId => {
     try {
       // Load Spond auth state
       const spondState = await dataService.getSpondAuthState(memberId);
@@ -183,7 +189,7 @@ const PersonProfileModal = ({
     } catch (error) {
       console.error('Error saving person:', error);
       setErrors({ submit: error.message || 'Failed to save person' });
-      
+
       // Haptic feedback for error
       if (navigator.vibrate) {
         navigator.vibrate([50, 50, 50]);
@@ -211,7 +217,7 @@ const PersonProfileModal = ({
     } catch (error) {
       console.error('Error deleting person:', error);
       setErrors({ submit: error.message || 'Failed to delete person' });
-      
+
       // Haptic feedback for error
       if (navigator.vibrate) {
         navigator.vibrate([50, 50, 50]);
@@ -223,13 +229,13 @@ const PersonProfileModal = ({
   };
 
   // Touch handlers for swipe-to-dismiss
-  const handleTouchStart = (e) => {
+  const handleTouchStart = e => {
     if (e.target.closest('.person-modal-content')) return;
     touchStartY.current = e.touches[0].clientY;
     isDragging.current = true;
   };
 
-  const handleTouchMove = (e) => {
+  const handleTouchMove = e => {
     if (!isDragging.current) return;
     touchCurrentY.current = e.touches[0].clientY;
     const diff = touchCurrentY.current - touchStartY.current;
@@ -257,113 +263,6 @@ const PersonProfileModal = ({
     touchCurrentY.current = 0;
   };
 
-  // Handle Spond test
-  const handleTestSpond = async () => {
-    if (!spondEmail || !spondPassword) {
-      setErrors({ spond: 'Please enter both email and password' });
-      return;
-    }
-
-    setIsTestingSpond(true);
-    setErrors({});
-
-    try {
-      const response = await fetch(`${API_ENDPOINTS.SPOND_AUTH}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-access-token': getAccessToken(),
-        },
-        body: JSON.stringify({
-          memberId: person?.id,
-          email: spondEmail,
-          password: spondPassword,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setSpondAuthState({
-          hasCredentials: true,
-          authenticated: true,
-          email: spondEmail,
-        });
-        
-        // Haptic feedback
-        if (navigator.vibrate) {
-          navigator.vibrate(10);
-        }
-      } else {
-        setErrors({ spond: data.message || 'Invalid credentials' });
-        if (navigator.vibrate) {
-          navigator.vibrate([50, 50, 50]);
-        }
-      }
-    } catch (error) {
-      console.error('Spond test error:', error);
-      setErrors({ spond: 'Network error. Please try again.' });
-      if (navigator.vibrate) {
-        navigator.vibrate([50, 50, 50]);
-      }
-    } finally {
-      setIsTestingSpond(false);
-    }
-  };
-
-  // Handle calendar import
-  const handleImportCalendar = async () => {
-    if (!calendarUrl || !calendarUrl.trim()) {
-      setErrors({ calendar: 'Please enter a calendar URL' });
-      return;
-    }
-
-    setIsImportingCalendar(true);
-    setErrors({});
-
-    try {
-      const response = await fetch(`${API_ENDPOINTS.CALENDAR_IMPORT}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-access-token': getAccessToken(),
-        },
-        body: JSON.stringify({
-          memberId: person?.id,
-          calendarUrl: calendarUrl.trim(),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setCalendarInfo({
-          url: calendarUrl,
-          lastSynced: new Date().toISOString(),
-          eventCount: data.eventCount || 0,
-        });
-        
-        // Haptic feedback
-        if (navigator.vibrate) {
-          navigator.vibrate(10);
-        }
-      } else {
-        setErrors({ calendar: data.error || 'Failed to import calendar' });
-        if (navigator.vibrate) {
-          navigator.vibrate([50, 50, 50]);
-        }
-      }
-    } catch (error) {
-      console.error('Calendar import error:', error);
-      setErrors({ calendar: getApiErrorMessage(error) });
-      if (navigator.vibrate) {
-        navigator.vibrate([50, 50, 50]);
-      }
-    } finally {
-      setIsImportingCalendar(false);
-    }
-  };
-
   if (!isOpen) return null;
 
   const isEditMode = !!person?.id;
@@ -373,7 +272,7 @@ const PersonProfileModal = ({
       <div
         ref={modalRef}
         className="person-modal"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -417,148 +316,160 @@ const PersonProfileModal = ({
 
         {/* Content */}
         <div className="person-modal-content">
-          <form onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
+          <form
+            onSubmit={e => {
+              e.preventDefault();
+              handleSave();
+            }}
+          >
             {/* Basic Tab */}
             {activeTab === 'basic' && (
               <>
-            {/* Name Input */}
-            <div className="person-form-group">
-              <label htmlFor="person-name" className="person-form-label">
-                Name *
-              </label>
-              <input
-                ref={titleInputRef}
-                id="person-name"
-                type="text"
-                className={`person-form-input ${errors.name ? 'error' : ''}`}
-                value={formData.name}
-                onChange={(e) => handleChange('name', e.target.value)}
-                placeholder="Enter name"
-                disabled={isSaving}
-              />
-              {errors.name && (
-                <span className="person-form-error">{errors.name}</span>
-              )}
-            </div>
-
-            {/* Color Picker */}
-            <div className="person-form-group">
-              <label className="person-form-label">Avatar Color *</label>
-              <div className="person-color-grid">
-                {AVATAR_COLORS.map((color) => (
-                  <button
-                    key={color.hex}
-                    type="button"
-                    className={`person-color-option ${
-                      formData.color === color.hex ? 'selected' : ''
-                    }`}
-                    style={{ backgroundColor: color.hex }}
-                    onClick={() => handleChange('color', color.hex)}
+                {/* Name Input */}
+                <div className="person-form-group">
+                  <label htmlFor="person-name" className="person-form-label">
+                    Name *
+                  </label>
+                  <input
+                    ref={titleInputRef}
+                    id="person-name"
+                    type="text"
+                    className={`person-form-input ${errors.name ? 'error' : ''}`}
+                    value={formData.name}
+                    onChange={e => handleChange('name', e.target.value)}
+                    placeholder="Enter name"
                     disabled={isSaving}
-                    aria-label={`Select ${color.name}`}
-                  >
-                    {formData.color === color.hex && (
-                      <span className="person-color-check">✓</span>
+                  />
+                  {errors.name && (
+                    <span className="person-form-error">{errors.name}</span>
+                  )}
+                </div>
+
+                {/* Color Picker */}
+                <div className="person-form-group">
+                  <label className="person-form-label">Avatar Color *</label>
+                  <div className="person-color-grid">
+                    {AVATAR_COLORS.map(color => (
+                      <button
+                        key={color.hex}
+                        type="button"
+                        className={`person-color-option ${
+                          formData.color === color.hex ? 'selected' : ''
+                        }`}
+                        style={{ backgroundColor: color.hex }}
+                        onClick={() => handleChange('color', color.hex)}
+                        disabled={isSaving}
+                        aria-label={`Select ${color.name}`}
+                      >
+                        {formData.color === color.hex && (
+                          <span className="person-color-check">✓</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  {errors.color && (
+                    <span className="person-form-error">{errors.color}</span>
+                  )}
+                </div>
+
+                {/* Preview */}
+                <div className="person-form-group">
+                  <label className="person-form-label">Preview</label>
+                  <div className="person-preview">
+                    <div
+                      className="person-preview-avatar"
+                      style={{ backgroundColor: formData.color }}
+                    >
+                      {formData.name
+                        ? formData.name.charAt(0).toUpperCase()
+                        : '?'}
+                    </div>
+                    <span className="person-preview-name">
+                      {formData.name || 'Enter a name'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Error Message */}
+                {errors.submit && (
+                  <div className="person-form-error-banner">
+                    <WarningIcon size={20} />
+                    <span>{errors.submit}</span>
+                  </div>
+                )}
+
+                {/* Delete Confirmation */}
+                {showDeleteConfirm && (
+                  <div className="person-delete-confirm">
+                    <div className="person-delete-confirm-content">
+                      <WarningIcon size={24} color="#F4B3BB" />
+                      <p className="person-delete-confirm-text">
+                        Delete <strong>{person?.name}</strong>? This will also
+                        delete all their activities and homework.
+                      </p>
+                      <div className="person-delete-confirm-actions">
+                        <button
+                          type="button"
+                          className="person-button person-button--secondary"
+                          onClick={() => setShowDeleteConfirm(false)}
+                          disabled={isDeleting}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          className="person-button person-button--danger"
+                          onClick={handleDelete}
+                          disabled={isDeleting}
+                        >
+                          {isDeleting ? 'Deleting...' : 'Delete'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions (Basic Tab) */}
+                {activeTab === 'basic' && (
+                  <div className="person-modal-actions">
+                    {isEditMode && !showDeleteConfirm && (
+                      <button
+                        type="button"
+                        className="person-button person-button--danger-outline"
+                        onClick={() => setShowDeleteConfirm(true)}
+                        disabled={isSaving}
+                      >
+                        <TrashIcon size={18} />
+                        Delete
+                      </button>
                     )}
-                  </button>
-                ))}
-              </div>
-              {errors.color && (
-                <span className="person-form-error">{errors.color}</span>
-              )}
-            </div>
 
-            {/* Preview */}
-            <div className="person-form-group">
-              <label className="person-form-label">Preview</label>
-              <div className="person-preview">
-                <div
-                  className="person-preview-avatar"
-                  style={{ backgroundColor: formData.color }}
-                >
-                  {formData.name ? formData.name.charAt(0).toUpperCase() : '?'}
-                </div>
-                <span className="person-preview-name">
-                  {formData.name || 'Enter a name'}
-                </span>
-              </div>
-            </div>
-
-            {/* Error Message */}
-            {errors.submit && (
-              <div className="person-form-error-banner">
-                <WarningIcon size={20} />
-                <span>{errors.submit}</span>
-              </div>
-            )}
-
-            {/* Delete Confirmation */}
-            {showDeleteConfirm && (
-              <div className="person-delete-confirm">
-                <div className="person-delete-confirm-content">
-                  <WarningIcon size={24} color="#F4B3BB" />
-                  <p className="person-delete-confirm-text">
-                    Delete <strong>{person?.name}</strong>? This will also delete all their activities and homework.
-                  </p>
-                  <div className="person-delete-confirm-actions">
-                    <button
-                      type="button"
-                      className="person-button person-button--secondary"
-                      onClick={() => setShowDeleteConfirm(false)}
-                      disabled={isDeleting}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      className="person-button person-button--danger"
-                      onClick={handleDelete}
-                      disabled={isDeleting}
-                    >
-                      {isDeleting ? 'Deleting...' : 'Delete'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Actions (Basic Tab) */}
-            {activeTab === 'basic' && (
-              <div className="person-modal-actions">
-                {isEditMode && !showDeleteConfirm && (
-                  <button
-                    type="button"
-                    className="person-button person-button--danger-outline"
-                    onClick={() => setShowDeleteConfirm(true)}
-                    disabled={isSaving}
-                  >
-                    <TrashIcon size={18} />
-                    Delete
-                  </button>
-                )}
-
-                {!showDeleteConfirm && (
-                  <div className="person-modal-actions-main">
-                    <button
-                      type="button"
-                      className="person-button person-button--secondary"
-                      onClick={onClose}
-                      disabled={isSaving}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="person-button person-button--primary"
-                      disabled={isSaving}
-                    >
-                      {isSaving ? 'Saving...' : isEditMode ? 'Save Changes' : 'Add Person'}
-                    </button>
+                    {!showDeleteConfirm && (
+                      <div className="person-modal-actions-main">
+                        <button
+                          type="button"
+                          className="person-button person-button--secondary"
+                          onClick={onClose}
+                          disabled={isSaving}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="person-button person-button--primary"
+                          disabled={isSaving}
+                        >
+                          {isSaving
+                            ? 'Saving...'
+                            : isEditMode
+                              ? 'Save Changes'
+                              : 'Add Person'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
-            )}
-            </>
+              </>
             )}
 
             {/* Integrations Tab */}
@@ -576,7 +487,9 @@ const PersonProfileModal = ({
                       <div className="person-status-icon">✅</div>
                       <div className="person-status-text">
                         <strong>Connected</strong>
-                        <span className="person-status-detail">{spondAuthState.email}</span>
+                        <span className="person-status-detail">
+                          {spondAuthState.email}
+                        </span>
                       </div>
                     </div>
                   ) : spondAuthState.hasCredentials ? (
@@ -584,7 +497,9 @@ const PersonProfileModal = ({
                       <div className="person-status-icon">🔑</div>
                       <div className="person-status-text">
                         <strong>Credentials Stored</strong>
-                        <span className="person-status-detail">{spondAuthState.email}</span>
+                        <span className="person-status-detail">
+                          {spondAuthState.email}
+                        </span>
                       </div>
                     </div>
                   ) : (
@@ -592,7 +507,9 @@ const PersonProfileModal = ({
                       <div className="person-status-icon">⚪</div>
                       <div className="person-status-text">
                         <strong>Not Connected</strong>
-                        <span className="person-status-detail">No Spond account linked</span>
+                        <span className="person-status-detail">
+                          No Spond account linked
+                        </span>
                       </div>
                     </div>
                   )}
@@ -610,7 +527,9 @@ const PersonProfileModal = ({
 
                 {/* Municipal Calendar Section */}
                 <div className="person-form-section">
-                  <h3 className="person-section-title">📅 Municipal Calendar</h3>
+                  <h3 className="person-section-title">
+                    📅 Municipal Calendar
+                  </h3>
                   <p className="person-section-description">
                     Sync events from municipal iCal calendars
                   </p>
@@ -630,7 +549,9 @@ const PersonProfileModal = ({
                       <div className="person-status-icon">⚪</div>
                       <div className="person-status-text">
                         <strong>Not Connected</strong>
-                        <span className="person-status-detail">No calendar linked</span>
+                        <span className="person-status-detail">
+                          No calendar linked
+                        </span>
                       </div>
                     </div>
                   )}
@@ -695,4 +616,3 @@ const PersonProfileModal = ({
 };
 
 export default PersonProfileModal;
-

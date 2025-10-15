@@ -5,10 +5,10 @@
 /**
  * Get the activity type based on activity properties
  * Priority order: school types > category > source > manual
- * 
+ *
  * @param {Object} activity - The activity object
  * @returns {string} The activity type identifier
- * 
+ *
  * @example
  * getActivityType({ description: '[TYPE:school_schedule]' }) // 'school_schedule'
  * getActivityType({ category: 'work' }) // 'category_work'
@@ -23,12 +23,12 @@ export const getActivityType = activity => {
   if (activity.description?.includes('[TYPE:school_activity]')) {
     return 'school_activity';
   }
-  
+
   // Check for category (second priority)
   if (activity.category) {
     return `category_${activity.category}`;
   }
-  
+
   // Check source (third priority)
   if (activity.source === 'spond') {
     return 'spond';
@@ -36,21 +36,9 @@ export const getActivityType = activity => {
   if (activity.source === 'municipal_calendar') {
     return 'municipal_calendar';
   }
-  
+
   // Default to manual
   return 'manual';
-};
-
-/**
- * Check if activity is school-related (schedule or activity)
- * @param {Object} activity - The activity object
- * @returns {boolean} True if school-related
- */
-export const isSchoolActivity = activity => {
-  return (
-    activity.description?.includes('[TYPE:school_schedule]') ||
-    activity.description?.includes('[TYPE:school_activity]')
-  );
 };
 
 /**
@@ -60,15 +48,6 @@ export const isSchoolActivity = activity => {
  */
 export const isSchoolScheduleActivity = activity => {
   return activity.description?.includes('[TYPE:school_schedule]');
-};
-
-/**
- * Check if activity is a school activity (special event)
- * @param {Object} activity - The activity object
- * @returns {boolean} True if school activity
- */
-export const isSchoolActivityEvent = activity => {
-  return activity.description?.includes('[TYPE:school_activity]');
 };
 
 /**
@@ -145,63 +124,63 @@ export const getMunicipalEventIcon = activity => {
 /**
  * Get the display color for an activity
  * Uses pastel colors from design system based on activity type
- * 
+ *
  * @param {Object} activity - The activity object
  * @returns {string} HEX color code
  */
 export const getActivityColor = activity => {
   const type = getActivityType(activity);
-  
+
   // Color mapping from design manual
   const colorMap = {
     // Source-based
-    manual: '#B2AEFF',           // Pastell Light Purple
-    spond: '#D2FCC3',            // Pastell Green
+    manual: '#B2AEFF', // Pastell Light Purple
+    spond: '#D2FCC3', // Pastell Green
     municipal_calendar: '#FCDD8C', // Pastell Orange
-    
+
     // School types
-    school_schedule: '#BADAF8',  // Pastell Blue
-    school_activity: '#DEB2FA',  // Pastell Pink
-    
+    school_schedule: '#BADAF8', // Pastell Blue
+    school_activity: '#DEB2FA', // Pastell Pink
+
     // Category-based
-    category_work: '#B2AEFF',    // Pastell Light Purple
+    category_work: '#B2AEFF', // Pastell Light Purple
     category_exercise: '#D2FCC3', // Pastell Green
-    category_family: '#DEB2FA',   // Pastell Pink
-    category_meal: '#FCDD8C',     // Pastell Orange
+    category_family: '#DEB2FA', // Pastell Pink
+    category_meal: '#FCDD8C', // Pastell Orange
     category_personal: '#BADAF8', // Pastell Blue
-    category_medical: '#F4B3BB',  // Pastell Salmon
-    category_social: '#FFF48D',   // Pastell Yellow
-    category_chores: '#ECECEC',   // Pastell Gray
+    category_medical: '#F4B3BB', // Pastell Salmon
+    category_social: '#FFF48D', // Pastell Yellow
+    category_chores: '#ECECEC', // Pastell Gray
   };
-  
+
   return colorMap[type] || '#B2AEFF'; // Default to light purple
 };
 
 /**
  * Get the display icon for an activity
  * Returns emoji icon based on activity type
- * 
+ *
  * @param {Object} activity - The activity object
  * @returns {string} Emoji icon
  */
 export const getActivityIcon = activity => {
   const type = getActivityType(activity);
-  
+
   // Special handling for municipal events
   if (type === 'municipal_calendar') {
     return getMunicipalEventIcon(activity);
   }
-  
+
   // Icon mapping
   const iconMap = {
     // Source-based
     manual: '✏️',
     spond: '⚽',
-    
+
     // School types
     school_schedule: '🏫',
     school_activity: '🎓',
-    
+
     // Category-based
     category_work: '💼',
     category_exercise: '🏃',
@@ -212,6 +191,6 @@ export const getActivityIcon = activity => {
     category_social: '👥',
     category_chores: '🧹',
   };
-  
+
   return iconMap[type] || '📅'; // Default icon
 };
