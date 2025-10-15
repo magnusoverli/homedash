@@ -18,7 +18,7 @@
   display: flex;
   align-items: center;
   gap: var(--mobile-space-xs);
-  height: 40px;
+  height: 30px;
   padding: 0 var(--mobile-card-padding);
   background: linear-gradient(
     to bottom,

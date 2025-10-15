@@ -21,7 +21,7 @@
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  background: var(--mobile-bg-secondary);
+  background: var(--mobile-bg-primary);
   border-bottom: 1px solid var(--mobile-color-light-gray);
 }
 

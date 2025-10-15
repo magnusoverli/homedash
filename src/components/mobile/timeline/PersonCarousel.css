@@ -11,7 +11,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 6px 0 0 0;
+  padding: 0;
 }
 
 /* Carousel scroll container */
@@ -42,20 +42,16 @@
 .person-carousel-card {
   flex: 0 0 100%;
   width: 100%;
-  scroll-snap-align: center;
+  scroll-snap-align: start;
   scroll-snap-stop: always;
-  padding: 0 8px;
+  padding: 0;
   box-sizing: border-box;
   opacity: 0.6;
-  transform: scale(0.95);
-  transition:
-    opacity var(--mobile-transition-normal) var(--mobile-ease-in-out),
-    transform var(--mobile-transition-normal) var(--mobile-ease-in-out);
+  transition: opacity var(--mobile-transition-normal) var(--mobile-ease-in-out);
 }
 
 .person-carousel-card--active {
   opacity: 1;
-  transform: scale(1);
 }
 
 /* Carousel indicators */
