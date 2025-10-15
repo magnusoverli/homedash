@@ -70,9 +70,9 @@ const MobilePersonCard = ({
     const availableHeight = window.innerHeight - 56 - 56;
     const deltaPercent = (deltaY / availableHeight) * 100;
 
-    // Calculate new ratio (constrained between 50 and 90)
+    // Calculate new ratio (constrained between 30 and 90)
     let newRatio = startRatio + deltaPercent;
-    newRatio = Math.max(50, Math.min(90, newRatio));
+    newRatio = Math.max(30, Math.min(90, newRatio));
 
     // Store offset for transform (smooth visual update)
     setDragOffset(deltaY);
@@ -87,10 +87,10 @@ const MobilePersonCard = ({
       const availableHeight = window.innerHeight - 56 - 56;
       const deltaPercent = (dragOffset / availableHeight) * 100;
       let newRatio = startRatio + deltaPercent;
-      newRatio = Math.max(50, Math.min(90, newRatio));
+      newRatio = Math.max(30, Math.min(90, newRatio));
 
       // Snap to common values
-      const snapPoints = [50, 60, 70, 80, 90];
+      const snapPoints = [30, 40, 50, 60, 70, 80, 90];
       const closestSnap = snapPoints.reduce((prev, curr) =>
         Math.abs(curr - newRatio) < Math.abs(prev - newRatio) ? curr : prev
       );
@@ -170,7 +170,7 @@ const MobilePersonCard = ({
               'aria-orientation': 'horizontal',
               'aria-label': 'Resize timeline and homework',
               'aria-valuenow': splitRatio,
-              'aria-valuemin': 50,
+              'aria-valuemin': 30,
               'aria-valuemax': 90,
               className: isDragging ? 'mobile-task-header--dragging' : '',
             }}
