@@ -159,7 +159,7 @@ const MobileApp = ({ initialWeek = new Date() }) => {
           centerSlot={<h1 className="mobile-header-title">Today</h1>}
           rightSlot={
             <div className="mobile-header-time">
-              {currentTime.toLocaleTimeString('en-US', {
+              {currentTime.toLocaleTimeString('en-GB', {
                 hour: '2-digit',
                 minute: '2-digit',
               })}
