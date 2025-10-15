@@ -17,7 +17,7 @@ import './MobileTaskList.css';
 const MobileTaskList = ({ tasks = [], dragHandleProps = {} }) => {
   const headerRef = useRef(null);
 
-  // Add passive:false event listeners to prevent pull-to-refresh
+  // Add passive:false event listeners to prevent pull-to-refresh on header
   useEffect(() => {
     const header = headerRef.current;
     if (!header || !dragHandleProps.onTouchMove) return;

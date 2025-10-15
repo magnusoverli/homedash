@@ -8,6 +8,7 @@
   flex-direction: column;
   background: var(--mobile-bg-secondary);
   overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 /* Header (now also acts as drag handle) */
@@ -106,6 +107,13 @@
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.mobile-task-items::-webkit-scrollbar {
+  display: none;
 }
 
 .mobile-task-item {

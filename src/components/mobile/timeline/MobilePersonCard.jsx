@@ -31,10 +31,9 @@ const MobilePersonCard = ({
   // Load saved split ratio or use default (70/30)
   const savedRatio = localStorage.getItem(`mobile-split-${member.id}`);
   const [splitRatio, setSplitRatio] = useState(
-    savedRatio ? parseInt(savedRatio) : 70
+    savedRatio ? parseFloat(savedRatio) : 70
   );
   const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState(0);
   const [startY, setStartY] = useState(0);
   const [startRatio, setStartRatio] = useState(70);
 
@@ -43,7 +42,6 @@ const MobilePersonCard = ({
     setIsDragging(true);
     setStartY(e.type === 'mousedown' ? e.clientY : e.touches[0].clientY);
     setStartRatio(splitRatio);
-    setDragOffset(0);
 
     // Haptic feedback
     if (navigator.vibrate) {
@@ -74,8 +72,8 @@ const MobilePersonCard = ({
     let newRatio = startRatio + deltaPercent;
     newRatio = Math.max(30, Math.min(90, newRatio));
 
-    // Store offset for transform (smooth visual update)
-    setDragOffset(deltaY);
+    // Update ratio in real-time during drag
+    setSplitRatio(newRatio);
   };
 
   // Handle drag end
@@ -83,31 +81,8 @@ const MobilePersonCard = ({
     if (isDragging) {
       setIsDragging(false);
 
-      // Calculate final ratio from drag offset
-      const availableHeight = window.innerHeight - 56 - 56;
-      const deltaPercent = (dragOffset / availableHeight) * 100;
-      let newRatio = startRatio + deltaPercent;
-      newRatio = Math.max(30, Math.min(90, newRatio));
-
-      // Snap to common values
-      const snapPoints = [30, 40, 50, 60, 70, 80, 90];
-      const closestSnap = snapPoints.reduce((prev, curr) =>
-        Math.abs(curr - newRatio) < Math.abs(prev - newRatio) ? curr : prev
-      );
-
-      if (Math.abs(closestSnap - newRatio) < 5) {
-        newRatio = closestSnap;
-      }
-
-      // Update final ratio
-      setSplitRatio(Math.round(newRatio));
-      setDragOffset(0);
-
-      // Save preference
-      localStorage.setItem(
-        `mobile-split-${member.id}`,
-        Math.round(newRatio).toString()
-      );
+      // Save preference (splitRatio is already at final position)
+      localStorage.setItem(`mobile-split-${member.id}`, splitRatio.toString());
 
       // Haptic feedback
       if (navigator.vibrate) {
@@ -129,10 +104,7 @@ const MobilePersonCard = ({
         <div
           className="mobile-person-timeline-section"
           style={{
-            height: isDragging
-              ? `calc(${splitRatio}% + ${dragOffset}px)`
-              : `${splitRatio}%`,
-            transition: isDragging ? 'none' : 'height 200ms ease-in-out',
+            height: `${splitRatio}%`,
           }}
         >
           <MobileTimeline
@@ -147,10 +119,7 @@ const MobilePersonCard = ({
         <div
           className="mobile-person-tasks-section"
           style={{
-            height: isDragging
-              ? `calc(${100 - splitRatio}% - ${dragOffset}px)`
-              : `${100 - splitRatio}%`,
-            transition: isDragging ? 'none' : 'height 200ms ease-in-out',
+            height: `${100 - splitRatio}%`,
           }}
         >
           <MobileTaskList
