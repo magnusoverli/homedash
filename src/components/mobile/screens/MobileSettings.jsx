@@ -1,23 +1,18 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import MobileHeader from '../navigation/MobileHeader';
-import LoadingState from '../../LoadingState';
 import { PlusIcon } from '../../icons';
 import PersonProfileModal from '../modals/PersonProfileModal';
 import SettingsSkeleton from '../loading/SettingsSkeleton';
 import dataService from '../../../services/dataService';
-import { AVATAR_COLORS } from '../../../constants/colors';
 import { useToast } from '../../../contexts/ToastContext';
 import './MobileSettings.css';
 
 /**
  * Mobile Settings Screen
- * 
+ *
  * Mobile-optimized settings interface with accordion sections.
  * Manages family members, integrations, and app preferences.
  */
 const MobileSettings = () => {
-  const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
   const [familyMembers, setFamilyMembers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,7 +21,7 @@ const MobileSettings = () => {
     integrations: false,
     about: false,
   });
-  
+
   // LLM Integration state
   const [llmEnabled, setLlmEnabled] = useState(false);
   const [apiKey, setApiKey] = useState('');
@@ -70,14 +65,14 @@ const MobileSettings = () => {
     loadData();
   }, []);
 
-  const toggleSection = (section) => {
+  const toggleSection = section => {
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section],
     }));
   };
 
-  const handleEditPerson = (member) => {
+  const handleEditPerson = member => {
     setEditingPerson(member);
     setShowPersonModal(true);
   };
@@ -87,7 +82,7 @@ const MobileSettings = () => {
     setShowPersonModal(true);
   };
 
-  const handleSavePerson = async (personData) => {
+  const handleSavePerson = async personData => {
     try {
       let savedPerson;
 
@@ -134,7 +129,7 @@ const MobileSettings = () => {
     }
   };
 
-  const handleDeletePerson = async (personId) => {
+  const handleDeletePerson = async personId => {
     try {
       await dataService.deleteFamilyMember(personId);
 
@@ -158,7 +153,6 @@ const MobileSettings = () => {
   if (isLoading) {
     return (
       <div className="mobile-settings">
-        <MobileHeader variant="back" title="Settings" showLogo={true} />
         <SettingsSkeleton />
       </div>
     );
@@ -166,8 +160,6 @@ const MobileSettings = () => {
 
   return (
     <div className="mobile-settings">
-      <MobileHeader variant="back" title="Settings" showLogo={true} />
-
       <div className="settings-content">
         {/* People Section */}
         <section className="settings-section">
@@ -179,7 +171,8 @@ const MobileSettings = () => {
             <div className="settings-section-title-group">
               <h2 className="settings-section-title">Family Members</h2>
               <span className="settings-section-subtitle">
-                {familyMembers.length} {familyMembers.length === 1 ? 'person' : 'people'}
+                {familyMembers.length}{' '}
+                {familyMembers.length === 1 ? 'person' : 'people'}
               </span>
             </div>
             <svg
@@ -189,10 +182,17 @@ const MobileSettings = () => {
               fill="none"
               className="settings-section-icon"
               style={{
-                transform: expandedSections.people ? 'rotate(180deg)' : 'rotate(0)',
+                transform: expandedSections.people
+                  ? 'rotate(180deg)'
+                  : 'rotate(0)',
               }}
             >
-              <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <path
+                d="M6 9l6 6 6-6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
             </svg>
           </button>
 
@@ -249,10 +249,17 @@ const MobileSettings = () => {
               fill="none"
               className="settings-section-icon"
               style={{
-                transform: expandedSections.integrations ? 'rotate(180deg)' : 'rotate(0)',
+                transform: expandedSections.integrations
+                  ? 'rotate(180deg)'
+                  : 'rotate(0)',
               }}
             >
-              <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <path
+                d="M6 9l6 6 6-6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
             </svg>
           </button>
 
@@ -270,7 +277,7 @@ const MobileSettings = () => {
                     <input
                       type="checkbox"
                       checked={llmEnabled}
-                      onChange={(e) => setLlmEnabled(e.target.checked)}
+                      onChange={e => setLlmEnabled(e.target.checked)}
                     />
                     <span className="toggle-slider"></span>
                   </label>
@@ -342,10 +349,17 @@ const MobileSettings = () => {
               fill="none"
               className="settings-section-icon"
               style={{
-                transform: expandedSections.about ? 'rotate(180deg)' : 'rotate(0)',
+                transform: expandedSections.about
+                  ? 'rotate(180deg)'
+                  : 'rotate(0)',
               }}
             >
-              <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <path
+                d="M6 9l6 6 6-6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
             </svg>
           </button>
 
@@ -391,4 +405,3 @@ const MobileSettings = () => {
 };
 
 export default MobileSettings;
-

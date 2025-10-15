@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
-import MobileHeader from '../navigation/MobileHeader';
-import LoadingState from '../../LoadingState';
 import EmptyState from '../../EmptyState';
 import TodayViewSkeleton from '../loading/TodayViewSkeleton';
-import { getActivityColor, getActivityIcon } from '../../../utils/activityUtils';
+import {
+  getActivityColor,
+  getActivityIcon,
+} from '../../../utils/activityUtils';
 import dataService from '../../../services/dataService';
 import { formatLocalDate } from '../../../utils/timeUtils';
 import './MobileTodayView.css';
 
 /**
  * Mobile Today View
- * 
+ *
  * Focused view of current day's activities across all family members.
  * Groups activities by time: Now, Next Up, Later Today.
  * Updates every minute to keep "Now" section accurate.
@@ -55,7 +56,10 @@ const MobileTodayView = () => {
         const enrichedActivities = activitiesData
           .filter(activity => {
             // Filter out declined Spond activities
-            if (activity.source === 'spond' && activity.response_status === 'declined') {
+            if (
+              activity.source === 'spond' &&
+              activity.response_status === 'declined'
+            ) {
               return false;
             }
             return true;
@@ -83,7 +87,7 @@ const MobileTodayView = () => {
   }, []);
 
   // Get time in minutes since midnight
-  const getMinutesSinceMidnight = (timeStr) => {
+  const getMinutesSinceMidnight = timeStr => {
     const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 60 + minutes;
   };
@@ -128,28 +132,28 @@ const MobileTodayView = () => {
   const categories = categorizeActivities();
 
   // Format time remaining
-  const getTimeRemaining = (endTime) => {
+  const getTimeRemaining = endTime => {
     const end = getMinutesSinceMidnight(endTime);
     const now = getCurrentMinutes();
     const remaining = end - now;
 
     if (remaining <= 0) return 'Ending now';
     if (remaining < 60) return `${remaining} min left`;
-    
+
     const hours = Math.floor(remaining / 60);
     const mins = remaining % 60;
     return mins > 0 ? `${hours}h ${mins}m left` : `${hours}h left`;
   };
 
   // Format time until
-  const getTimeUntil = (startTime) => {
+  const getTimeUntil = startTime => {
     const start = getMinutesSinceMidnight(startTime);
     const now = getCurrentMinutes();
     const until = start - now;
 
     if (until <= 0) return 'Starting now';
     if (until < 60) return `in ${until} min`;
-    
+
     const hours = Math.floor(until / 60);
     const mins = until % 60;
     return mins > 0 ? `in ${hours}h ${mins}m` : `in ${hours}h`;
@@ -158,12 +162,6 @@ const MobileTodayView = () => {
   if (isLoading) {
     return (
       <div className="mobile-today-view">
-        <MobileHeader
-          variant="default"
-          title="Today"
-          showLogo={true}
-          rightSlot={<div className="mobile-header-time">Loading...</div>}
-        />
         <TodayViewSkeleton />
       </div>
     );
@@ -172,8 +170,6 @@ const MobileTodayView = () => {
   if (activities.length === 0) {
     return (
       <div className="mobile-today-view">
-        <MobileHeader variant="default" title="Today" showLogo={true} />
-
         <EmptyState
           icon="🎉"
           title="Free Day!"
@@ -185,20 +181,6 @@ const MobileTodayView = () => {
 
   return (
     <div className="mobile-today-view">
-      <MobileHeader
-        variant="default"
-        title="Today"
-        showLogo={true}
-        rightSlot={
-          <div className="mobile-header-time">
-            {currentTime.toLocaleTimeString('en-US', { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })}
-          </div>
-        }
-      />
-
       <div className="today-content">
         {/* NOW Section */}
         {categories.current.length > 0 && (
@@ -212,7 +194,7 @@ const MobileTodayView = () => {
               >
                 <div className="today-card-header">
                   <div className="today-card-person">
-                    <div 
+                    <div
                       className="today-card-avatar"
                       style={{ backgroundColor: activity.member?.avatarColor }}
                     >
@@ -228,7 +210,9 @@ const MobileTodayView = () => {
                 </div>
 
                 <div className="today-card-body">
-                  <div className="today-card-icon">{getActivityIcon(activity)}</div>
+                  <div className="today-card-icon">
+                    {getActivityIcon(activity)}
+                  </div>
                   <h3 className="today-card-title">{activity.title}</h3>
                   <div className="today-card-time">
                     {activity.startTime} - {activity.endTime}
@@ -256,14 +240,16 @@ const MobileTodayView = () => {
               >
                 <div className="today-card-compact-content">
                   <div className="today-card-compact-left">
-                    <div 
+                    <div
                       className="today-card-avatar-small"
                       style={{ backgroundColor: activity.member?.avatarColor }}
                     >
                       {activity.member?.name?.charAt(0)}
                     </div>
                     <div className="today-card-compact-info">
-                      <div className="today-card-compact-title">{activity.title}</div>
+                      <div className="today-card-compact-title">
+                        {activity.title}
+                      </div>
                       <div className="today-card-compact-meta">
                         {activity.member?.name} • {activity.startTime}
                       </div>
@@ -290,14 +276,16 @@ const MobileTodayView = () => {
               >
                 <div className="today-card-compact-content">
                   <div className="today-card-compact-left">
-                    <div 
+                    <div
                       className="today-card-avatar-small"
                       style={{ backgroundColor: activity.member?.avatarColor }}
                     >
                       {activity.member?.name?.charAt(0)}
                     </div>
                     <div className="today-card-compact-info">
-                      <div className="today-card-compact-title">{activity.title}</div>
+                      <div className="today-card-compact-title">
+                        {activity.title}
+                      </div>
                       <div className="today-card-compact-meta">
                         {activity.member?.name} • {activity.startTime}
                       </div>
@@ -314,4 +302,3 @@ const MobileTodayView = () => {
 };
 
 export default MobileTodayView;
-

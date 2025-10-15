@@ -1,12 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import MobileHeader from '../navigation/MobileHeader';
-import { HomeDashIcon } from '../../icons';
 import LoadingState from '../../LoadingState';
 import ErrorState from '../../ErrorState';
 import EmptyState from '../../EmptyState';
 import PersonCarousel from '../timeline/PersonCarousel';
 import MobilePersonCard from '../timeline/MobilePersonCard';
-
 import PersonCardSkeleton from '../loading/PersonCardSkeleton';
 import dataService from '../../../services/dataService';
 import { formatLocalDate } from '../../../utils/timeUtils';
@@ -27,9 +24,8 @@ import './MobileOverview.css';
  *
  * @param {Object} props
  * @param {Date} props.currentWeek - Current week to display
- * @param {Function} props.onWeekChange - Callback when week changes
  */
-const MobileOverview = ({ currentWeek, onWeekChange }) => {
+const MobileOverview = ({ currentWeek }) => {
   const { showSuccess, showError } = useToast();
   const [familyMembers, setFamilyMembers] = useState([]);
   const [activities, setActivities] = useState({});
@@ -48,7 +44,6 @@ const MobileOverview = ({ currentWeek, onWeekChange }) => {
     return weekStart;
   }, [currentWeek]);
 
-  // Load family members
   useEffect(() => {
     const loadFamilyMembers = async () => {
       setIsLoading(true);
@@ -70,7 +65,6 @@ const MobileOverview = ({ currentWeek, onWeekChange }) => {
     loadFamilyMembers();
   }, []);
 
-  // Load activities and homework
   const loadData = useCallback(async () => {
     if (familyMembers.length === 0) return;
 
@@ -140,52 +134,6 @@ const MobileOverview = ({ currentWeek, onWeekChange }) => {
     loadData();
   }, [loadData, currentWeek]);
 
-  const handlePreviousWeek = () => {
-    const newDate = new Date(currentWeek);
-    newDate.setDate(newDate.getDate() - 7);
-    onWeekChange(newDate);
-  };
-
-  const handleNextWeek = () => {
-    const newDate = new Date(currentWeek);
-    newDate.setDate(newDate.getDate() + 7);
-    onWeekChange(newDate);
-  };
-
-  const handleToday = () => {
-    onWeekChange(new Date());
-  };
-
-  const getWeekNumber = date => {
-    const d = new Date(
-      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
-    );
-    const dayNum = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
-  };
-
-  const getWeekDisplay = () => {
-    const weekStart = getWeekStart();
-    const weekNumber = getWeekNumber(weekStart);
-    return `Week ${weekNumber}`;
-  };
-
-  const isCurrentWeek = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const weekStart = getWeekStart();
-    weekStart.setHours(0, 0, 0, 0);
-
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-    weekEnd.setHours(23, 59, 59, 999);
-
-    return today >= weekStart && today <= weekEnd;
-  };
-
   const handleDeleteActivity = async activityId => {
     try {
       await dataService.deleteActivity(activityId);
@@ -226,22 +174,6 @@ const MobileOverview = ({ currentWeek, onWeekChange }) => {
   if (isLoading) {
     return (
       <div className="mobile-overview">
-        <MobileHeader
-          variant="overview"
-          leftSlot={
-            <div className="mobile-overview-logo">
-              <HomeDashIcon size={28} color="white" />
-            </div>
-          }
-          centerSlot={
-            <div className="mobile-overview-week">
-              <div className="mobile-week-display">
-                <span className="mobile-week-text">Loading...</span>
-              </div>
-            </div>
-          }
-          rightSlot={<div style={{ width: '40px' }} />}
-        />
         <div style={{ padding: 'var(--mobile-space-m)' }}>
           <PersonCardSkeleton />
         </div>
@@ -275,59 +207,6 @@ const MobileOverview = ({ currentWeek, onWeekChange }) => {
 
   return (
     <div className="mobile-overview">
-      {/* Header */}
-      <MobileHeader
-        variant="overview"
-        leftSlot={
-          <div className="mobile-overview-logo">
-            <HomeDashIcon size={28} color="white" />
-          </div>
-        }
-        centerSlot={
-          <div className="mobile-overview-week">
-            <button
-              className="mobile-week-nav-button"
-              onClick={handlePreviousWeek}
-              aria-label="Previous week"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M15 18l-6-6 6-6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
-
-            <button
-              className={`mobile-week-display ${isCurrentWeek() ? 'mobile-week-display--current' : ''}`}
-              onClick={handleToday}
-              aria-label="Go to today"
-            >
-              <span className="mobile-week-text">{getWeekDisplay()}</span>
-            </button>
-
-            <button
-              className="mobile-week-nav-button"
-              onClick={handleNextWeek}
-              aria-label="Next week"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M9 18l6-6-6-6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
-          </div>
-        }
-        rightSlot={<div style={{ width: '40px' }} />}
-      />
-
-      {/* Person Carousel */}
       <PersonCarousel
         members={familyMembers}
         currentIndex={currentPersonIndex}

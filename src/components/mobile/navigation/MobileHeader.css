@@ -15,30 +15,11 @@
   gap: var(--mobile-space-m);
   min-height: 40px;
   box-shadow: var(--mobile-shadow-small);
-}
-
-/* Support for safe area (notches, etc.) */
-.mobile-header {
   padding-top: max(var(--mobile-space-xs), env(safe-area-inset-top));
   padding-left: max(var(--mobile-space-xs), env(safe-area-inset-left));
   padding-right: max(var(--mobile-space-xs), env(safe-area-inset-right));
 }
 
-/* Default variant - centered title with optional side slots */
-.mobile-header--default {
-  display: grid;
-  grid-template-columns: 40px 1fr 40px;
-  gap: var(--mobile-space-m);
-}
-
-/* Back variant - back button on left */
-.mobile-header--back {
-  display: grid;
-  grid-template-columns: 40px 1fr 40px;
-  gap: var(--mobile-space-m);
-}
-
-/* Overview variant - custom layout for overview screen */
 .mobile-header--overview {
   background: linear-gradient(
     135deg,
@@ -55,7 +36,7 @@
   gap: var(--mobile-space-m);
 }
 
-/* Header title */
+/* Header title (centered text) */
 .mobile-header-title {
   font-size: var(--mobile-font-size-h2);
   font-weight: var(--mobile-font-weight-bold);
@@ -63,78 +44,93 @@
   text-align: center;
   color: currentColor;
   line-height: 1.2;
+  flex: 1;
 }
 
-/* Icon slots */
-.mobile-header-icon {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* ============================================
+   SLOT-SPECIFIC STYLES
+   ============================================ */
+
+.mobile-overview-logo {
   flex-shrink: 0;
-}
-
-/* Logo slot */
-.mobile-header-logo {
   width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
 
-/* Icon button */
-.mobile-icon-button {
-  width: 40px;
-  height: 40px;
+.mobile-overview-week {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  gap: var(--mobile-space-xxs);
+}
+
+.mobile-week-nav-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   border: none;
-  color: currentColor;
+  background: transparent;
+  color: var(--mobile-text-inverse);
   cursor: pointer;
   border-radius: var(--mobile-radius-small);
-  transition: var(--mobile-transition-standard);
-  flex-shrink: 0;
-  padding: 0;
+  transition: all var(--mobile-transition-fast) var(--mobile-ease-in-out);
+  -webkit-tap-highlight-color: transparent;
 }
 
-.mobile-icon-button:hover {
+.mobile-week-nav-button:active {
+  transform: scale(0.9);
   background: rgba(255, 255, 255, 0.1);
 }
 
-.mobile-icon-button:active {
-  background: rgba(255, 255, 255, 0.2);
+.mobile-week-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: var(--mobile-space-xs) var(--mobile-space-xs);
+  border-radius: var(--mobile-radius-small);
+  transition: all var(--mobile-transition-fast) var(--mobile-ease-in-out);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-week-display:active {
   transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.mobile-icon-button svg {
-  width: 24px;
-  height: 24px;
+.mobile-week-text {
+  font-family: var(--mobile-font-display);
+  font-size: var(--mobile-text-body);
+  font-weight: var(--mobile-weight-semibold);
+  color: var(--mobile-text-inverse);
 }
 
-/* Accessibility */
-.mobile-icon-button:focus-visible {
-  outline: 2px solid var(--mobile-color-focus);
-  outline-offset: 2px;
+.mobile-week-display--current .mobile-week-text {
+  font-weight: var(--mobile-weight-bold);
+  text-shadow:
+    0 0 15px rgba(255, 255, 255, 0.9),
+    0 0 8px rgba(255, 255, 255, 0.7);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .mobile-header {
-    background-color: var(--mobile-color-bg-header);
-  }
-
-  .mobile-header--overview {
-    background: linear-gradient(
-      135deg,
-      var(--mobile-color-primary-dark) 0%,
-      var(--mobile-color-primary) 100%
-    );
-  }
+.mobile-header-time {
+  font-family: var(--mobile-font-mono, monospace);
+  font-size: var(--mobile-text-small);
+  font-weight: var(--mobile-weight-medium);
+  color: var(--mobile-text-inverse);
+  text-align: right;
+  white-space: nowrap;
 }
 
 /* Tablet adjustments */
