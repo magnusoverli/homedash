@@ -81,14 +81,30 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   position: relative;
+  background: linear-gradient(
+    to right,
+    var(--mobile-bg-secondary) 0,
+    var(--mobile-bg-secondary) var(--mobile-timeline-time-width),
+    transparent var(--mobile-timeline-time-width)
+  );
+}
+
+.mobile-timeline::before {
+  content: '';
+  position: absolute;
+  left: var(--mobile-timeline-time-width);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--mobile-color-light-gray);
+  pointer-events: none;
+  z-index: var(--mobile-z-base);
 }
 
 /* Time scale (left sidebar) */
 .mobile-time-scale {
   flex-shrink: 0;
   width: var(--mobile-timeline-time-width);
-  background: var(--mobile-bg-secondary);
-  border-right: 1px solid var(--mobile-color-light-gray);
   padding-top: var(--mobile-space-xs);
 }
 

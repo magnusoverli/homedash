@@ -6,7 +6,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--mobile-bg-secondary);
+  background: var(--mobile-bg-primary);
   overflow: hidden;
   overscroll-behavior: contain;
 }
@@ -14,13 +14,13 @@
 /* Header (now also acts as drag handle) */
 .mobile-task-header {
   flex-shrink: 0;
-  min-height: 32px;
+  min-height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--mobile-space-xs) var(--mobile-space-m);
+  padding: var(--mobile-space-xxs) var(--mobile-space-m);
   border-bottom: 1px solid var(--mobile-color-light-gray);
-  background: var(--mobile-bg-secondary);
+  background: #dedede;
   cursor: ns-resize;
   user-select: none;
   -webkit-user-select: none;
@@ -29,22 +29,23 @@
 }
 
 .mobile-task-header:active {
-  background: var(--mobile-color-extra-light-purple);
+  background: #e5e5e5;
 }
 
 .mobile-task-header-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--mobile-space-xxs);
+  gap: 2px;
   width: 100%;
 }
 
 .mobile-task-title {
   margin: 0;
-  font-size: var(--mobile-text-body-large);
+  font-size: var(--mobile-text-body-small);
   font-weight: var(--mobile-weight-semibold);
   color: var(--mobile-text-primary);
+  line-height: 1;
 }
 
 .mobile-task-drag-indicator {
@@ -52,7 +53,7 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 8px;
+  height: 6px;
 }
 
 .mobile-task-drag-bar {
@@ -71,7 +72,7 @@
 }
 
 .mobile-task-header--dragging {
-  background: var(--mobile-color-extra-light-purple);
+  background: #e5e5e5;
 }
 
 /* Focus visible for accessibility */

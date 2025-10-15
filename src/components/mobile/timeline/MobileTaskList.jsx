@@ -36,13 +36,17 @@ const MobileTaskList = ({ tasks = [], dragHandleProps = {} }) => {
     };
   }, [dragHandleProps.onTouchMove]);
 
+  // Extract className from dragHandleProps to merge with base class
+  const { className: dragClassName, ...restDragProps } = dragHandleProps;
+  const headerClassName = `mobile-task-header ${dragClassName || ''}`.trim();
+
   if (tasks.length === 0) {
     return (
       <div className="mobile-task-list">
         <div
           ref={headerRef}
-          className="mobile-task-header"
-          {...dragHandleProps}
+          className={headerClassName}
+          {...restDragProps}
           onTouchMove={undefined}
         >
           <div className="mobile-task-header-content">
@@ -64,8 +68,8 @@ const MobileTaskList = ({ tasks = [], dragHandleProps = {} }) => {
     <div className="mobile-task-list">
       <div
         ref={headerRef}
-        className="mobile-task-header"
-        {...dragHandleProps}
+        className={headerClassName}
+        {...restDragProps}
         onTouchMove={undefined}
       >
         <div className="mobile-task-header-content">
