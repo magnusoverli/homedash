@@ -47,7 +47,7 @@ export function clearAccessToken() {
 /**
  * Get token expiration time
  */
-export function getTokenExpiry() {
+function getTokenExpiry() {
   const expiry = localStorage.getItem(EXPIRY_KEY);
   return expiry ? new Date(expiry) : null;
 }
@@ -64,10 +64,10 @@ export function isTokenExpired() {
 /**
  * Check if token needs refresh
  */
-export function needsTokenRefresh() {
+function needsTokenRefresh() {
   const expiry = getTokenExpiry();
   if (!expiry) return false;
-  
+
   const timeUntilExpiry = expiry - new Date();
   return timeUntilExpiry < REFRESH_THRESHOLD && timeUntilExpiry > 0;
 }
@@ -75,9 +75,9 @@ export function needsTokenRefresh() {
 /**
  * Refresh access token
  */
-export async function refreshToken() {
+async function refreshToken() {
   const token = getAccessToken();
-  
+
   if (!token) {
     throw new Error('No token to refresh');
   }
@@ -113,7 +113,7 @@ let refreshInterval = null;
 export function startTokenRefresh() {
   // Clear any existing interval
   stopTokenRefresh();
-  
+
   refreshInterval = setInterval(async () => {
     if (needsTokenRefresh()) {
       try {
@@ -173,7 +173,7 @@ export async function login(password, rememberMe = false) {
  */
 export async function logout() {
   stopTokenRefresh();
-  
+
   const token = getAccessToken();
 
   if (token) {
