@@ -10,7 +10,7 @@
      MOBILE LAYOUT DIMENSIONS
      ============================================ */
   --mobile-tab-bar-height: 56px;
-  --mobile-header-height: 56px;
+  --mobile-header-height: 40px;
   --mobile-touch-target: 48px;
   --mobile-touch-target-large: 56px;
 
@@ -199,7 +199,7 @@
 /* Landscape mode adjustments */
 @media (orientation: landscape) {
   :root {
-    --mobile-header-height: 56px;
+    --mobile-header-height: 40px;
     --mobile-tab-bar-height: 56px;
   }
 }

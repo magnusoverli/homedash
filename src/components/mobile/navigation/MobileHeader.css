@@ -8,20 +8,20 @@
   z-index: var(--mobile-z-header);
   background-color: var(--mobile-color-bg-header);
   color: var(--mobile-color-text-on-dark);
-  padding: var(--mobile-space-m);
+  padding: var(--mobile-space-xs);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--mobile-space-m);
-  min-height: 56px;
+  min-height: 40px;
   box-shadow: var(--mobile-shadow-small);
 }
 
 /* Support for safe area (notches, etc.) */
 .mobile-header {
-  padding-top: max(var(--mobile-space-m), env(safe-area-inset-top));
-  padding-left: max(var(--mobile-space-m), env(safe-area-inset-left));
-  padding-right: max(var(--mobile-space-m), env(safe-area-inset-right));
+  padding-top: max(var(--mobile-space-xs), env(safe-area-inset-top));
+  padding-left: max(var(--mobile-space-xs), env(safe-area-inset-left));
+  padding-right: max(var(--mobile-space-xs), env(safe-area-inset-right));
 }
 
 /* Default variant - centered title with optional side slots */
@@ -127,7 +127,7 @@
   .mobile-header {
     background-color: var(--mobile-color-bg-header);
   }
-  
+
   .mobile-header--overview {
     background: linear-gradient(
       135deg,
@@ -140,12 +140,11 @@
 /* Tablet adjustments */
 @media (min-width: 768px) {
   .mobile-header {
-    padding: var(--mobile-space-l);
-    min-height: 60px;
+    padding: var(--mobile-space-s);
+    min-height: 45px;
   }
-  
+
   .mobile-header-title {
     font-size: var(--mobile-font-size-h1);
   }
 }
-

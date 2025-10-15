@@ -156,16 +156,34 @@ const MobileOverview = ({ currentWeek, onWeekChange }) => {
     onWeekChange(new Date());
   };
 
+  const getWeekNumber = date => {
+    const d = new Date(
+      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+    );
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+  };
+
   const getWeekDisplay = () => {
     const weekStart = getWeekStart();
+    const weekNumber = getWeekNumber(weekStart);
+    return `Week ${weekNumber}`;
+  };
+
+  const isCurrentWeek = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const weekStart = getWeekStart();
+    weekStart.setHours(0, 0, 0, 0);
+
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
 
-    const formatDate = date => {
-      return `${date.getDate()}/${date.getMonth() + 1}`;
-    };
-
-    return `${formatDate(weekStart)} - ${formatDate(weekEnd)}`;
+    return today >= weekStart && today <= weekEnd;
   };
 
   const handleDeleteActivity = async activityId => {
@@ -283,7 +301,7 @@ const MobileOverview = ({ currentWeek, onWeekChange }) => {
             </button>
 
             <button
-              className="mobile-week-display"
+              className={`mobile-week-display ${isCurrentWeek() ? 'mobile-week-display--current' : ''}`}
               onClick={handleToday}
               aria-label="Go to today"
             >
