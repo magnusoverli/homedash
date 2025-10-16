@@ -1,14 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import {
-  CloseIcon,
-  TrashIcon,
-  WarningIcon,
-  UploadIcon,
-  LoadingSpinner,
-} from '../../icons';
+import { CloseIcon, TrashIcon, WarningIcon } from '../../icons';
 import { AVATAR_COLORS } from '../../../constants/colors';
-import { validateImageFile } from '../../../utils/fileValidation';
-import { getApiErrorMessage } from '../../../utils/errorUtils';
 import API_ENDPOINTS from '../../../config/api';
 import { getAccessToken } from '../../../services/authService';
 import dataService from '../../../services/dataService';
@@ -49,20 +41,12 @@ const PersonProfileModal = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Spond integration state
-  const [spondEnabled, setSpondEnabled] = useState(false);
-  const [spondEmail, setSpondEmail] = useState('');
-  const [spondPassword, setSpondPassword] = useState('');
-  const [isTestingSpond, setIsTestingSpond] = useState(false);
   const [spondAuthState, setSpondAuthState] = useState({
     hasCredentials: false,
     authenticated: false,
     email: '',
   });
 
-  // Municipal calendar state
-  const [calendarUrl, setCalendarUrl] = useState('');
-  const [isImportingCalendar, setIsImportingCalendar] = useState(false);
   const [calendarInfo, setCalendarInfo] = useState(null);
 
   const modalRef = useRef(null);
@@ -111,21 +95,16 @@ const PersonProfileModal = ({
           headers,
         }
       );
-      
+
       if (spondResponse.ok) {
         const spondState = await spondResponse.json();
         setSpondAuthState(spondState);
-        setSpondEnabled(spondState.hasCredentials || spondState.authenticated);
-        if (spondState.hasCredentials) {
-          setSpondEmail(spondState.email || '');
-        }
       }
 
       // Load calendar info from family member data
       const members = await dataService.getFamilyMembers();
       const currentMember = members.find(m => m.id === memberId);
       if (currentMember) {
-        setCalendarUrl(currentMember.calendarUrl || '');
         setCalendarInfo({
           url: currentMember.calendarUrl,
           lastSynced: currentMember.calendarLastSynced,

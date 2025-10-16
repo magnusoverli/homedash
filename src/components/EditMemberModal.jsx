@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import GenericModal from './GenericModal';
 import {
   LoadingSpinner,
@@ -92,47 +92,10 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
     setActiveTab('basic'); // Reset to basic tab when member changes
   }, [member]);
 
-  // Load LLM settings and check for school schedule when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      loadLlmSettings();
-      checkForSchoolSchedule();
-      loadSpondAuthState();
-      loadCalendarInfo();
-    }
-  }, [isOpen, member]);
-
-  const loadLlmSettings = async () => {
-    try {
-      const settings = await dataService.getSettings();
-      setLlmSettings({
-        enabled: Boolean(
-          settings.llmIntegrationEnabled === 'true' ||
-            settings.llmIntegrationEnabled === true ||
-            settings.llmIntegrationEnabled === 1
-        ),
-        apiKey: settings.anthropicApiKey || '',
-        selectedModel: settings.selectedAnthropicModel || '',
-      });
-    } catch (error) {
-      console.error('Error loading LLM settings:', error);
-      // Fallback to localStorage
-      const localEnabled = localStorage.getItem('llmIntegrationEnabled');
-      setLlmSettings({
-        enabled: Boolean(
-          localEnabled === 'true' || localEnabled === true || localEnabled === 1
-        ),
-        apiKey: localStorage.getItem('anthropicApiKey') || '',
-        selectedModel: localStorage.getItem('selectedAnthropicModel') || '',
-      });
-    }
-  };
-
-  const checkForSchoolSchedule = async () => {
+  const checkForSchoolSchedule = useCallback(async () => {
     if (!member?.id) return;
 
     try {
-      // Check if member has any activities with school schedule type
       const activities = await dataService.getActivities({
         memberId: member.id,
       });
@@ -152,13 +115,12 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
     } catch (error) {
       console.error('Error checking for school schedule:', error);
     }
-  };
+  }, [member?.id]);
 
-  const loadCalendarInfo = async () => {
+  const loadCalendarInfo = useCallback(async () => {
     if (!member?.id) return;
 
     try {
-      // Get member data to check for calendar info
       const members = await dataService.getFamilyMembers();
       const currentMember = members.find(m => m.id === member.id);
 
@@ -170,9 +132,9 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
     } catch (error) {
       console.error('Error loading calendar info:', error);
     }
-  };
+  }, [member?.id]);
 
-  const loadSpondAuthState = async () => {
+  const loadSpondAuthState = useCallback(async () => {
     if (!member?.id) return;
 
     setIsLoadingSpondState(true);
@@ -210,7 +172,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       if (data.hasCredentials) {
         setSpondIntegrationEnabled(true);
         setSpondEmail(data.email || '');
-        // Don't set password from stored data for security
       }
     } catch (error) {
       console.error('❌ Error loading Spond auth state:', error);
@@ -224,7 +185,47 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
     } finally {
       setIsLoadingSpondState(false);
     }
-  };
+  }, [member?.id]);
+
+  const loadLlmSettings = useCallback(async () => {
+    try {
+      const settings = await dataService.getSettings();
+      setLlmSettings({
+        enabled: Boolean(
+          settings.llmIntegrationEnabled === 'true' ||
+            settings.llmIntegrationEnabled === true ||
+            settings.llmIntegrationEnabled === 1
+        ),
+        apiKey: settings.anthropicApiKey || '',
+        selectedModel: settings.selectedAnthropicModel || '',
+      });
+    } catch (error) {
+      console.error('Error loading LLM settings:', error);
+      const localEnabled = localStorage.getItem('llmIntegrationEnabled');
+      setLlmSettings({
+        enabled: Boolean(
+          localEnabled === 'true' || localEnabled === true || localEnabled === 1
+        ),
+        apiKey: localStorage.getItem('anthropicApiKey') || '',
+        selectedModel: localStorage.getItem('selectedAnthropicModel') || '',
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadLlmSettings();
+      checkForSchoolSchedule();
+      loadSpondAuthState();
+      loadCalendarInfo();
+    }
+  }, [
+    isOpen,
+    loadLlmSettings,
+    checkForSchoolSchedule,
+    loadSpondAuthState,
+    loadCalendarInfo,
+  ]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({

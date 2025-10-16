@@ -5,7 +5,6 @@ import {
   isTouchDevice,
   getDeviceType,
   supportsHover,
-  hasCoarsePointer,
   getOrientation,
 } from '../utils/deviceDetection';
 

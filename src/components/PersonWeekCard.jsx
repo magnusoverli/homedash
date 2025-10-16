@@ -19,17 +19,18 @@ const PersonWeekCard = ({
 
   const [isDragging, setIsDragging] = useState(false);
 
-  // Persist resize state per member in localStorage
-  const getStoredGridHeight = () => {
+  const getStoredGridHeight = useCallback(() => {
     try {
       const stored = localStorage.getItem(`weekGridHeight_${member.id}`);
       return stored ? parseFloat(stored) : 70;
     } catch {
       return 70;
     }
-  };
+  }, [member.id]);
 
-  const [weekGridHeight, setWeekGridHeight] = useState(getStoredGridHeight);
+  const [weekGridHeight, setWeekGridHeight] = useState(() =>
+    getStoredGridHeight()
+  );
   const containerRef = useRef(null);
   const weekGridRef = useRef(null);
   const [dynamicPixelsPerHour, setDynamicPixelsPerHour] = useState(54);
@@ -68,7 +69,7 @@ const PersonWeekCard = ({
     if (storedHeight !== weekGridHeight) {
       setWeekGridHeight(storedHeight);
     }
-  }, [member.id]); // Only depend on member.id to avoid infinite loops
+  }, [member.id, getStoredGridHeight, weekGridHeight]); // Only depend on member.id to avoid infinite loops
 
   // Calculate dynamic pixels per hour based on week-grid height
   useEffect(() => {
@@ -200,49 +201,50 @@ const PersonWeekCard = ({
   };
 
   // Standard resizable pane implementation
-  const handleResizeStart = useCallback(e => {
-    e.preventDefault();
-    setIsDragging(true);
+  const handleResizeStart = useCallback(
+    e => {
+      e.preventDefault();
+      setIsDragging(true);
 
-    const handleMouseMove = moveEvent => {
-      if (!containerRef.current) return;
+      const handleMouseMove = moveEvent => {
+        if (!containerRef.current) return;
 
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const clientY = moveEvent.touches
-        ? moveEvent.touches[0].clientY
-        : moveEvent.clientY;
-      const relativeY = clientY - containerRect.top;
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const clientY = moveEvent.touches
+          ? moveEvent.touches[0].clientY
+          : moveEvent.clientY;
+        const relativeY = clientY - containerRect.top;
 
-      // Calculate percentage (with constraints)
-      const percentage = (relativeY / containerRect.height) * 100;
-      const newWeekGridHeight = Math.min(80, Math.max(20, percentage));
+        const percentage = (relativeY / containerRect.height) * 100;
+        const newWeekGridHeight = Math.min(80, Math.max(20, percentage));
 
-      setWeekGridHeight(newWeekGridHeight);
+        setWeekGridHeight(newWeekGridHeight);
 
-      // Persist the new height to localStorage
-      try {
-        localStorage.setItem(
-          `weekGridHeight_${member.id}`,
-          newWeekGridHeight.toString()
-        );
-      } catch (error) {
-        console.warn('Failed to save grid height to localStorage:', error);
-      }
-    };
+        try {
+          localStorage.setItem(
+            `weekGridHeight_${member.id}`,
+            newWeekGridHeight.toString()
+          );
+        } catch (error) {
+          console.warn('Failed to save grid height to localStorage:', error);
+        }
+      };
 
-    const handleMouseUp = () => {
-      setIsDragging(false);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.removeEventListener('touchmove', handleMouseMove);
-      document.removeEventListener('touchend', handleMouseUp);
-    };
+      const handleMouseUp = () => {
+        setIsDragging(false);
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('touchmove', handleMouseMove);
+        document.removeEventListener('touchend', handleMouseUp);
+      };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-    document.addEventListener('touchmove', handleMouseMove);
-    document.addEventListener('touchend', handleMouseUp);
-  }, []);
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchmove', handleMouseMove);
+      document.addEventListener('touchend', handleMouseUp);
+    },
+    [member.id]
+  );
 
   // Prevent text selection during drag
   useEffect(() => {
