@@ -23,18 +23,16 @@ const MobileTaskList = ({ tasks = [], dragHandleProps = {} }) => {
     if (!header || !dragHandleProps.onTouchMove) return;
 
     const handleTouchMove = e => {
-      // Prevent pull-to-refresh when dragging
       e.preventDefault();
       dragHandleProps.onTouchMove(e);
     };
 
-    // Add with passive: false to allow preventDefault
     header.addEventListener('touchmove', handleTouchMove, { passive: false });
 
     return () => {
       header.removeEventListener('touchmove', handleTouchMove);
     };
-  }, [dragHandleProps.onTouchMove]);
+  }, [dragHandleProps, dragHandleProps.onTouchMove]);
 
   // Extract className from dragHandleProps to merge with base class
   const { className: dragClassName, ...restDragProps } = dragHandleProps;

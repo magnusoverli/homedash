@@ -15,7 +15,6 @@ import './MobilePersonCard.css';
  * @param {Array} props.activities - Activities for this member
  * @param {Array} props.homework - Homework/tasks for this member
  * @param {Date} props.weekStart - Start date of current week
- * @param {Function} props.onDeleteActivity - Callback to delete activity
  * @param {Function} props.onDeleteTask - Callback to delete task
  * @param {boolean} props.isActive - Whether this card is currently visible
  */
@@ -24,7 +23,6 @@ const MobilePersonCard = ({
   activities = [],
   homework = [],
   weekStart,
-  onDeleteActivity,
   onDeleteTask,
   isActive = false,
 }) => {

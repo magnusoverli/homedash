@@ -15,9 +15,8 @@ import './MobileTimeline.css';
  * @param {Date} props.weekStart - Start of current week
  * @param {boolean} props.isActive - Whether this timeline is active
  */
-const MobileTimeline = ({ member, activities = [], weekStart, isActive }) => {
+const MobileTimeline = ({ activities = [], weekStart, isActive }) => {
   const timelineRef = useRef(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
 
   // Initialize selectedDay to today's index in weekDays array (Mon=0, Sun=6)
   const getTodayIndex = () => {
@@ -27,15 +26,6 @@ const MobileTimeline = ({ member, activities = [], weekStart, isActive }) => {
   };
 
   const [selectedDay, setSelectedDay] = useState(getTodayIndex());
-
-  // Update current time every minute
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   // Scroll to current time on mount
   useEffect(() => {

@@ -12,12 +12,7 @@ import './MobileHeader.css';
  * @param {React.ReactNode} props.centerSlot - Custom content for center slot
  * @param {React.ReactNode} props.rightSlot - Custom content for right slot
  */
-const MobileHeader = ({
-  variant = 'overview',
-  leftSlot,
-  centerSlot,
-  rightSlot,
-}) => {
+const MobileHeader = ({ leftSlot, centerSlot, rightSlot }) => {
   return (
     <header className="mobile-header mobile-header--overview">
       <div className="mobile-header-content">
