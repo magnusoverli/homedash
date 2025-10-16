@@ -48,6 +48,7 @@
 All SVG icons are centralized in reusable components. Always use these instead of inline SVGs.
 
 **Available Icons:**
+
 - `CloseIcon` - X/close icon for modals and dismissible elements
 - `LoadingSpinner` - Animated loading spinner with SVG animation
 - `TrashIcon` - Delete/trash icon for destructive actions
@@ -59,6 +60,7 @@ All SVG icons are centralized in reusable components. Always use these instead o
 - `SettingsIcon` - Settings/gear icon for settings access
 
 **Usage:**
+
 ```jsx
 import { CloseIcon, LoadingSpinner } from '../components/icons';
 
@@ -67,6 +69,7 @@ import { CloseIcon, LoadingSpinner } from '../components/icons';
 ```
 
 **Props:**
+
 - `size` (number): Icon size in pixels (default: 24)
 - `color` (string): Icon color (default: 'currentColor')
 - `className` (string): Additional CSS classes
@@ -74,6 +77,7 @@ import { CloseIcon, LoadingSpinner } from '../components/icons';
 ### UI Components
 
 #### Button Component
+
 Standardized button with consistent styling and variants.
 
 ```jsx
@@ -88,15 +92,17 @@ import Button from '../components/Button';
 **Sizes:** small, medium (default), large
 
 #### LoadingState Component
+
 Standardized loading state with spinner and message.
 
 ```jsx
 import LoadingState from '../components/LoadingState';
 
-<LoadingState text="Loading data..." spinnerSize={40} />
+<LoadingState text="Loading data..." spinnerSize={40} />;
 ```
 
 #### ErrorState Component
+
 Standardized error state with icon, message, and optional retry.
 
 ```jsx
@@ -106,10 +112,11 @@ import ErrorState from '../components/ErrorState';
   title="Something went wrong"
   message={error}
   onRetry={handleRetry}
-/>
+/>;
 ```
 
 #### EmptyState Component
+
 Standardized empty state for empty lists or no data scenarios.
 
 ```jsx
@@ -121,7 +128,7 @@ import EmptyState from '../components/EmptyState';
   message="Add your first item to get started"
   onAction={handleAdd}
   actionText="Add Item"
-/>
+/>;
 ```
 
 ### Utility Functions
@@ -139,6 +146,7 @@ if (!validation.valid) {
 ```
 
 **Available Functions:**
+
 - `validateImageFile(file, maxSizeMB)` - Validate image files
 - `validateFile(file, allowedTypes, maxSizeMB)` - Validate any file type
 - `formatFileSize(bytes)` - Format bytes to human-readable string
@@ -158,6 +166,7 @@ try {
 ```
 
 **Available Functions:**
+
 - `getApiErrorMessage(error, response)` - Get user-friendly error message
 - `getHttpStatusMessage(statusCode)` - Get HTTP status message
 - `isNetworkError(error)` - Check if error is network-related
@@ -220,6 +229,15 @@ The HomeDash application is deployed using Docker Compose with two services:
 1. **homedash-app** (Frontend) - React application served on port 3000
 2. **homedash-backend** (Backend Proxy) - Express server handling Anthropic API communication on port 3001
 
+### Node.js Version
+
+- **Current**: Node 24.10.0 (Current release, becomes LTS October 2025)
+- **Docker Images**:
+  - Frontend: `node:24-alpine` (builder & production stages)
+  - Backend: `node:24-slim`
+- **Upgraded**: October 16, 2025 (from Node 20)
+- **Key Benefits**: V8 13.6 performance improvements, npm 11, URLPattern API, improved AsyncLocalStorage
+
 ### Quick Start
 
 #### Production Deployment
@@ -269,7 +287,7 @@ PORT=3001
 - **External Access**:
   - Frontend: `http://localhost:3000` (or custom port via docker-compose)
   - Backend API: `http://localhost:3001` (fixed port)
-- **Dynamic API URL Detection**: 
+- **Dynamic API URL Detection**:
   - The frontend automatically detects the backend URL at runtime using `window.location.protocol` and `window.location.hostname`
   - Works on any port mapping (e.g., `3000:3000`, `3030:3000`, `8080:3000`)
   - Backend must always be accessible on port 3001 of the same hostname
@@ -337,7 +355,7 @@ environment:
 
 #### How Authentication Works
 
-1. **Backend**: 
+1. **Backend**:
    - Checks for `ACCESS_PASSWORD` environment variable
    - If set, requires `x-access-token` header on all API requests (except health, auth status, and login endpoints)
    - Issues session tokens on successful password validation
