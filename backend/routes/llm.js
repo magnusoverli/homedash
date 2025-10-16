@@ -31,38 +31,4 @@ router.post('/models', async (req, res) => {
   return res.json(result);
 });
 
-router.post('/messages', async (req, res) => {
-  const { apiKey, ...messageData } = req.body;
-
-  logger.info('Messages endpoint called');
-
-  if (!apiKey) {
-    return res.status(400).json({ error: 'API key is required' });
-  }
-
-  try {
-    const result = await AnthropicService.sendMessage(apiKey, messageData);
-
-    if (!result.success) {
-      return res.status(result.status).json(result.error);
-    }
-
-    res.json(result.data);
-  } catch (error) {
-    logger.error('Error proxying message:', error);
-
-    if (error.message === 'Request timed out') {
-      return res.status(500).json({
-        error: 'Request timed out',
-        message: 'The request to Anthropic API timed out. Please try again.',
-      });
-    }
-
-    res.status(500).json({
-      error: 'Failed to proxy message',
-      message: error.message,
-    });
-  }
-});
-
 export default router;

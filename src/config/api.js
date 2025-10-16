@@ -46,7 +46,6 @@ export const ENDPOINTS = {
   llm: {
     testKey: `${BASE_URL}/api/test-key`,
     models: `${BASE_URL}/api/models`,
-    messages: `${BASE_URL}/api/messages`,
   },
   family: {
     list: `${BASE_URL}/api/family-members`,
@@ -89,13 +88,7 @@ export const ENDPOINTS = {
       selections: memberId =>
         `${BASE_URL}/api/spond/groups/${memberId}/selections`,
     },
-    profiles: {
-      list: memberId => `${BASE_URL}/api/spond/profiles/${memberId}`,
-    },
-    profileMapping: {
-      get: memberId => `${BASE_URL}/api/spond/profile-mapping/${memberId}`,
-      save: memberId => `${BASE_URL}/api/spond/profile-mapping/${memberId}`,
-    },
+
     activities: {
       syncStatus: memberId =>
         `${BASE_URL}/api/spond/activities/${memberId}/sync-status`,
@@ -105,7 +98,6 @@ export const ENDPOINTS = {
   settings: {
     list: `${BASE_URL}/api/settings`,
     update: key => `${BASE_URL}/api/settings/${key}`,
-    promptContent: `${BASE_URL}/api/prompt-content`,
   },
   health: `${BASE_URL}/api/health`,
 };

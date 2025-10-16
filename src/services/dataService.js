@@ -163,14 +163,6 @@ class DataService {
     return this.handleResponse(response);
   }
 
-  async getPromptContent() {
-    const response = await fetch(`${API_URL}/api/prompt-content`, {
-      method: 'GET',
-      headers: this.getHeaders(),
-    });
-    return this.handleResponse(response);
-  }
-
   async getHomework(filters = {}) {
     const params = new URLSearchParams();
     if (filters.member_id) params.append('member_id', filters.member_id);

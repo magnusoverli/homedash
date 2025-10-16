@@ -1,6 +1,4 @@
 import express from 'express';
-import { promises as fs } from 'fs';
-import path from 'path';
 import { requireAuth } from '../middleware/auth.js';
 import { getAll, runQuery } from '../database.js';
 
@@ -40,20 +38,6 @@ router.put('/:key', async (req, res) => {
   } catch (error) {
     console.error('Error updating setting:', error);
     res.status(500).json({ error: 'Failed to update setting' });
-  }
-});
-
-router.get('/prompt-content', async (req, res) => {
-  try {
-    const promptPath = path.join(process.cwd(), 'llm_prompt.md');
-    const promptContent = await fs.readFile(promptPath, 'utf8');
-
-    res.json({
-      content: promptContent,
-    });
-  } catch (error) {
-    console.error('Error reading prompt file:', error);
-    res.status(500).json({ error: 'Failed to read prompt content' });
   }
 });
 
