@@ -27,13 +27,19 @@ COPY backend/ .
 # Create non-root user for security
 RUN groupadd -r nodejs && useradd -r -g nodejs backend
 
-# Create data directory and change ownership
-RUN mkdir -p /app/data && \
-    chown -R backend:nodejs /app && \
+# Change ownership of app and shared directories
+RUN chown -R backend:nodejs /app && \
     chown -R backend:nodejs /shared
 
-# Switch to non-root user
-USER backend
+# Create entrypoint script to fix volume permissions
+RUN echo '#!/bin/sh\n\
+mkdir -p /app/data\n\
+chown -R backend:nodejs /app/data\n\
+exec su-exec backend:nodejs "$@"' > /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
+# Install su-exec for dropping privileges
+RUN apt-get update && apt-get install -y su-exec && rm -rf /var/lib/apt/lists/*
 
 # Expose port
 EXPOSE 3001
@@ -42,5 +48,6 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3001/api/health || exit 1
 
-# Start the application
+# Use entrypoint to fix permissions then drop to backend user
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["node", "server.js"]
