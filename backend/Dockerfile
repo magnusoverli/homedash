@@ -31,15 +31,15 @@ RUN groupadd -r nodejs && useradd -r -g nodejs backend
 RUN chown -R backend:nodejs /app && \
     chown -R backend:nodejs /shared
 
+# Install gosu for dropping privileges
+RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
+
 # Create entrypoint script to fix volume permissions
 RUN echo '#!/bin/sh\n\
 mkdir -p /app/data\n\
 chown -R backend:nodejs /app/data\n\
-exec su-exec backend:nodejs "$@"' > /entrypoint.sh && \
+exec gosu backend:nodejs "$@"' > /entrypoint.sh && \
     chmod +x /entrypoint.sh
-
-# Install su-exec for dropping privileges
-RUN apt-get update && apt-get install -y su-exec && rm -rf /var/lib/apt/lists/*
 
 # Expose port
 EXPOSE 3001
