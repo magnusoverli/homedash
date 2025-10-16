@@ -72,11 +72,20 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
 
   useEffect(() => {
     if (member) {
+      // Calculate current week's Monday as default
+      const today = new Date();
+      const day = today.getDay();
+      const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(today);
+      monday.setDate(diff);
+      monday.setHours(0, 0, 0, 0);
+      const defaultWeek = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+
       setFormData({
         name: member.name || '',
         avatarColor: member.avatarColor || member.color || '#FFF48D',
         schoolPlanImage: member.schoolPlanImage || null,
-        selectedWeekDate: null, // Reset week selection when member changes
+        selectedWeekDate: defaultWeek, // Default to current week
       });
     }
     setShowDeleteConfirm(false);
@@ -97,15 +106,22 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
     try {
       const settings = await dataService.getSettings();
       setLlmSettings({
-        enabled: settings.llmIntegrationEnabled === 'true',
+        enabled: Boolean(
+          settings.llmIntegrationEnabled === 'true' ||
+            settings.llmIntegrationEnabled === true ||
+            settings.llmIntegrationEnabled === 1
+        ),
         apiKey: settings.anthropicApiKey || '',
         selectedModel: settings.selectedAnthropicModel || '',
       });
     } catch (error) {
       console.error('Error loading LLM settings:', error);
       // Fallback to localStorage
+      const localEnabled = localStorage.getItem('llmIntegrationEnabled');
       setLlmSettings({
-        enabled: localStorage.getItem('llmIntegrationEnabled') === 'true',
+        enabled: Boolean(
+          localEnabled === 'true' || localEnabled === true || localEnabled === 1
+        ),
         apiKey: localStorage.getItem('anthropicApiKey') || '',
         selectedModel: localStorage.getItem('selectedAnthropicModel') || '',
       });
@@ -167,7 +183,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       if (token) {
         headers['x-access-token'] = token;
       }
-      
+
       const response = await fetch(
         `${API_ENDPOINTS.SPOND_CREDENTIALS}/${member.id}`,
         {
@@ -175,7 +191,19 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
           headers,
         }
       );
+
+      if (!response.ok) {
+        console.error('❌ Failed to load Spond auth state:', response.status);
+        throw new Error(`HTTP ${response.status}`);
+      }
+
       const data = await response.json();
+
+      console.log('🔍 Spond auth state loaded:', {
+        hasCredentials: data.hasCredentials,
+        authenticated: data.authenticated,
+        email: data.email,
+      });
 
       setSpondAuthState(data);
 
@@ -234,23 +262,23 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
   const getWeekOptions = () => {
     const options = [];
     const today = new Date();
-    
+
     for (let i = 0; i < 9; i++) {
       const weekDate = new Date(today);
       weekDate.setDate(today.getDate() + i * 7);
       const monday = getMonday(weekDate);
       const dateString = formatDate(monday);
-      
+
       let label = formatWeekDisplay(dateString);
       if (i === 0) {
         label += ' (This week)';
       } else if (i === 1) {
         label += ' (Next week)';
       }
-      
+
       options.push({ value: dateString, label });
     }
-    
+
     return options;
   };
 
@@ -405,7 +433,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       if (token) {
         headers['x-access-token'] = token;
       }
-      
+
       const response = await fetch(
         `${API_ENDPOINTS.SPOND_GROUPS}/${member.id}`,
         {
@@ -475,7 +503,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
           if (token) {
             headers['x-access-token'] = token;
           }
-          
+
           const response = await fetch(
             `${API_ENDPOINTS.SPOND_CREDENTIALS}/${member.id}`,
             {
@@ -521,7 +549,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       if (token) {
         headers['x-access-token'] = token;
       }
-      
+
       const response = await fetch(
         `${API_ENDPOINTS.FAMILY_MEMBERS}/${member.id}/import-calendar`,
         {
@@ -567,7 +595,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       if (token) {
         headers['x-access-token'] = token;
       }
-      
+
       const response = await fetch(
         `${API_ENDPOINTS.FAMILY_MEMBERS}/${member.id}/remove-calendar`,
         {
@@ -616,7 +644,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       if (token) {
         headers['x-access-token'] = token;
       }
-      
+
       const response = await fetch(API_ENDPOINTS.TEST_SPOND_CREDENTIALS, {
         method: 'POST',
         headers,
@@ -639,7 +667,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
             if (token) {
               storeHeaders['x-access-token'] = token;
             }
-            
+
             const storeResponse = await fetch(
               `${API_ENDPOINTS.SPOND_CREDENTIALS}/${member.id}`,
               {
@@ -1563,7 +1591,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                       if (token) {
                         saveHeaders['x-access-token'] = token;
                       }
-                      
+
                       const response = await fetch(
                         `${API_ENDPOINTS.SPOND_GROUP_SELECTIONS}/${member.id}/selections`,
                         {
@@ -1584,6 +1612,41 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                         setSelectedGroups([]);
                         setGroupsData([]);
                         setGroupsError(null);
+
+                        // Trigger sync for the next 30 days of activities
+                        try {
+                          const today = new Date();
+                          const futureDate = new Date();
+                          futureDate.setDate(today.getDate() + 30);
+
+                          const formatDate = date => {
+                            const year = date.getFullYear();
+                            const month = String(date.getMonth() + 1).padStart(
+                              2,
+                              '0'
+                            );
+                            const day = String(date.getDate()).padStart(2, '0');
+                            return `${year}-${month}-${day}`;
+                          };
+
+                          console.log(
+                            '🔄 Triggering Spond activity sync after group selection...'
+                          );
+                          await dataService.syncSpondActivities(
+                            member.id,
+                            formatDate(today),
+                            formatDate(futureDate)
+                          );
+                          console.log(
+                            '✅ Spond activities synced successfully'
+                          );
+                        } catch (syncError) {
+                          console.error(
+                            '❌ Error syncing activities:',
+                            syncError
+                          );
+                          // Don't show error to user - they can manually refresh
+                        }
                       } else {
                         const errorData = await response
                           .json()
