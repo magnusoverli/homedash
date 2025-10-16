@@ -97,21 +97,49 @@ const PersonProfileModal = ({
   // Load integration data
   const loadIntegrationData = async memberId => {
     try {
-      // Load Spond auth state
-      const spondState = await dataService.getSpondAuthState(memberId);
-      if (spondState) {
-        setSpondAuthState(spondState);
-        setSpondEnabled(spondState.hasCredentials || spondState.authenticated);
+      // Load Spond auth state by calling the API directly
+      const headers = {};
+      const token = getAccessToken();
+      if (token) {
+        headers['x-access-token'] = token;
       }
 
-      // Load calendar info
-      const calendarData = await dataService.getCalendarInfo(memberId);
-      if (calendarData) {
-        setCalendarInfo(calendarData);
-        setCalendarUrl(calendarData.url || '');
+      const spondResponse = await fetch(
+        API_ENDPOINTS.SPOND_CREDENTIALS.get(memberId),
+        {
+          method: 'GET',
+          headers,
+        }
+      );
+      
+      if (spondResponse.ok) {
+        const spondState = await spondResponse.json();
+        setSpondAuthState(spondState);
+        setSpondEnabled(spondState.hasCredentials || spondState.authenticated);
+        if (spondState.hasCredentials) {
+          setSpondEmail(spondState.email || '');
+        }
+      }
+
+      // Load calendar info from family member data
+      const members = await dataService.getFamilyMembers();
+      const currentMember = members.find(m => m.id === memberId);
+      if (currentMember) {
+        setCalendarUrl(currentMember.calendarUrl || '');
+        setCalendarInfo({
+          url: currentMember.calendarUrl,
+          lastSynced: currentMember.calendarLastSynced,
+          eventCount: currentMember.calendarEventCount || 0,
+        });
       }
     } catch (error) {
       console.error('Error loading integration data:', error);
+      // Reset state on error
+      setSpondAuthState({
+        hasCredentials: false,
+        authenticated: false,
+        email: '',
+      });
     }
   };
 

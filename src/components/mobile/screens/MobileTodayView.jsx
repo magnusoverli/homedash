@@ -58,7 +58,7 @@ const MobileTodayView = () => {
             // Filter out declined Spond activities
             if (
               activity.source === 'spond' &&
-              activity.response_status === 'declined'
+              activity.responseStatus === 'declined'
             ) {
               return false;
             }
@@ -66,12 +66,11 @@ const MobileTodayView = () => {
           })
           .map(activity => ({
             ...activity,
-            member: mappedMembers.find(m => m.id === activity.member_id),
-            startTime: activity.start_time,
-            endTime: activity.end_time,
+            // Add member object for display (activity already has memberId from transformer)
+            member: mappedMembers.find(m => m.id === activity.memberId),
           }))
           .sort((a, b) => {
-            // Sort by start time
+            // Sort by start time (already in camelCase from transformer)
             return a.startTime.localeCompare(b.startTime);
           });
 
@@ -217,9 +216,9 @@ const MobileTodayView = () => {
                   <div className="today-card-time">
                     {activity.startTime} - {activity.endTime}
                   </div>
-                  {activity.location_name && (
+                  {activity.locationName && (
                     <div className="today-card-location">
-                      📍 {activity.location_name}
+                      📍 {activity.locationName}
                     </div>
                   )}
                 </div>

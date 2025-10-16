@@ -88,27 +88,18 @@ const MobileOverview = ({ currentWeek }) => {
       activitiesData.forEach(activity => {
         if (
           activity.source === 'spond' &&
-          activity.response_status === 'declined'
+          activity.responseStatus === 'declined'
         ) {
           return;
         }
 
-        if (!activitiesByMember[activity.member_id]) {
-          activitiesByMember[activity.member_id] = [];
+        if (!activitiesByMember[activity.memberId]) {
+          activitiesByMember[activity.memberId] = [];
         }
 
-        activitiesByMember[activity.member_id].push({
-          id: activity.id,
-          memberId: activity.member_id,
-          title: activity.title,
-          date: activity.date,
-          startTime: activity.start_time,
-          endTime: activity.end_time,
-          description: activity.description,
-          source: activity.source || 'manual',
-          location_name: activity.location_name,
-          is_cancelled: activity.is_cancelled,
-        });
+        // Use the full activity object from activityFromAPI transformer
+        // which includes all necessary fields like category, activityType, etc.
+        activitiesByMember[activity.memberId].push(activity);
       });
 
       setActivities(activitiesByMember);

@@ -81,7 +81,7 @@ const MobileActivityBlock = ({ activity }) => {
         {activity.source === 'spond' && (
           <span className="mobile-activity-badge" title="From Spond">⚽</span>
         )}
-        {activity.is_cancelled && (
+        {activity.isCancelled && (
           <span className="mobile-activity-badge mobile-activity-badge--cancelled" title="Cancelled">❌</span>
         )}
       </div>
