@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+/* eslint-env node */
+/* global process */
 import sqlite3 from 'sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -26,31 +28,32 @@ const resetTables = () => {
     db.serialize(() => {
       // Drop Spond tables in correct order (respecting foreign keys)
       console.log('🗑️  Dropping spond_sync_log table...');
-      db.run('DROP TABLE IF EXISTS spond_sync_log', (err) => {
+      db.run('DROP TABLE IF EXISTS spond_sync_log', err => {
         if (err) {
           console.error('❌ Error dropping spond_sync_log:', err);
           return reject(err);
         }
-        
+
         console.log('🗑️  Dropping spond_activities table...');
-        db.run('DROP TABLE IF EXISTS spond_activities', (err) => {
+        db.run('DROP TABLE IF EXISTS spond_activities', err => {
           if (err) {
             console.error('❌ Error dropping spond_activities:', err);
             return reject(err);
           }
-          
+
           console.log('🗑️  Dropping spond_groups table...');
-          db.run('DROP TABLE IF EXISTS spond_groups', (err) => {
+          db.run('DROP TABLE IF EXISTS spond_groups', err => {
             if (err) {
               console.error('❌ Error dropping spond_groups:', err);
               return reject(err);
             }
-            
+
             console.log('✅ All Spond tables dropped successfully');
-            
+
             // Recreate tables
             console.log('🔨 Recreating spond_groups table...');
-            db.run(`
+            db.run(
+              `
               CREATE TABLE spond_groups (
                 id TEXT PRIMARY KEY,
                 member_id INTEGER NOT NULL,
@@ -63,14 +66,16 @@ const resetTables = () => {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
               )
-            `, (err) => {
-              if (err) {
-                console.error('❌ Error creating spond_groups:', err);
-                return reject(err);
-              }
-              
-              console.log('🔨 Recreating spond_activities table...');
-              db.run(`
+            `,
+              err => {
+                if (err) {
+                  console.error('❌ Error creating spond_groups:', err);
+                  return reject(err);
+                }
+
+                console.log('🔨 Recreating spond_activities table...');
+                db.run(
+                  `
                 CREATE TABLE spond_activities (
                   id TEXT PRIMARY KEY,
                   group_id TEXT NOT NULL,
@@ -96,14 +101,16 @@ const resetTables = () => {
                   FOREIGN KEY (group_id) REFERENCES spond_groups (id) ON DELETE CASCADE,
                   FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
                 )
-              `, (err) => {
-                if (err) {
-                  console.error('❌ Error creating spond_activities:', err);
-                  return reject(err);
-                }
-                
-                console.log('🔨 Recreating spond_sync_log table...');
-                db.run(`
+              `,
+                  err => {
+                    if (err) {
+                      console.error('❌ Error creating spond_activities:', err);
+                      return reject(err);
+                    }
+
+                    console.log('🔨 Recreating spond_sync_log table...');
+                    db.run(
+                      `
                   CREATE TABLE spond_sync_log (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     member_id INTEGER NOT NULL,
@@ -116,17 +123,26 @@ const resetTables = () => {
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
                   )
-                `, (err) => {
-                  if (err) {
-                    console.error('❌ Error creating spond_sync_log:', err);
-                    return reject(err);
+                `,
+                      err => {
+                        if (err) {
+                          console.error(
+                            '❌ Error creating spond_sync_log:',
+                            err
+                          );
+                          return reject(err);
+                        }
+
+                        console.log(
+                          '✅ All Spond tables recreated successfully'
+                        );
+                        resolve();
+                      }
+                    );
                   }
-                  
-                  console.log('✅ All Spond tables recreated successfully');
-                  resolve();
-                });
-              });
-            });
+                );
+              }
+            );
           });
         });
       });
@@ -139,7 +155,7 @@ resetTables()
     console.log('🎉 Spond table reset completed successfully!');
     db.close();
   })
-  .catch((err) => {
+  .catch(err => {
     console.error('❌ Failed to reset Spond tables:', err);
     db.close();
     process.exit(1);
