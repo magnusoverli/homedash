@@ -9,36 +9,34 @@ LABEL org.opencontainers.image.vendor="magnusoverli"
 
 WORKDIR /app
 
-# Install build dependencies for native modules (sqlite3), timezone data, and wget
+# Install ALL system dependencies in one layer for better caching
 RUN apt-get update && apt-get install -y \
     python3 \
     make \
     g++ \
     tzdata \
     wget \
+    gosu \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy package files
+# Create non-root user early (before file copies)
+RUN groupadd -r nodejs && useradd -r -g nodejs backend
+
+# Copy package files first (leverage cache when code changes)
 COPY backend/package*.json ./
 
 # Install dependencies (all for development support)
 RUN npm ci && npm cache clean --force
 
-# Copy shared utilities first (to parent of app directory)
+# Copy shared utilities (to parent of app directory)
 COPY shared/ /shared/
 
 # Copy backend application code
 COPY backend/ .
 
-# Create non-root user for security
-RUN groupadd -r nodejs && useradd -r -g nodejs backend
-
 # Change ownership of app and shared directories
 RUN chown -R backend:nodejs /app && \
     chown -R backend:nodejs /shared
-
-# Install gosu for dropping privileges
-RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
 
 # Create entrypoint script to fix volume permissions
 RUN echo '#!/bin/sh\n\

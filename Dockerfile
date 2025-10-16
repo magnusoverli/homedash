@@ -3,13 +3,13 @@ FROM node:24-slim AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files first for better layer caching
 COPY package*.json ./
 
 # Install all dependencies (including dev dependencies for build)
 RUN npm ci && npm cache clean --force
 
-# Copy source code
+# Copy source code (this layer changes most frequently)
 COPY . .
 
 # Build the application without setting VITE_API_URL to enable dynamic detection
@@ -27,9 +27,9 @@ LABEL org.opencontainers.image.vendor="magnusoverli"
 
 WORKDIR /app
 
-# Install timezone data and serve to serve the static files
+# Install timezone data and serve globally for serving static files
 RUN apt-get update && apt-get install -y tzdata && rm -rf /var/lib/apt/lists/* && \
-    npm install -g serve
+    npm install -g serve && npm cache clean --force
 
 # Create non-root user for security
 RUN groupadd -g 1001 nodejs && \
