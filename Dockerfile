@@ -38,6 +38,61 @@ RUN groupadd -g 1001 nodejs && \
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
 
+# Create serve configuration with compression and caching headers
+RUN echo '{\n\
+  "public": "dist",\n\
+  "headers": [\n\
+    {\n\
+      "source": "**/*.@(js|css|woff|woff2|ttf|eot)",\n\
+      "headers": [\n\
+        {\n\
+          "key": "Cache-Control",\n\
+          "value": "public, max-age=31536000, immutable"\n\
+        }\n\
+      ]\n\
+    },\n\
+    {\n\
+      "source": "**/*.@(jpg|jpeg|png|gif|svg|webp|ico)",\n\
+      "headers": [\n\
+        {\n\
+          "key": "Cache-Control",\n\
+          "value": "public, max-age=31536000, immutable"\n\
+        }\n\
+      ]\n\
+    },\n\
+    {\n\
+      "source": "index.html",\n\
+      "headers": [\n\
+        {\n\
+          "key": "Cache-Control",\n\
+          "value": "public, max-age=0, must-revalidate"\n\
+        }\n\
+      ]\n\
+    },\n\
+    {\n\
+      "source": "**/*",\n\
+      "headers": [\n\
+        {\n\
+          "key": "X-Content-Type-Options",\n\
+          "value": "nosniff"\n\
+        },\n\
+        {\n\
+          "key": "X-Frame-Options",\n\
+          "value": "DENY"\n\
+        },\n\
+        {\n\
+          "key": "X-XSS-Protection",\n\
+          "value": "1; mode=block"\n\
+        }\n\
+      ]\n\
+    }\n\
+  ],\n\
+  "cleanUrls": true,\n\
+  "rewrites": [\n\
+    { "source": "**", "destination": "/index.html" }\n\
+  ]\n\
+}' > /app/serve.json
+
 # Change ownership of the app directory
 RUN chown -R homedash:nodejs /app
 
@@ -51,5 +106,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
 
-# Start the application - serve on default 0.0.0.0:3000
-CMD ["serve", "-s", "dist", "-p", "3000"]
+# Start the application with compression and config
+CMD ["serve", "-c", "serve.json", "-p", "3000", "--no-clipboard"]
