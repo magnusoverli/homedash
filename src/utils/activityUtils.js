@@ -60,12 +60,15 @@ export const isSpondActivity = activity => {
 };
 
 /**
- * Check if activity is tentative (Spond activity with no response)
+ * Check if activity is tentative (Spond activity with no response or declined)
  * @param {Object} activity - The activity object
  * @returns {boolean} True if tentative
  */
 export const isTentativeActivity = activity => {
-  return activity.source === 'spond' && !activity.response_status;
+  return (
+    activity.source === 'spond' &&
+    (!activity.responseStatus || activity.responseStatus === 'declined')
+  );
 };
 
 /**
