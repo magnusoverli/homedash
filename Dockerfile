@@ -1,5 +1,5 @@
 # Multi-stage build for optimized production image
-FROM node:24-alpine AS builder
+FROM node:24-slim AS builder
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM node:24-alpine AS production
+FROM node:24-slim AS production
 
 # Add OCI labels for GitHub Container Registry linking
 LABEL org.opencontainers.image.source="https://github.com/magnusoverli/homedash"
@@ -28,12 +28,12 @@ LABEL org.opencontainers.image.vendor="magnusoverli"
 WORKDIR /app
 
 # Install timezone data and serve to serve the static files
-RUN apk add --no-cache tzdata && \
+RUN apt-get update && apt-get install -y tzdata && rm -rf /var/lib/apt/lists/* && \
     npm install -g serve
 
 # Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S homedash -u 1001
+RUN groupadd -g 1001 nodejs && \
+    useradd -u 1001 -g nodejs homedash
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
