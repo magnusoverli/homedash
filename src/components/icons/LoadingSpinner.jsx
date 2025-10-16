@@ -1,12 +1,5 @@
-/**
- * LoadingSpinner Component
- * 
- * Animated loading spinner with SVG animation
- * 
- * @param {number} size - Spinner size in pixels (default: 24)
- * @param {string} color - Spinner color (default: 'currentColor')
- * @param {string} className - Additional CSS classes
- */
+import PropTypes from 'prop-types';
+
 const LoadingSpinner = ({
   size = 24,
   color = 'currentColor',
@@ -45,6 +38,12 @@ const LoadingSpinner = ({
       </circle>
     </svg>
   );
+};
+
+LoadingSpinner.propTypes = {
+  size: PropTypes.number,
+  color: PropTypes.string,
+  className: PropTypes.string,
 };
 
 export default LoadingSpinner;

@@ -1,8 +1,9 @@
+import PropTypes from 'prop-types';
 /**
  * BackArrowIcon Component
- * 
+ *
  * Back/left arrow icon for navigation
- * 
+ *
  * @param {number} size - Icon size in pixels (default: 24)
  * @param {string} color - Icon color (default: 'currentColor')
  * @param {string} className - Additional CSS classes
@@ -31,6 +32,12 @@ const BackArrowIcon = ({
       />
     </svg>
   );
+};
+
+BackArrowIcon.propTypes = {
+  size: PropTypes.number,
+  color: PropTypes.string,
+  className: PropTypes.string,
 };
 
 export default BackArrowIcon;

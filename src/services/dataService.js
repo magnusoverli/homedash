@@ -1,5 +1,15 @@
 import { API_URL } from '../config/api';
 import { getAccessToken } from './authService';
+import {
+  familyMemberFromAPI,
+  familyMemberToAPI,
+  activityFromAPI,
+  activityToAPI,
+  homeworkFromAPI,
+  homeworkToAPI,
+  settingsFromAPI,
+  transformArray,
+} from './transformers';
 
 class DataService {
   getHeaders() {
@@ -21,22 +31,17 @@ class DataService {
         .json()
         .catch(() => ({ error: 'Network error' }));
 
-      // Create a more informative error message
       let errorMessage =
         errorData.error || `HTTP error! status: ${response.status}`;
 
-      // If there's additional context in the message field, include it
       if (errorData.message && errorData.message !== errorData.error) {
         errorMessage += `: ${errorData.message}`;
       }
 
-      // For specific HTTP status codes, provide more context
       if (response.status === 529) {
         errorMessage = `Anthropic API is currently overloaded (Error 529). Please try again in a few moments.`;
       } else if (response.status === 401) {
-        // Check if this is an auth error vs API key error
         if (errorData.message?.includes('access token')) {
-          // Clear invalid token and reload to show login
           import('./authService').then(({ clearAccessToken }) => {
             clearAccessToken();
             window.location.reload();
@@ -59,31 +64,33 @@ class DataService {
     return response.json();
   }
 
-  // Family Members
   async getFamilyMembers() {
     const response = await fetch(`${API_URL}/api/family-members`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
-    return this.handleResponse(response);
+    const data = await this.handleResponse(response);
+    return transformArray(data, familyMemberFromAPI);
   }
 
   async createFamilyMember(memberData) {
     const response = await fetch(`${API_URL}/api/family-members`, {
       method: 'POST',
       headers: this.getHeaders(),
-      body: JSON.stringify(memberData),
+      body: JSON.stringify(familyMemberToAPI(memberData)),
     });
-    return this.handleResponse(response);
+    const data = await this.handleResponse(response);
+    return familyMemberFromAPI(data);
   }
 
   async updateFamilyMember(id, memberData) {
     const response = await fetch(`${API_URL}/api/family-members/${id}`, {
       method: 'PUT',
       headers: this.getHeaders(),
-      body: JSON.stringify(memberData),
+      body: JSON.stringify(familyMemberToAPI(memberData)),
     });
-    return this.handleResponse(response);
+    const data = await this.handleResponse(response);
+    return familyMemberFromAPI(data);
   }
 
   async deleteFamilyMember(id) {
@@ -94,7 +101,6 @@ class DataService {
     return this.handleResponse(response);
   }
 
-  // Activities
   async getActivities(filters = {}) {
     const params = new URLSearchParams();
     if (filters.memberId) params.append('member_id', filters.memberId);
@@ -107,25 +113,28 @@ class DataService {
       method: 'GET',
       headers: this.getHeaders(),
     });
-    return this.handleResponse(response);
+    const data = await this.handleResponse(response);
+    return transformArray(data, activityFromAPI);
   }
 
   async createActivity(activityData) {
     const response = await fetch(`${API_URL}/api/activities`, {
       method: 'POST',
       headers: this.getHeaders(),
-      body: JSON.stringify(activityData),
+      body: JSON.stringify(activityToAPI(activityData)),
     });
-    return this.handleResponse(response);
+    const data = await this.handleResponse(response);
+    return activityFromAPI(data);
   }
 
   async updateActivity(id, activityData) {
     const response = await fetch(`${API_URL}/api/activities/${id}`, {
       method: 'PUT',
       headers: this.getHeaders(),
-      body: JSON.stringify(activityData),
+      body: JSON.stringify(activityToAPI(activityData)),
     });
-    return this.handleResponse(response);
+    const data = await this.handleResponse(response);
+    return activityFromAPI(data);
   }
 
   async deleteActivity(id) {
@@ -136,13 +145,13 @@ class DataService {
     return this.handleResponse(response);
   }
 
-  // Settings
   async getSettings() {
     const response = await fetch(`${API_URL}/api/settings`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
-    return this.handleResponse(response);
+    const data = await this.handleResponse(response);
+    return settingsFromAPI(data);
   }
 
   async updateSetting(key, value) {
@@ -162,7 +171,6 @@ class DataService {
     return this.handleResponse(response);
   }
 
-  // Homework
   async getHomework(filters = {}) {
     const params = new URLSearchParams();
     if (filters.member_id) params.append('member_id', filters.member_id);
@@ -174,25 +182,28 @@ class DataService {
       method: 'GET',
       headers: this.getHeaders(),
     });
-    return this.handleResponse(response);
+    const data = await this.handleResponse(response);
+    return transformArray(data, homeworkFromAPI);
   }
 
   async createHomework(homeworkData) {
     const response = await fetch(`${API_URL}/api/homework`, {
       method: 'POST',
       headers: this.getHeaders(),
-      body: JSON.stringify(homeworkData),
+      body: JSON.stringify(homeworkToAPI(homeworkData)),
     });
-    return this.handleResponse(response);
+    const data = await this.handleResponse(response);
+    return homeworkFromAPI(data);
   }
 
   async updateHomework(id, homeworkData) {
     const response = await fetch(`${API_URL}/api/homework/${id}`, {
       method: 'PUT',
       headers: this.getHeaders(),
-      body: JSON.stringify(homeworkData),
+      body: JSON.stringify(homeworkToAPI(homeworkData)),
     });
-    return this.handleResponse(response);
+    const data = await this.handleResponse(response);
+    return homeworkFromAPI(data);
   }
 
   async deleteHomework(id) {
@@ -203,7 +214,6 @@ class DataService {
     return this.handleResponse(response);
   }
 
-  // School Plan Extraction
   async extractSchoolPlan(
     memberId,
     imageFile,
@@ -216,12 +226,10 @@ class DataService {
     formData.append('api_key', apiKey);
     formData.append('schoolPlanImage', imageFile);
 
-    // Pass the selected model if provided
     if (selectedModel) {
       formData.append('selected_model', selectedModel);
     }
 
-    // Pass the week start date if provided
     if (weekStartDate) {
       formData.append('week_start_date', weekStartDate);
     }
@@ -234,13 +242,12 @@ class DataService {
 
     const response = await fetch(`${API_URL}/api/extract-school-plan`, {
       method: 'POST',
-      headers: headers, // Don't set Content-Type for FormData, but include auth token
+      headers: headers,
       body: formData,
     });
     return this.handleResponse(response);
   }
 
-  // School Schedule Batch Deletion
   async deleteSchoolSchedule(memberId) {
     const response = await fetch(`${API_URL}/api/school-schedule/${memberId}`, {
       method: 'DELETE',
@@ -249,7 +256,6 @@ class DataService {
     return this.handleResponse(response);
   }
 
-  // Spond Activities Sync Status Check
   async checkSpondSyncStatus(memberId, maxAgeMinutes = 5) {
     const response = await fetch(
       `${API_URL}/api/spond-activities/${memberId}/sync-status?maxAgeMinutes=${maxAgeMinutes}`,
@@ -261,7 +267,6 @@ class DataService {
     return this.handleResponse(response);
   }
 
-  // Spond Activities Sync
   async syncSpondActivities(memberId, startDate, endDate) {
     const response = await fetch(
       `${API_URL}/api/spond-activities/${memberId}/sync`,

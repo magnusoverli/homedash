@@ -1,18 +1,12 @@
-// API configuration
-// When accessed from external devices, use the same hostname but different port
 export const getApiUrl = () => {
-  // If VITE_API_URL is set explicitly, use it
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
 
-  // Get current hostname
   const protocol = window.location.protocol;
   const hostname = window.location.hostname;
 
-  // In production mode
   if (import.meta.env.PROD) {
-    // If accessing via localhost or local network IP, add port 3001
     const isLocalAccess = hostname === 'localhost' || hostname === '127.0.0.1';
     const isLocalNetworkIP =
       /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|100\.)/.test(hostname);
@@ -21,32 +15,110 @@ export const getApiUrl = () => {
       return `${protocol}//${hostname}:3001`;
     }
 
-    // For Cloudflare tunnel or domain names - use same host without port
     return `${protocol}//${hostname}`;
   }
 
-  // In development, check if we're accessing via network IP (not localhost)
-  // If hostname is an IP address or not localhost, use that IP for backend too
   if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
     return `${protocol}//${hostname}:3001`;
   }
 
-  // Default: localhost for local development
   return 'http://localhost:3001';
 };
 
-const API_BASE_URL = getApiUrl();
+const BASE_URL = getApiUrl();
 
-export const API_URL = API_BASE_URL;
+const buildUrl = (path, params = {}) => {
+  const url = `${BASE_URL}${path}`;
+  const searchParams = new URLSearchParams(params);
+  const queryString = searchParams.toString();
+  return queryString ? `${url}?${queryString}` : url;
+};
+
+export const API_URL = BASE_URL;
+
+export const ENDPOINTS = {
+  auth: {
+    status: `${BASE_URL}/api/auth/status`,
+    login: `${BASE_URL}/api/auth/login`,
+    logout: `${BASE_URL}/api/auth/logout`,
+    refresh: `${BASE_URL}/api/auth/refresh`,
+  },
+  llm: {
+    testKey: `${BASE_URL}/api/test-key`,
+    models: `${BASE_URL}/api/models`,
+    messages: `${BASE_URL}/api/messages`,
+  },
+  family: {
+    list: `${BASE_URL}/api/family-members`,
+    create: `${BASE_URL}/api/family-members`,
+    update: id => `${BASE_URL}/api/family-members/${id}`,
+    delete: id => `${BASE_URL}/api/family-members/${id}`,
+    importCalendar: id =>
+      `${BASE_URL}/api/family-members/${id}/import-calendar`,
+    removeCalendar: id =>
+      `${BASE_URL}/api/family-members/${id}/remove-calendar`,
+  },
+  activities: {
+    list: params => buildUrl('/api/activities', params),
+    create: `${BASE_URL}/api/activities`,
+    update: id => `${BASE_URL}/api/activities/${id}`,
+    delete: id => `${BASE_URL}/api/activities/${id}`,
+    schoolSchedule: {
+      delete: memberId =>
+        `${BASE_URL}/api/activities/school-schedule/${memberId}`,
+    },
+  },
+  homework: {
+    list: params => buildUrl('/api/homework', params),
+    create: `${BASE_URL}/api/homework`,
+    update: id => `${BASE_URL}/api/homework/${id}`,
+    delete: id => `${BASE_URL}/api/homework/${id}`,
+  },
+  schoolPlan: {
+    extract: `${BASE_URL}/api/extract-school-plan`,
+  },
+  spond: {
+    testCredentials: `${BASE_URL}/api/spond/test-credentials`,
+    credentials: {
+      get: memberId => `${BASE_URL}/api/spond/credentials/${memberId}`,
+      save: memberId => `${BASE_URL}/api/spond/credentials/${memberId}`,
+      delete: memberId => `${BASE_URL}/api/spond/credentials/${memberId}`,
+    },
+    groups: {
+      list: memberId => `${BASE_URL}/api/spond/groups/${memberId}`,
+      selections: memberId =>
+        `${BASE_URL}/api/spond/groups/${memberId}/selections`,
+    },
+    profiles: {
+      list: memberId => `${BASE_URL}/api/spond/profiles/${memberId}`,
+    },
+    profileMapping: {
+      get: memberId => `${BASE_URL}/api/spond/profile-mapping/${memberId}`,
+      save: memberId => `${BASE_URL}/api/spond/profile-mapping/${memberId}`,
+    },
+    activities: {
+      syncStatus: memberId =>
+        `${BASE_URL}/api/spond-activities/${memberId}/sync-status`,
+      sync: memberId => `${BASE_URL}/api/spond-activities/${memberId}/sync`,
+    },
+  },
+  settings: {
+    list: `${BASE_URL}/api/settings`,
+    update: key => `${BASE_URL}/api/settings/${key}`,
+    promptContent: `${BASE_URL}/api/prompt-content`,
+  },
+  health: `${BASE_URL}/api/health`,
+};
 
 export const API_ENDPOINTS = {
-  TEST_KEY: `${API_BASE_URL}/api/test-key`,
-  MODELS: `${API_BASE_URL}/api/models`,
-  FAMILY_MEMBERS: `${API_BASE_URL}/api/family-members`,
-  TEST_SPOND_CREDENTIALS: `${API_BASE_URL}/api/test-spond-credentials`,
-  SPOND_CREDENTIALS: `${API_BASE_URL}/api/spond-credentials`,
-  SPOND_GROUPS: `${API_BASE_URL}/api/spond-groups`,
-  SPOND_GROUP_SELECTIONS: `${API_BASE_URL}/api/spond-groups`,
+  TEST_KEY: ENDPOINTS.llm.testKey,
+  MODELS: ENDPOINTS.llm.models,
+  FAMILY_MEMBERS: ENDPOINTS.family.list,
+  TEST_SPOND_CREDENTIALS: ENDPOINTS.spond.testCredentials,
+  SPOND_CREDENTIALS: ENDPOINTS.spond.credentials,
+  SPOND_GROUPS: ENDPOINTS.spond.groups,
+  SPOND_GROUP_SELECTIONS: ENDPOINTS.spond.groups,
 };
 
 export default API_ENDPOINTS;
+export { buildUrl };

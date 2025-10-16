@@ -1,12 +1,5 @@
-/**
- * CloseIcon Component
- * 
- * X/Close icon used in modals, toasts, and other dismissible elements
- * 
- * @param {number} size - Icon size in pixels (default: 24)
- * @param {string} color - Icon color (default: 'currentColor')
- * @param {string} className - Additional CSS classes
- */
+import PropTypes from 'prop-types';
+
 const CloseIcon = ({ size = 24, color = 'currentColor', className = '' }) => {
   return (
     <svg
@@ -27,6 +20,12 @@ const CloseIcon = ({ size = 24, color = 'currentColor', className = '' }) => {
       />
     </svg>
   );
+};
+
+CloseIcon.propTypes = {
+  size: PropTypes.number,
+  color: PropTypes.string,
+  className: PropTypes.string,
 };
 
 export default CloseIcon;

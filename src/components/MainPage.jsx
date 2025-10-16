@@ -21,7 +21,6 @@ const MainPage = ({ currentWeek }) => {
   const [isLoadingHomework, setIsLoadingHomework] = useState(true);
   const [error, setError] = useState('');
 
-  // Helper function to get week start
   const getWeekStart = useCallback(() => {
     const weekStart = new Date(currentWeek);
     const day = weekStart.getDay();
@@ -30,27 +29,16 @@ const MainPage = ({ currentWeek }) => {
     return weekStart;
   }, [currentWeek]);
 
-  // Load family members from API
   useEffect(() => {
     const loadFamilyMembers = async () => {
       setIsLoadingMembers(true);
+      setError('');
       try {
         const members = await dataService.getFamilyMembers();
-        // Map backend 'color' field to frontend 'avatarColor'
-        const mappedMembers = members.map(m => ({
-          ...m,
-          avatarColor: m.color,
-        }));
-        setFamilyMembers(mappedMembers);
-        setError('');
+        setFamilyMembers(members);
       } catch (error) {
         console.error('Error loading family members:', error);
-        setError('Failed to load family members');
-        // Fallback to localStorage
-        const savedMembers = localStorage.getItem('familyMembers');
-        if (savedMembers) {
-          setFamilyMembers(JSON.parse(savedMembers));
-        }
+        setError(error.message || 'Failed to load family members');
       } finally {
         setIsLoadingMembers(false);
       }
@@ -58,7 +46,6 @@ const MainPage = ({ currentWeek }) => {
     loadFamilyMembers();
   }, []);
 
-  // Load activities from API when week changes
   useEffect(() => {
     const loadActivities = async () => {
       setIsLoadingActivities(true);
@@ -70,57 +57,32 @@ const MainPage = ({ currentWeek }) => {
         const startDateStr = formatLocalDate(weekStart);
         const endDateStr = formatLocalDate(weekEnd);
 
-        // Load all activities (regular and Spond combined)
         const activitiesData = await dataService.getActivities({
           startDate: startDateStr,
           endDate: endDateStr,
         });
 
-        // Convert flat API data to nested structure for compatibility
         const structuredActivities = {};
         const weekKey = getWeekKey(currentWeek);
         structuredActivities[weekKey] = {};
 
-        // Add all activities (preserving source and Spond-specific data)
-        // Filter out declined Spond activities
         activitiesData.forEach(activity => {
-          // Skip declined Spond activities
           if (
             activity.source === 'spond' &&
-            activity.response_status === 'declined'
+            activity.responseStatus === 'declined'
           ) {
             return;
           }
 
-          if (!structuredActivities[weekKey][activity.member_id]) {
-            structuredActivities[weekKey][activity.member_id] = [];
+          if (!structuredActivities[weekKey][activity.memberId]) {
+            structuredActivities[weekKey][activity.memberId] = [];
           }
-          structuredActivities[weekKey][activity.member_id].push({
-            id: activity.id,
-            memberId: activity.member_id,
-            title: activity.title,
-            date: activity.date,
-            startTime: activity.start_time,
-            endTime: activity.end_time,
-            description: activity.description,
-            notes: activity.notes,
-            source: activity.source || 'manual', // Preserve original source
-            // Include Spond-specific fields
-            location_name: activity.location_name,
-            location_address: activity.location_address,
-            raw_data: activity.raw_data,
-            activity_type: activity.activity_type,
-            is_cancelled: activity.is_cancelled,
-            organizer_name: activity.organizer_name,
-            response_status: activity.response_status, // Include response status
-          });
+          structuredActivities[weekKey][activity.memberId].push(activity);
         });
 
-        // Smart Spond sync: only sync if data is stale (>5 minutes old)
         if (familyMembers.length > 0) {
           const syncPromises = familyMembers.map(async member => {
             try {
-              // Check if sync is needed
               const syncStatus = await dataService.checkSpondSyncStatus(
                 member.id,
                 5
@@ -148,7 +110,6 @@ const MainPage = ({ currentWeek }) => {
             }
           });
 
-          // After all syncs complete (or skip), refresh activities to show any new Spond data
           Promise.all(syncPromises).then(async () => {
             try {
               const refreshedActivitiesData = await dataService.getActivities({
@@ -156,48 +117,26 @@ const MainPage = ({ currentWeek }) => {
                 endDate: endDateStr,
               });
 
-              // Convert flat API data to nested structure for compatibility
               const refreshedStructuredActivities = {};
               const weekKey = getWeekKey(currentWeek);
               refreshedStructuredActivities[weekKey] = {};
 
-              // Add all activities (preserving source and Spond-specific data)
-              // Filter out declined Spond activities
               refreshedActivitiesData.forEach(activity => {
-                // Skip declined Spond activities
                 if (
                   activity.source === 'spond' &&
-                  activity.response_status === 'declined'
+                  activity.responseStatus === 'declined'
                 ) {
                   return;
                 }
 
                 if (
-                  !refreshedStructuredActivities[weekKey][activity.member_id]
+                  !refreshedStructuredActivities[weekKey][activity.memberId]
                 ) {
-                  refreshedStructuredActivities[weekKey][activity.member_id] =
+                  refreshedStructuredActivities[weekKey][activity.memberId] =
                     [];
                 }
-                refreshedStructuredActivities[weekKey][activity.member_id].push(
-                  {
-                    id: activity.id,
-                    memberId: activity.member_id,
-                    title: activity.title,
-                    date: activity.date,
-                    startTime: activity.start_time,
-                    endTime: activity.end_time,
-                    description: activity.description,
-                    notes: activity.notes,
-                    source: activity.source || 'manual', // Preserve original source
-                    // Include Spond-specific fields
-                    location_name: activity.location_name,
-                    location_address: activity.location_address,
-                    raw_data: activity.raw_data,
-                    activity_type: activity.activity_type,
-                    is_cancelled: activity.is_cancelled,
-                    organizer_name: activity.organizer_name,
-                    response_status: activity.response_status, // Include response status
-                  }
+                refreshedStructuredActivities[weekKey][activity.memberId].push(
+                  activity
                 );
               });
 
@@ -215,11 +154,7 @@ const MainPage = ({ currentWeek }) => {
         setError('');
       } catch (error) {
         console.error('Error loading activities:', error);
-        // Fallback to localStorage
-        const savedActivities = localStorage.getItem('activities');
-        if (savedActivities) {
-          setActivities(JSON.parse(savedActivities));
-        }
+        setError(error.message || 'Failed to load activities');
       } finally {
         setIsLoadingActivities(false);
       }
@@ -228,7 +163,6 @@ const MainPage = ({ currentWeek }) => {
     loadActivities();
   }, [currentWeek, getWeekStart, familyMembers]);
 
-  // Load homework for all family members
   const loadHomework = useCallback(async () => {
     if (familyMembers.length === 0) {
       setIsLoadingHomework(false);
@@ -237,35 +171,22 @@ const MainPage = ({ currentWeek }) => {
 
     setIsLoadingHomework(true);
     try {
-      // Calculate week start date for homework filtering
       const weekStart = getWeekStart();
       const weekStartStr = formatLocalDate(weekStart);
 
-      console.log('🔍 DEBUG currentWeek:', currentWeek);
-      console.log('🔍 DEBUG weekStart:', weekStart);
-      console.log('🔍 DEBUG weekStart.getDay():', weekStart.getDay());
-      console.log('🔍 DEBUG weekStartStr:', weekStartStr);
-
       const homeworkData = {};
 
-      // Load homework for each family member for the current week
       for (const member of familyMembers) {
-        console.log(
-          `🔍 Loading homework for member ${member.id} (${member.name}), week: ${weekStartStr}`
-        );
         const memberHomework = await dataService.getHomework({
           member_id: member.id,
           week_start_date: weekStartStr,
         });
-        console.log(`📚 Homework for ${member.name}:`, memberHomework);
         homeworkData[member.id] = memberHomework;
       }
-      console.log('✅ All homework loaded:', homeworkData);
       setHomework(homeworkData);
       setError('');
     } catch (error) {
       console.error('Error loading homework:', error);
-      // Don't set error state for homework failure - it's not critical
     } finally {
       setIsLoadingHomework(false);
     }
@@ -273,20 +194,16 @@ const MainPage = ({ currentWeek }) => {
 
   useEffect(() => {
     loadHomework();
-  }, [loadHomework, currentWeek]); // Reload when week changes
+  }, [loadHomework, currentWeek]);
 
-  // Refresh homework when navigating back to main page (e.g., from settings)
   useEffect(() => {
-    // Only reload homework if we're on the main page and have family members
     if (location.pathname === '/' && familyMembers.length > 0) {
       loadHomework();
     }
   }, [location.pathname, loadHomework, familyMembers]);
 
-  // Also refresh homework when page regains focus (for tab switching)
   useEffect(() => {
     const handleFocus = () => {
-      // Only reload if we have family members and are on main page
       if (familyMembers.length > 0 && location.pathname === '/') {
         loadHomework();
       }
@@ -351,18 +268,7 @@ const MainPage = ({ currentWeek }) => {
       });
     } catch (error) {
       console.error('Error deleting activity:', error);
-      // Still update local state as fallback
-      const weekKey = getWeekKey(currentWeek);
-      setActivities(prev => {
-        const updated = { ...prev };
-        if (updated[weekKey] && updated[weekKey][memberId]) {
-          updated[weekKey][memberId] = updated[weekKey][memberId].filter(
-            a => a.id !== activityId
-          );
-        }
-        localStorage.setItem('activities', JSON.stringify(updated));
-        return updated;
-      });
+      throw error;
     }
   };
 
@@ -373,36 +279,13 @@ const MainPage = ({ currentWeek }) => {
     try {
       let savedActivity;
       if (activityData.id) {
-        // Update existing activity
-        savedActivity = await dataService.updateActivity(activityData.id, {
-          title: activityData.title,
-          date: activityData.date,
-          start_time: activityData.startTime,
-          end_time: activityData.endTime,
-          description: activityData.description || '',
-        });
+        savedActivity = await dataService.updateActivity(
+          activityData.id,
+          activityData
+        );
       } else {
-        // Create new activity
-        savedActivity = await dataService.createActivity({
-          member_id: memberId,
-          title: activityData.title,
-          date: activityData.date,
-          start_time: activityData.startTime,
-          end_time: activityData.endTime,
-          description: activityData.description || '',
-        });
+        savedActivity = await dataService.createActivity(activityData);
       }
-
-      // Update local state with API response
-      const formattedActivity = {
-        id: savedActivity.id,
-        memberId: savedActivity.member_id,
-        title: savedActivity.title,
-        date: savedActivity.date,
-        startTime: savedActivity.start_time,
-        endTime: savedActivity.end_time,
-        description: savedActivity.description,
-      };
 
       setActivities(prev => {
         const updated = { ...prev };
@@ -415,38 +298,17 @@ const MainPage = ({ currentWeek }) => {
 
         if (activityData.id) {
           updated[weekKey][memberId] = updated[weekKey][memberId].map(a =>
-            a.id === formattedActivity.id ? formattedActivity : a
+            a.id === savedActivity.id ? savedActivity : a
           );
         } else {
-          updated[weekKey][memberId].push(formattedActivity);
+          updated[weekKey][memberId].push(savedActivity);
         }
 
         return updated;
       });
     } catch (error) {
       console.error('Error saving activity:', error);
-      // Fallback to localStorage
-      setActivities(prev => {
-        const updated = { ...prev };
-        if (!updated[weekKey]) {
-          updated[weekKey] = {};
-        }
-        if (!updated[weekKey][memberId]) {
-          updated[weekKey][memberId] = [];
-        }
-
-        if (activityData.id) {
-          updated[weekKey][memberId] = updated[weekKey][memberId].map(a =>
-            a.id === activityData.id ? activityData : a
-          );
-        } else {
-          activityData.id = Date.now().toString();
-          updated[weekKey][memberId].push(activityData);
-        }
-
-        localStorage.setItem('activities', JSON.stringify(updated));
-        return updated;
-      });
+      throw error;
     }
 
     setShowActivityModal(false);

@@ -56,13 +56,6 @@ app.use(
 
 app.use(express.json());
 
-initDatabase()
-  .then(() => {
-    cleanupExpiredTokens();
-    setInterval(cleanupExpiredTokens, 24 * 60 * 60 * 1000);
-  })
-  .catch(console.error);
-
 app.get('/api/health', (_, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
@@ -93,9 +86,20 @@ app.use('/api/homework', homeworkRoutes);
 app.use('/api', schoolPlanRoutes);
 app.use('/api/spond', spondRoutes);
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 HomeDash Backend Server Started`);
-  console.log(`📡 Server listening on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔍 Health Check: http://localhost:${PORT}/api/health`);
-});
+initDatabase()
+  .then(() => {
+    console.log('✅ Database initialization complete');
+    cleanupExpiredTokens();
+    setInterval(cleanupExpiredTokens, 24 * 60 * 60 * 1000);
+
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 HomeDash Backend Server Started`);
+      console.log(`📡 Server listening on port ${PORT}`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🔍 Health Check: http://localhost:${PORT}/api/health`);
+    });
+  })
+  .catch(err => {
+    console.error('❌ Failed to initialize database:', err);
+    process.exit(1);
+  });

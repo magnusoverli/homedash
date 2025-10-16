@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import FamilyMemberCard from './FamilyMemberCard';
 import AddMemberForm from './AddMemberForm';
 import EditMemberModal from './EditMemberModal';
-import LoadingState from './LoadingState';
 import { BackArrowIcon, PlusIcon } from './icons';
 import { getApiErrorMessage } from '../utils/errorUtils';
 import API_ENDPOINTS from '../config/api';
@@ -31,28 +30,16 @@ const Settings = () => {
   const [apiKeyTestResult, setApiKeyTestResult] = useState(null);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
 
-
-  // Load family members from API
   useEffect(() => {
     const loadFamilyMembers = async () => {
       setIsLoadingMembers(true);
+      setMembersError('');
       try {
         const members = await dataService.getFamilyMembers();
-        // Map backend 'color' field to frontend 'avatarColor'
-        const mappedMembers = members.map(m => ({
-          ...m,
-          avatarColor: m.color,
-        }));
-        setFamilyMembers(mappedMembers);
-        setMembersError('');
+        setFamilyMembers(members);
       } catch (error) {
         console.error('Error loading family members:', error);
-        setMembersError('Failed to load family members');
-        // Fallback to localStorage if API fails
-        const savedMembers = localStorage.getItem('familyMembers');
-        if (savedMembers) {
-          setFamilyMembers(JSON.parse(savedMembers));
-        }
+        setMembersError(error.message || 'Failed to load family members');
       } finally {
         setIsLoadingMembers(false);
       }
@@ -60,14 +47,13 @@ const Settings = () => {
     loadFamilyMembers();
   }, []);
 
-  // Load settings from API
   useEffect(() => {
     const loadSettings = async () => {
       setIsLoadingSettings(true);
       try {
         const settings = await dataService.getSettings();
         if (settings.llmIntegrationEnabled !== undefined) {
-          setLlmIntegrationEnabled(settings.llmIntegrationEnabled === 'true');
+          setLlmIntegrationEnabled(settings.llmIntegrationEnabled);
         }
         if (settings.anthropicApiKey) {
           setApiKey(settings.anthropicApiKey);
@@ -77,21 +63,6 @@ const Settings = () => {
         }
       } catch (error) {
         console.error('Error loading settings:', error);
-        // Fallback to localStorage if API fails
-        const savedLlmEnabled = localStorage.getItem('llmIntegrationEnabled');
-        const savedApiKey = localStorage.getItem('anthropicApiKey');
-        const savedModel = localStorage.getItem('selectedAnthropicModel');
-
-        if (savedLlmEnabled) {
-          setLlmIntegrationEnabled(JSON.parse(savedLlmEnabled));
-        }
-        if (savedApiKey) {
-          setApiKey(savedApiKey);
-        }
-        if (savedModel) {
-          setSelectedModel(savedModel);
-        }
-
       } finally {
         setIsLoadingSettings(false);
       }
@@ -99,7 +70,6 @@ const Settings = () => {
     loadSettings();
   }, []);
 
-  // Save LLM settings to API when they change
   useEffect(() => {
     if (!isLoadingSettings) {
       saveSetting('llmIntegrationEnabled', String(llmIntegrationEnabled));
@@ -118,28 +88,18 @@ const Settings = () => {
     }
   }, [selectedModel, isLoadingSettings]);
 
-
   const fetchAvailableModels = useCallback(async () => {
-    console.log('=== FRONTEND MODELS FETCH ===');
-    console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
-    console.log(`🔑 API Key provided: ${apiKey ? 'YES' : 'NO'}`);
-    
     setIsLoadingModels(true);
     setModelsError('');
 
     try {
       if (!apiKey || apiKey.trim().length === 0) {
-        console.log('❌ No API key provided for models fetch');
-        console.log('=== END FRONTEND MODELS FETCH ===');
         setModelsError('API key is required to show available models.');
         setAvailableModels([]);
         setIsLoadingModels(false);
         return;
       }
 
-      console.log('🚀 Starting models fetch request...');
-      console.log(`📡 Request URL: ${API_ENDPOINTS.MODELS}`);
-      
       const headers = {
         'Content-Type': 'application/json',
       };
@@ -147,39 +107,27 @@ const Settings = () => {
       if (token) {
         headers['x-access-token'] = token;
       }
-      
+
       const response = await fetch(API_ENDPOINTS.MODELS, {
         method: 'POST',
         headers,
         body: JSON.stringify({ apiKey }),
       });
 
-      console.log(`📥 Models response status: ${response.status}`);
-      console.log(`📥 Models response ok: ${response.ok}`);
-
       const data = await response.json();
-      console.log('📥 Models response data:', data);
 
       if (response.status === 401) {
-        console.log('❌ Models fetch FAILED - 401 Unauthorized');
-        console.log('=== END FRONTEND MODELS FETCH ===');
         setModelsError('Invalid API key. Please check your credentials.');
         setAvailableModels([]);
       } else if (response.ok && data.models) {
-        console.log(`✅ Models fetch SUCCESS - ${data.models.length} models found`);
-        console.log('📋 Available models:', data.models.map(m => m.id));
-        console.log('=== END FRONTEND MODELS FETCH ===');
-        
         setAvailableModels(data.models);
-        
-        // Show warning if API key validation failed but models are available
+
         if (data.warning) {
           setModelsError(data.warning);
         } else {
           setModelsError('');
         }
 
-        // Clear selection if the current model is no longer available
         if (
           selectedModel &&
           !data.models.find(model => model.id === selectedModel)
@@ -187,31 +135,20 @@ const Settings = () => {
           setSelectedModel('');
         }
 
-        // Auto-select Claude Sonnet 4 as default if no model is selected
         if (!selectedModel) {
-          const claudeSonnet4 = data.models.find(model => 
-            model.id === 'claude-sonnet-4-20250514'
+          const claudeSonnet4 = data.models.find(
+            model => model.id === 'claude-sonnet-4-20250514'
           );
           if (claudeSonnet4) {
             setSelectedModel(claudeSonnet4.id);
           }
         }
       } else {
-        console.log(`❌ Models fetch FAILED - Status: ${response.status}`);
-        console.log(`❌ Error: ${data.error || 'Unknown error'}`);
-        console.log('=== END FRONTEND MODELS FETCH ===');
         setModelsError(data.error || 'Failed to load available models.');
         setAvailableModels([]);
       }
     } catch (error) {
-      console.log('💥 Frontend models fetch ERROR occurred');
-      console.error('🔍 Frontend models error details:');
-      console.error(`  - Type: ${error.constructor.name}`);
-      console.error(`  - Name: ${error.name}`);
-      console.error(`  - Message: ${error.message}`);
       console.error('Error fetching models:', error);
-      console.log('=== END FRONTEND MODELS FETCH ===');
-      
       setModelsError(getApiErrorMessage(error));
       setAvailableModels([]);
     } finally {
@@ -231,69 +168,31 @@ const Settings = () => {
 
   const handleAddMember = async member => {
     try {
-      const newMember = await dataService.createFamilyMember({
-        name: member.name,
-        color: member.avatarColor || member.color,
-      });
-      // Map backend 'color' field to frontend 'avatarColor'
-      setFamilyMembers([
-        ...familyMembers,
-        { ...newMember, avatarColor: newMember.color },
-      ]);
+      const newMember = await dataService.createFamilyMember(member);
+      setFamilyMembers([...familyMembers, newMember]);
       setIsAddingMember(false);
     } catch (error) {
       console.error('Error adding member:', error);
-      // Fallback to localStorage
-      const newMember = {
-        ...member,
-        id: Date.now().toString(),
-        color: member.avatarColor || member.color,
-        createdAt: new Date().toISOString(),
-      };
-      setFamilyMembers([...familyMembers, newMember]);
-      localStorage.setItem(
-        'familyMembers',
-        JSON.stringify([...familyMembers, newMember])
-      );
-      setIsAddingMember(false);
+      throw error;
     }
   };
 
   const handleUpdateMember = async updatedMember => {
     try {
-      const updated = await dataService.updateFamilyMember(updatedMember.id, {
-        name: updatedMember.name,
-        color: updatedMember.avatarColor || updatedMember.color,
-        schoolPlanImage: updatedMember.schoolPlanImage,
-      });
-      // Map backend 'color' field to frontend 'avatarColor'
+      const updated = await dataService.updateFamilyMember(
+        updatedMember.id,
+        updatedMember
+      );
       setFamilyMembers(
         familyMembers.map(member =>
-          member.id === updated.id
-            ? { ...updated, avatarColor: updated.color }
-            : member
+          member.id === updated.id ? updated : member
         )
       );
       setEditingMember(null);
       setIsEditModalOpen(false);
     } catch (error) {
       console.error('Error updating member:', error);
-      // Fallback to localStorage
-      setFamilyMembers(
-        familyMembers.map(member =>
-          member.id === updatedMember.id ? updatedMember : member
-        )
-      );
-      localStorage.setItem(
-        'familyMembers',
-        JSON.stringify(
-          familyMembers.map(member =>
-            member.id === updatedMember.id ? updatedMember : member
-          )
-        )
-      );
-      setEditingMember(null);
-      setIsEditModalOpen(false);
+      throw error;
     }
   };
 
@@ -305,18 +204,11 @@ const Settings = () => {
       setEditingMember(null);
     } catch (error) {
       console.error('Error deleting member:', error);
-      // Fallback to localStorage
-      const updatedMembers = familyMembers.filter(
-        member => member.id !== memberId
-      );
-      setFamilyMembers(updatedMembers);
-      localStorage.setItem('familyMembers', JSON.stringify(updatedMembers));
-      setIsEditModalOpen(false);
-      setEditingMember(null);
+      throw error;
     }
   };
 
-  const handleEditMember = (member) => {
+  const handleEditMember = member => {
     setEditingMember(member);
     setIsEditModalOpen(true);
   };
@@ -347,15 +239,7 @@ const Settings = () => {
   };
 
   const testApiKey = async () => {
-    console.log('=== FRONTEND API KEY TEST ===');
-    console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
-    console.log(`🔑 API Key provided: ${apiKey ? 'YES' : 'NO'}`);
-    console.log(`🔑 API Key length: ${apiKey?.length || 0} characters`);
-    console.log(`🔑 API Key format: ${apiKey ? (apiKey.startsWith('sk-ant-') ? 'CORRECT (sk-ant-*)' : 'INCORRECT (should start with sk-ant-)') : 'N/A'}`);
-
     if (!apiKey || apiKey.trim().length === 0) {
-      console.log('❌ No API key provided');
-      console.log('=== END FRONTEND API KEY TEST ===');
       setApiKeyTestResult({
         success: false,
         message: 'Please enter an API key first.',
@@ -367,11 +251,6 @@ const Settings = () => {
     setApiKeyTestResult(null);
 
     try {
-      console.log('🚀 Starting API key validation request...');
-      console.log(`📡 Request URL: ${API_ENDPOINTS.TEST_KEY}`);
-      console.log('📤 Request method: POST');
-      console.log('📤 Request headers: Content-Type: application/json');
-      
       const headers = {
         'Content-Type': 'application/json',
       };
@@ -379,33 +258,21 @@ const Settings = () => {
       if (token) {
         headers['x-access-token'] = token;
       }
-      
+
       const response = await fetch(API_ENDPOINTS.TEST_KEY, {
         method: 'POST',
         headers,
         body: JSON.stringify({ apiKey }),
       });
 
-      console.log(`📥 Response status: ${response.status}`);
-      console.log(`📥 Response status text: ${response.statusText}`);
-      console.log(`📥 Response ok: ${response.ok}`);
-
       const data = await response.json();
-      console.log('📥 Response data:', data);
 
       if (data.valid) {
-        console.log('✅ API key validation SUCCESS');
-        console.log('=== END FRONTEND API KEY TEST ===');
         setApiKeyTestResult({
           success: true,
           message: 'API key is valid! ✓',
         });
       } else {
-        console.log('❌ API key validation FAILED');
-        console.log(`❌ Error message: ${data.message}`);
-        console.log(`❌ Error code: ${data.error || 'N/A'}`);
-        console.log(`❌ Error type: ${data.errorType || 'N/A'}`);
-        console.log('=== END FRONTEND API KEY TEST ===');
         setApiKeyTestResult({
           success: false,
           message:
@@ -413,15 +280,7 @@ const Settings = () => {
         });
       }
     } catch (error) {
-      console.log('💥 Frontend API key test ERROR occurred');
-      console.error('🔍 Frontend error details:');
-      console.error(`  - Type: ${error.constructor.name}`);
-      console.error(`  - Name: ${error.name}`);
-      console.error(`  - Message: ${error.message}`);
-      console.error(`  - Stack: ${error.stack}`);
       console.error('API key test error:', error);
-      console.log('=== END FRONTEND API KEY TEST ===');
-      
       setApiKeyTestResult({
         success: false,
         message: getApiErrorMessage(error),
@@ -430,7 +289,6 @@ const Settings = () => {
       setIsTestingApiKey(false);
     }
   };
-
 
   return (
     <div className="settings-page">
@@ -588,7 +446,6 @@ const Settings = () => {
               )}
             </div>
           </section>
-
         </div>
       </main>
 

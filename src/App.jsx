@@ -19,13 +19,19 @@ import { API_URL } from './config/api';
 import './styles/globals.css';
 
 function App() {
-  const [currentWeek, setCurrentWeek] = useState(new Date());
+  const [currentWeek] = useState(new Date());
   const [authRequired, setAuthRequired] = useState(null); // null = checking, true/false = determined
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  
+
   // Device detection for future mobile UI implementation
-  const { isMobile, isTablet, isTouch, deviceType, orientation, isInitialized } =
-    useDeviceDetection();
+  const {
+    isMobile,
+    isTablet,
+    isTouch,
+    deviceType,
+    orientation,
+    isInitialized,
+  } = useDeviceDetection();
 
   // Send device detection to server for logging (only after proper detection)
   useEffect(() => {
@@ -73,14 +79,14 @@ function App() {
     }
 
     checkAuth();
-    
+
     // Cleanup on unmount
     return () => {
       stopTokenRefresh();
     };
   }, []);
 
-  const handleLogin = (token) => {
+  const handleLogin = token => {
     setAccessToken(token);
     setIsAuthenticated(true);
     startTokenRefresh();
