@@ -9,8 +9,14 @@ LABEL org.opencontainers.image.vendor="magnusoverli"
 
 WORKDIR /app
 
-# Install timezone data and wget for health checks
-RUN apt-get update && apt-get install -y tzdata wget && rm -rf /var/lib/apt/lists/*
+# Install build dependencies for native modules (sqlite3), timezone data, and wget
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    tzdata \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY backend/package*.json ./
