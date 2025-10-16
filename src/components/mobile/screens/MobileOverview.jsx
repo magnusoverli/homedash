@@ -31,7 +31,6 @@ const MobileOverview = ({ currentWeek }) => {
   const [activities, setActivities] = useState({});
   const [homework, setHomework] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingActivities, setIsLoadingActivities] = useState(true);
   const [error, setError] = useState('');
   const [currentPersonIndex, setCurrentPersonIndex] = useState(0);
 
@@ -68,7 +67,6 @@ const MobileOverview = ({ currentWeek }) => {
   const loadData = useCallback(async () => {
     if (familyMembers.length === 0) return;
 
-    setIsLoadingActivities(true);
     try {
       const weekStart = getWeekStart();
       const weekEnd = new Date(weekStart);
@@ -116,34 +114,12 @@ const MobileOverview = ({ currentWeek }) => {
       setHomework(homeworkData);
     } catch (error) {
       console.error('Error loading activities:', error);
-    } finally {
-      setIsLoadingActivities(false);
     }
   }, [familyMembers, getWeekStart]);
 
   useEffect(() => {
     loadData();
   }, [loadData, currentWeek]);
-
-  const handleDeleteActivity = async activityId => {
-    try {
-      await dataService.deleteActivity(activityId);
-
-      // Update local state
-      setActivities(prev => {
-        const updated = {};
-        Object.keys(prev).forEach(memberId => {
-          updated[memberId] = prev[memberId].filter(a => a.id !== activityId);
-        });
-        return updated;
-      });
-
-      showSuccess('Activity deleted');
-    } catch (error) {
-      console.error('Error deleting activity:', error);
-      showError('Failed to delete activity');
-    }
-  };
 
   const handleDeleteTask = async (memberId, taskId) => {
     try {
@@ -208,7 +184,6 @@ const MobileOverview = ({ currentWeek }) => {
             activities={activities[member.id] || []}
             homework={homework[member.id] || []}
             weekStart={getWeekStart()}
-            onDeleteActivity={handleDeleteActivity}
             onDeleteTask={handleDeleteTask}
             isActive={isActive}
           />

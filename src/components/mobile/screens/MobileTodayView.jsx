@@ -18,7 +18,6 @@ import './MobileTodayView.css';
  * Completed activities are automatically filtered out.
  */
 const MobileTodayView = () => {
-  const [familyMembers, setFamilyMembers] = useState([]);
   const [activities, setActivities] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -43,7 +42,6 @@ const MobileTodayView = () => {
           ...m,
           avatarColor: m.color,
         }));
-        setFamilyMembers(mappedMembers);
 
         // Load today's activities for all members
         const today = formatLocalDate(new Date());

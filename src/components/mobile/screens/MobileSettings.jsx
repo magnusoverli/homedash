@@ -25,7 +25,6 @@ const MobileSettings = () => {
   // LLM Integration state
   const [llmEnabled, setLlmEnabled] = useState(false);
   const [apiKey, setApiKey] = useState('');
-  const [selectedModel, setSelectedModel] = useState('');
 
   // Person modal state
   const [showPersonModal, setShowPersonModal] = useState(false);
@@ -51,9 +50,6 @@ const MobileSettings = () => {
         }
         if (settings.anthropicApiKey) {
           setApiKey(settings.anthropicApiKey);
-        }
-        if (settings.selectedAnthropicModel) {
-          setSelectedModel(settings.selectedAnthropicModel);
         }
       } catch (error) {
         console.error('Error loading settings:', error);
