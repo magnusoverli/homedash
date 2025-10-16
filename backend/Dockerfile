@@ -1,4 +1,4 @@
-FROM node:20-slim
+FROM node:24-slim
 
 # Add OCI labels for GitHub Container Registry linking
 LABEL org.opencontainers.image.source="https://github.com/magnusoverli/homedash"
