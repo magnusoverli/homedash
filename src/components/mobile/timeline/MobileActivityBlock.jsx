@@ -41,11 +41,8 @@ const MobileActivityBlock = ({ activity }) => {
   const getDisplayText = () => {
     const height = getBlockHeight();
     
-    if (height < 40) {
-      // Very small - icon only
-      return null;
-    } else if (height < 60) {
-      // Small - title only
+    if (height < 60) {
+      // Small and very small - title only (icon next to it for < 40px due to flex-row)
       return <span className="mobile-activity-title">{activity.title}</span>;
     } else {
       // Large - title + time
