@@ -258,7 +258,7 @@ class DataService {
 
   async checkSpondSyncStatus(memberId, maxAgeMinutes = 5) {
     const response = await fetch(
-      `${API_URL}/api/spond-activities/${memberId}/sync-status?maxAgeMinutes=${maxAgeMinutes}`,
+      `${API_URL}/api/spond/activities/${memberId}/sync-status?maxAgeMinutes=${maxAgeMinutes}`,
       {
         method: 'GET',
         headers: this.getHeaders(),
@@ -269,7 +269,7 @@ class DataService {
 
   async syncSpondActivities(memberId, startDate, endDate) {
     const response = await fetch(
-      `${API_URL}/api/spond-activities/${memberId}/sync`,
+      `${API_URL}/api/spond/activities/${memberId}/sync`,
       {
         method: 'POST',
         headers: this.getHeaders(),

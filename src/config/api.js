@@ -98,8 +98,8 @@ export const ENDPOINTS = {
     },
     activities: {
       syncStatus: memberId =>
-        `${BASE_URL}/api/spond-activities/${memberId}/sync-status`,
-      sync: memberId => `${BASE_URL}/api/spond-activities/${memberId}/sync`,
+        `${BASE_URL}/api/spond/activities/${memberId}/sync-status`,
+      sync: memberId => `${BASE_URL}/api/spond/activities/${memberId}/sync`,
     },
   },
   settings: {
@@ -115,9 +115,9 @@ export const API_ENDPOINTS = {
   MODELS: ENDPOINTS.llm.models,
   FAMILY_MEMBERS: ENDPOINTS.family.list,
   TEST_SPOND_CREDENTIALS: ENDPOINTS.spond.testCredentials,
-  SPOND_CREDENTIALS: ENDPOINTS.spond.credentials,
-  SPOND_GROUPS: ENDPOINTS.spond.groups,
-  SPOND_GROUP_SELECTIONS: ENDPOINTS.spond.groups,
+  SPOND_CREDENTIALS: `${BASE_URL}/api/spond/credentials`,
+  SPOND_GROUPS: `${BASE_URL}/api/spond/groups`,
+  SPOND_GROUP_SELECTIONS: `${BASE_URL}/api/spond/groups`,
 };
 
 export default API_ENDPOINTS;

@@ -105,7 +105,7 @@ const PersonProfileModal = ({
       }
 
       const spondResponse = await fetch(
-        API_ENDPOINTS.SPOND_CREDENTIALS.get(memberId),
+        `${API_ENDPOINTS.SPOND_CREDENTIALS}/${memberId}`,
         {
           method: 'GET',
           headers,
