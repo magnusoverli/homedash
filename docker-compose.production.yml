@@ -40,6 +40,7 @@ services:
       - NODE_ENV=production
       - PORT=3001
       - TZ=Europe/Oslo
+      - NODE_OPTIONS=--max-old-space-size=512 --optimize-for-size
     volumes:
       - homedash-data:/app/data
     healthcheck:
