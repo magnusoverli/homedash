@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import { initDatabase } from './database.js';
 import { cleanupExpiredTokens } from './utils/auth.js';
@@ -17,6 +18,19 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+app.use(
+  compression({
+    filter: (req, res) => {
+      if (req.headers['x-no-compression']) {
+        return false;
+      }
+      return compression.filter(req, res);
+    },
+    level: 6,
+    threshold: 1024,
+  })
+);
 
 app.use(
   cors({
@@ -97,6 +111,7 @@ initDatabase()
       console.log(`📡 Server listening on port ${PORT}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🔍 Health Check: http://localhost:${PORT}/api/health`);
+      console.log(`🗜️  Compression: Enabled (gzip/deflate, threshold: 1KB)`);
     });
   })
   .catch(err => {
