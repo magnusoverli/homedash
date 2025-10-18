@@ -167,7 +167,7 @@
   transform: scale(1.1);
 }
 
-.homework-subject {
+.homework-item .homework-subject {
   font-size: 0.8rem;
   font-weight: 600;
   color: #ffffff;
@@ -175,7 +175,7 @@
   text-transform: capitalize;
 }
 
-.homework-assignment {
+.homework-item .homework-assignment {
   font-size: 0.75rem;
   color: #ffffff;
   line-height: 1.3;
