@@ -37,7 +37,8 @@
   justify-content: center;
   gap: 2px;
   min-width: 48px;
-  padding: 6px 8px;
+  padding: 4px 8px;
+  min-height: unset;
   border: 1px solid var(--mobile-color-light-gray);
   border-radius: var(--mobile-radius-card);
   background: var(--mobile-bg-card);
