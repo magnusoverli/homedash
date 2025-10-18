@@ -1,5 +1,5 @@
 /**
- * Mobile Today View Styles
+ * Mobile Homework View Styles
  */
 
 .mobile-today-view {
@@ -10,35 +10,45 @@
   flex-direction: column;
 }
 
-/* Header with time */
-.mobile-header-time {
-  font-family: var(--mobile-font-condensed);
-  font-size: var(--mobile-text-body);
-  font-weight: var(--mobile-weight-semibold);
-  color: var(--mobile-text-inverse);
-}
-
-/* Content */
-.today-content {
+.homework-content {
   flex: 1;
   padding: var(--mobile-space-m);
   padding-bottom: calc(var(--mobile-space-m) + var(--mobile-space-l));
   display: flex;
   flex-direction: column;
-  gap: var(--mobile-space-l);
+  gap: var(--mobile-space-xl);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 
-/* Section */
-.today-section {
+/* Homework Section */
+.homework-section {
   display: flex;
   flex-direction: column;
   gap: var(--mobile-space-m);
 }
 
+.homework-member-header {
+  display: flex;
+  align-items: center;
+  gap: var(--mobile-space-s);
+  padding-bottom: var(--mobile-space-xs);
+  border-bottom: 2px solid var(--mobile-color-primary-purple);
+}
+
+.homework-member-name {
+  margin: 0;
+  font-size: var(--mobile-text-h2);
+  font-weight: var(--mobile-weight-semibold);
+  color: var(--mobile-text-primary);
+}
+
 .today-section--now {
-  background: linear-gradient(135deg, rgba(103, 4, 255, 0.05) 0%, transparent 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(103, 4, 255, 0.05) 0%,
+    transparent 100%
+  );
   padding: var(--mobile-space-m);
   border-radius: var(--mobile-radius-card-large);
   margin: calc(var(--mobile-space-m) * -1);
@@ -54,13 +64,40 @@
   color: var(--mobile-text-primary);
 }
 
-/* Current Activity Card (Large) */
-.today-card--current {
+/* Homework Items */
+.homework-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mobile-space-s);
+}
+
+.homework-card {
   background: var(--mobile-bg-card);
-  border-radius: var(--mobile-radius-card-large);
-  padding: var(--mobile-space-l);
-  box-shadow: var(--mobile-shadow-medium);
-  border-left: 4px solid;
+  border-radius: var(--mobile-radius-card);
+  padding: var(--mobile-space-m);
+  box-shadow: var(--mobile-shadow-small);
+  border-left: 4px solid var(--mobile-color-primary-purple);
+}
+
+.homework-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mobile-space-xs);
+}
+
+.homework-subject {
+  margin: 0;
+  font-size: var(--mobile-text-body-large);
+  font-weight: var(--mobile-weight-semibold);
+  color: var(--mobile-text-primary);
+}
+
+.homework-assignment {
+  margin: 0;
+  font-size: var(--mobile-text-body);
+  font-weight: var(--mobile-weight-regular);
+  color: var(--mobile-text-secondary);
+  line-height: var(--mobile-line-height-normal);
 }
 
 .today-card-header {
@@ -113,7 +150,8 @@
 }
 
 @keyframes pulse-badge {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   50% {
@@ -213,28 +251,16 @@
 
 /* Responsive */
 @media (max-width: 374px) {
-  .today-content {
+  .homework-content {
     padding: var(--mobile-space-s);
-    gap: var(--mobile-space-m);
+    gap: var(--mobile-space-l);
   }
-  
-  .today-card--current {
-    padding: var(--mobile-space-m);
+
+  .homework-card {
+    padding: var(--mobile-space-s);
   }
-  
-  .today-card-icon {
-    font-size: 28px;
-  }
-  
-  .today-card-title {
+
+  .homework-member-name {
     font-size: var(--mobile-text-h3);
   }
 }
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .today-card-badge--current {
-    animation: none;
-  }
-}
-
