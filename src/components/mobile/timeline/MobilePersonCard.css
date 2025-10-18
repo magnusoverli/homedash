@@ -51,9 +51,9 @@
   will-change: transform, height;
 }
 
-.mobile-person-tasks-section {
-  overflow: hidden;
-  will-change: transform, height;
+.mobile-person-timeline-section--full {
+  flex: 1;
+  height: 100%;
 }
 
 /* Landscape adjustments */
