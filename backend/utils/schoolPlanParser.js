@@ -189,7 +189,7 @@ export function parseSchoolPlanResponse(responseText) {
     console.log('📚 Parsing school_homework...');
     try {
       const homeworkPattern =
-        /Dataset 3[^:]*school_homework[^:]*:\s*```json\s*(\[[\s\S]*?\])\s*```/i;
+        /Dataset 3[^`]*school_homework[^`]*```json\s*(\[[\s\S]*?\])\s*```/i;
       const homeworkMatch = responseText.match(homeworkPattern);
 
       if (homeworkMatch) {
