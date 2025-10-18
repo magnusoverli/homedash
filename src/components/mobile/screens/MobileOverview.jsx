@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import LoadingState from '../../LoadingState';
 import ErrorState from '../../ErrorState';
 import EmptyState from '../../EmptyState';
 import PersonCarousel from '../timeline/PersonCarousel';
@@ -7,7 +6,6 @@ import MobilePersonCard from '../timeline/MobilePersonCard';
 import PersonCardSkeleton from '../loading/PersonCardSkeleton';
 import dataService from '../../../services/dataService';
 import { formatLocalDate } from '../../../utils/timeUtils';
-import { useToast } from '../../../contexts/ToastContext';
 import './MobileOverview.css';
 
 /**
@@ -19,17 +17,13 @@ import './MobileOverview.css';
  * Features:
  * - Swipeable person carousel
  * - Timeline with hourly activity blocks
- * - Touch-to-create activities
- * - Drag-to-resize task section
  *
  * @param {Object} props
  * @param {Date} props.currentWeek - Current week to display
  */
 const MobileOverview = ({ currentWeek }) => {
-  const { showSuccess, showError } = useToast();
   const [familyMembers, setFamilyMembers] = useState([]);
   const [activities, setActivities] = useState({});
-  const [homework, setHomework] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentPersonIndex, setCurrentPersonIndex] = useState(0);
@@ -101,17 +95,6 @@ const MobileOverview = ({ currentWeek }) => {
       });
 
       setActivities(activitiesByMember);
-
-      // Load homework
-      const homeworkData = {};
-      for (const member of familyMembers) {
-        const memberHomework = await dataService.getHomework({
-          member_id: member.id,
-          week_start_date: startDateStr,
-        });
-        homeworkData[member.id] = memberHomework;
-      }
-      setHomework(homeworkData);
     } catch (error) {
       console.error('Error loading activities:', error);
     }
@@ -120,23 +103,6 @@ const MobileOverview = ({ currentWeek }) => {
   useEffect(() => {
     loadData();
   }, [loadData, currentWeek]);
-
-  const handleDeleteTask = async (memberId, taskId) => {
-    try {
-      await dataService.deleteHomework(taskId);
-
-      // Update local state
-      setHomework(prev => ({
-        ...prev,
-        [memberId]: (prev[memberId] || []).filter(hw => hw.id !== taskId),
-      }));
-
-      showSuccess('Task deleted');
-    } catch (error) {
-      console.error('Error deleting task:', error);
-      showError('Failed to delete task');
-    }
-  };
 
   if (isLoading) {
     return (
@@ -182,9 +148,7 @@ const MobileOverview = ({ currentWeek }) => {
           <MobilePersonCard
             member={member}
             activities={activities[member.id] || []}
-            homework={homework[member.id] || []}
             weekStart={getWeekStart()}
-            onDeleteTask={handleDeleteTask}
             isActive={isActive}
           />
         )}
