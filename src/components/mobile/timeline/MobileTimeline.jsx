@@ -3,6 +3,10 @@ import MobileActivityBlock from './MobileActivityBlock';
 import { formatLocalDate } from '../../../utils/timeUtils';
 import './MobileTimeline.css';
 
+const PIXELS_PER_HOUR = 50;
+const TIMELINE_START_HOUR = 6;
+const TIMELINE_END_HOUR = 24;
+
 /**
  * Mobile Timeline
  *
@@ -32,12 +36,15 @@ const MobileTimeline = ({ activities = [], weekStart, isActive }) => {
     if (isActive && timelineRef.current) {
       const now = new Date();
       const currentHour = now.getHours();
-      const scrollTarget = currentHour * 60; // 60px per hour
+      const currentMinute = now.getMinutes();
+      const scrollTarget =
+        (currentHour - TIMELINE_START_HOUR) * PIXELS_PER_HOUR +
+        (currentMinute * PIXELS_PER_HOUR) / 60;
 
       setTimeout(() => {
         if (timelineRef.current) {
           timelineRef.current.scrollTo({
-            top: scrollTarget - 100, // Offset to show context
+            top: scrollTarget - 100,
             behavior: 'smooth',
           });
         }
@@ -60,7 +67,10 @@ const MobileTimeline = ({ activities = [], weekStart, isActive }) => {
   };
 
   const weekDays = getWeekDays();
-  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const hours = Array.from(
+    { length: TIMELINE_END_HOUR - TIMELINE_START_HOUR },
+    (_, i) => i + TIMELINE_START_HOUR
+  );
 
   // Get activities for a specific date and hour
   // Only return activities that START in this hour (not those that span it)
@@ -93,7 +103,10 @@ const MobileTimeline = ({ activities = [], weekStart, isActive }) => {
     const now = new Date();
     const hour = now.getHours();
     const minute = now.getMinutes();
-    return hour * 60 + minute; // px from top
+    return (
+      (hour - TIMELINE_START_HOUR) * PIXELS_PER_HOUR +
+      (minute * PIXELS_PER_HOUR) / 60
+    );
   };
 
   const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -148,7 +161,11 @@ const MobileTimeline = ({ activities = [], weekStart, isActive }) => {
                 className={`mobile-timeline-slot ${isCurrentTime ? 'mobile-timeline-slot--current' : ''}`}
               >
                 {slotActivities.map(activity => (
-                  <MobileActivityBlock key={activity.id} activity={activity} />
+                  <MobileActivityBlock
+                    key={activity.id}
+                    activity={activity}
+                    pixelsPerHour={PIXELS_PER_HOUR}
+                  />
                 ))}
               </div>
             );
