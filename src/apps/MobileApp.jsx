@@ -96,11 +96,7 @@ const MobileApp = ({ initialWeek = new Date() }) => {
       return (
         <MobileHeader
           variant="overview"
-          leftSlot={
-            <div className="mobile-overview-logo">
-              <HomeDashIcon size={28} color="white" />
-            </div>
-          }
+          leftSlot={<div style={{ width: '40px' }} />}
           centerSlot={
             <div className="mobile-overview-week">
               <button
@@ -151,20 +147,49 @@ const MobileApp = ({ initialWeek = new Date() }) => {
       return (
         <MobileHeader
           variant="overview"
-          leftSlot={
-            <div className="mobile-overview-logo">
-              <HomeDashIcon size={28} color="white" />
+          leftSlot={<div style={{ width: '40px' }} />}
+          centerSlot={
+            <div className="mobile-overview-week">
+              <button
+                className="mobile-week-nav-button"
+                onClick={handlePreviousWeek}
+                aria-label="Previous week"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M15 18l-6-6 6-6"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+
+              <button
+                className={`mobile-week-display ${isCurrentWeek() ? 'mobile-week-display--current' : ''}`}
+                onClick={handleToday}
+                aria-label="Go to today"
+              >
+                <span className="mobile-week-text">{getWeekDisplay()}</span>
+              </button>
+
+              <button
+                className="mobile-week-nav-button"
+                onClick={handleNextWeek}
+                aria-label="Next week"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M9 18l6-6-6-6"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
             </div>
           }
-          centerSlot={<h1 className="mobile-header-title">Homework</h1>}
-          rightSlot={
-            <div className="mobile-header-time">
-              {currentTime.toLocaleTimeString('en-GB', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </div>
-          }
+          rightSlot={<div style={{ width: '40px' }} />}
         />
       );
     }
@@ -173,11 +198,7 @@ const MobileApp = ({ initialWeek = new Date() }) => {
       return (
         <MobileHeader
           variant="overview"
-          leftSlot={
-            <div className="mobile-overview-logo">
-              <HomeDashIcon size={28} color="white" />
-            </div>
-          }
+          leftSlot={<div style={{ width: '40px' }} />}
           centerSlot={<h1 className="mobile-header-title">Settings</h1>}
           rightSlot={<div style={{ width: '40px' }} />}
         />
@@ -197,7 +218,10 @@ const MobileApp = ({ initialWeek = new Date() }) => {
             path="/"
             element={<MobileOverview currentWeek={currentWeek} />}
           />
-          <Route path="/homework" element={<MobileHomeworkView />} />
+          <Route
+            path="/homework"
+            element={<MobileHomeworkView currentWeek={currentWeek} />}
+          />
           <Route path="/settings" element={<MobileSettings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
