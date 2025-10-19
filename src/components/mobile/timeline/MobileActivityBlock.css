@@ -16,7 +16,6 @@
   z-index: var(--mobile-z-card);
 }
 
-
 /* Activity content */
 .mobile-activity-content {
   display: flex;
@@ -46,11 +45,15 @@
 }
 
 .mobile-activity-time {
+  position: absolute;
+  top: 0;
+  right: 0;
   font-family: var(--mobile-font-condensed);
   font-size: 11px;
   font-weight: var(--mobile-weight-medium);
   color: var(--mobile-text-secondary);
   opacity: 0.8;
+  line-height: 1;
 }
 
 /* Activity badges */
@@ -80,33 +83,3 @@
   left: auto;
   right: 0;
 }
-
-/* Very small blocks */
-.mobile-activity-block[style*="height: 30px"],
-.mobile-activity-block[style*="height: 40px"] {
-  padding: var(--mobile-space-xxs);
-}
-
-.mobile-activity-block[style*="height: 30px"] .mobile-activity-content,
-.mobile-activity-block[style*="height: 40px"] .mobile-activity-content {
-  flex-direction: row;
-  align-items: center;
-  gap: var(--mobile-space-xxs);
-}
-
-.mobile-activity-block[style*="height: 30px"] .mobile-activity-icon {
-  font-size: 14px;
-}
-
-/* Single-line title for very small blocks in horizontal layout */
-.mobile-activity-block[style*="height: 30px"] .mobile-activity-title,
-.mobile-activity-block[style*="height: 40px"] .mobile-activity-title {
-  -webkit-line-clamp: 1;
-  white-space: nowrap;
-  display: block;
-  flex: 1;
-  min-width: 0;
-}
-
-
-
