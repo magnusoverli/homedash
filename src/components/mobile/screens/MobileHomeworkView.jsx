@@ -10,18 +10,21 @@ import './MobileHomeworkView.css';
  *
  * Displays all homework/tasks across all family members.
  * Groups homework by family member with subject and assignment details.
+ *
+ * @param {Object} props
+ * @param {Date} props.currentWeek - Current week to display
  */
-const MobileHomeworkView = () => {
+const MobileHomeworkView = ({ currentWeek }) => {
   const [homeworkByMember, setHomeworkByMember] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const getWeekStart = useCallback(() => {
-    const weekStart = new Date();
+    const weekStart = new Date(currentWeek);
     const day = weekStart.getDay();
     const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
     weekStart.setDate(diff);
     return weekStart;
-  }, []);
+  }, [currentWeek]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -59,7 +62,7 @@ const MobileHomeworkView = () => {
     };
 
     loadData();
-  }, [getWeekStart]);
+  }, [getWeekStart, currentWeek]);
 
   if (isLoading) {
     return (
