@@ -163,7 +163,7 @@
   /* ============================================
      TIMELINE SPECIFIC
      ============================================ */
-  --mobile-timeline-hour-height: 60px;
+  --mobile-timeline-hour-height: 50px;
   --mobile-timeline-time-width: 40px;
   --mobile-timeline-gutter: 8px;
 
