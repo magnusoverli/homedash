@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import EmptyState from '../../EmptyState';
 import HomeworkViewSkeleton from '../loading/HomeworkViewSkeleton';
 import dataService from '../../../services/dataService';
@@ -14,7 +14,6 @@ import './MobileHomeworkView.css';
 const MobileHomeworkView = () => {
   const [homeworkByMember, setHomeworkByMember] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const contentRef = useRef(null);
 
   const getWeekStart = useCallback(() => {
     const weekStart = new Date();
@@ -62,36 +61,6 @@ const MobileHomeworkView = () => {
     loadData();
   }, [getWeekStart]);
 
-  useEffect(() => {
-    const content = contentRef.current;
-    if (!content) return;
-
-    let startY = 0;
-
-    const handleTouchStart = e => {
-      startY = e.touches[0].clientY;
-    };
-
-    const handleTouchMove = e => {
-      const currentY = e.touches[0].clientY;
-      const scrollTop = content.scrollTop;
-      const isScrollingDown = currentY > startY;
-      const hasScroll = content.scrollHeight > content.clientHeight;
-
-      if (!hasScroll || (scrollTop <= 0 && isScrollingDown)) {
-        e.preventDefault();
-      }
-    };
-
-    content.addEventListener('touchstart', handleTouchStart, { passive: true });
-    content.addEventListener('touchmove', handleTouchMove, { passive: false });
-
-    return () => {
-      content.removeEventListener('touchstart', handleTouchStart);
-      content.removeEventListener('touchmove', handleTouchMove);
-    };
-  }, []);
-
   if (isLoading) {
     return (
       <div className="mobile-homework-view">
@@ -114,7 +83,7 @@ const MobileHomeworkView = () => {
 
   return (
     <div className="mobile-homework-view">
-      <div ref={contentRef} className="homework-content">
+      <div className="homework-content">
         {homeworkByMember.map(({ member, homework }) => (
           <section key={member.id} className="homework-section">
             <div className="homework-member-header">
