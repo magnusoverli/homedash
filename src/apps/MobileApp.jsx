@@ -3,7 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import MobileHeader from '../components/mobile/navigation/MobileHeader';
 import BottomTabBar from '../components/mobile/navigation/BottomTabBar';
 import MobileOverview from '../components/mobile/screens/MobileOverview';
-import MobileTodayView from '../components/mobile/screens/MobileTodayView';
+import MobileHomeworkView from '../components/mobile/screens/MobileHomeworkView';
 import MobileSettings from '../components/mobile/screens/MobileSettings';
 import { HomeDashIcon } from '../components/icons';
 import '../styles/mobile/mobile-app.css';
@@ -147,7 +147,7 @@ const MobileApp = ({ initialWeek = new Date() }) => {
       );
     }
 
-    if (location.pathname === '/today') {
+    if (location.pathname === '/homework') {
       return (
         <MobileHeader
           variant="overview"
@@ -156,7 +156,7 @@ const MobileApp = ({ initialWeek = new Date() }) => {
               <HomeDashIcon size={28} color="white" />
             </div>
           }
-          centerSlot={<h1 className="mobile-header-title">Today</h1>}
+          centerSlot={<h1 className="mobile-header-title">Homework</h1>}
           rightSlot={
             <div className="mobile-header-time">
               {currentTime.toLocaleTimeString('en-GB', {
@@ -197,7 +197,7 @@ const MobileApp = ({ initialWeek = new Date() }) => {
             path="/"
             element={<MobileOverview currentWeek={currentWeek} />}
           />
-          <Route path="/today" element={<MobileTodayView />} />
+          <Route path="/homework" element={<MobileHomeworkView />} />
           <Route path="/settings" element={<MobileSettings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
