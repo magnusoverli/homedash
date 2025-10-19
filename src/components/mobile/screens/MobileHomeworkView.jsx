@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import EmptyState from '../../EmptyState';
-import TodayViewSkeleton from '../loading/TodayViewSkeleton';
+import HomeworkViewSkeleton from '../loading/HomeworkViewSkeleton';
 import dataService from '../../../services/dataService';
 import { formatLocalDate } from '../../../utils/timeUtils';
-import './MobileTodayView.css';
+import './MobileHomeworkView.css';
 
 /**
  * Mobile Homework View
@@ -11,9 +11,10 @@ import './MobileTodayView.css';
  * Displays all homework/tasks across all family members.
  * Groups homework by family member with subject and assignment details.
  */
-const MobileTodayView = () => {
+const MobileHomeworkView = () => {
   const [homeworkByMember, setHomeworkByMember] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const contentRef = useRef(null);
 
   const getWeekStart = useCallback(() => {
     const weekStart = new Date();
@@ -61,17 +62,47 @@ const MobileTodayView = () => {
     loadData();
   }, [getWeekStart]);
 
+  useEffect(() => {
+    const content = contentRef.current;
+    if (!content) return;
+
+    let startY = 0;
+
+    const handleTouchStart = e => {
+      startY = e.touches[0].clientY;
+    };
+
+    const handleTouchMove = e => {
+      const currentY = e.touches[0].clientY;
+      const scrollTop = content.scrollTop;
+      const isScrollingDown = currentY > startY;
+      const hasScroll = content.scrollHeight > content.clientHeight;
+
+      if (!hasScroll || (scrollTop <= 0 && isScrollingDown)) {
+        e.preventDefault();
+      }
+    };
+
+    content.addEventListener('touchstart', handleTouchStart, { passive: true });
+    content.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+    return () => {
+      content.removeEventListener('touchstart', handleTouchStart);
+      content.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, []);
+
   if (isLoading) {
     return (
-      <div className="mobile-today-view">
-        <TodayViewSkeleton />
+      <div className="mobile-homework-view">
+        <HomeworkViewSkeleton />
       </div>
     );
   }
 
   if (homeworkByMember.length === 0) {
     return (
-      <div className="mobile-today-view">
+      <div className="mobile-homework-view">
         <EmptyState
           icon="✅"
           title="All Caught Up!"
@@ -82,8 +113,8 @@ const MobileTodayView = () => {
   }
 
   return (
-    <div className="mobile-today-view">
-      <div className="homework-content">
+    <div className="mobile-homework-view">
+      <div ref={contentRef} className="homework-content">
         {homeworkByMember.map(({ member, homework }) => (
           <section key={member.id} className="homework-section">
             <div className="homework-member-header">
@@ -109,4 +140,4 @@ const MobileTodayView = () => {
   );
 };
 
-export default MobileTodayView;
+export default MobileHomeworkView;
