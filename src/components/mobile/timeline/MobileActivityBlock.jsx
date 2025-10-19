@@ -12,11 +12,14 @@ import './MobileActivityBlock.css';
  *
  * @param {Object} props
  * @param {Object} props.activity - Activity object
+ * @param {number} props.pixelsPerHour - Height of one hour in pixels
  */
-const MobileActivityBlock = ({ activity }) => {
+const MobileActivityBlock = ({ activity, pixelsPerHour }) => {
+  const PIXELS_PER_MINUTE = pixelsPerHour / 60;
+
   // Calculate block height based on duration
   const getBlockHeight = () => {
-    if (!activity.startTime || !activity.endTime) return 60;
+    if (!activity.startTime || !activity.endTime) return pixelsPerHour;
 
     const [startHour, startMin] = activity.startTime.split(':').map(Number);
     const [endHour, endMin] = activity.endTime.split(':').map(Number);
@@ -25,7 +28,7 @@ const MobileActivityBlock = ({ activity }) => {
     const endMinutes = endHour * 60 + endMin;
     const durationMinutes = endMinutes - startMinutes;
 
-    return Math.max(durationMinutes, 30); // Minimum 30px
+    return Math.max(durationMinutes * PIXELS_PER_MINUTE, 30);
   };
 
   // Calculate block position within hour slot
@@ -33,7 +36,7 @@ const MobileActivityBlock = ({ activity }) => {
     if (!activity.startTime) return 0;
 
     const [, startMin] = activity.startTime.split(':').map(Number);
-    return startMin; // px offset from hour start
+    return startMin * PIXELS_PER_MINUTE;
   };
 
   // Get activity color
