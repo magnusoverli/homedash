@@ -60,6 +60,78 @@ export const isSpondActivity = activity => {
 };
 
 /**
+ * Get the icon for a Spond activity based on type
+ * @param {Object} activity - The activity object
+ * @returns {string} The emoji icon
+ */
+export const getSpondActivityIcon = activity => {
+  const activityType = (
+    activity.activity_type ||
+    activity.activityType ||
+    'EVENT'
+  ).toUpperCase();
+  const title = (activity.title || '').toLowerCase();
+
+  // Check for theater/drama practice first (specific case)
+  if (title.includes('teater') || title.includes('drama')) {
+    return '🎭';
+  }
+
+  // Check activity type from Spond API
+  if (
+    activityType.includes('GAME') ||
+    activityType.includes('MATCH') ||
+    activityType.includes('KAMP')
+  ) {
+    return '⚽';
+  }
+  if (
+    activityType.includes('TRAINING') ||
+    activityType.includes('PRACTICE') ||
+    activityType.includes('TRENING')
+  ) {
+    return '🏃';
+  }
+
+  // Title-based detection for matches/games (using "–" dash or "vs" pattern)
+  if (
+    title.includes('–') ||
+    title.includes(' - ') ||
+    title.includes(' vs ') ||
+    title.includes(' v ')
+  ) {
+    return '⚽';
+  }
+
+  // Other title keywords
+  if (
+    title.includes('kamp') ||
+    title.includes('match') ||
+    title.includes('game')
+  ) {
+    return '⚽';
+  }
+  if (
+    title.includes('trening') ||
+    title.includes('training') ||
+    title.includes('practice') ||
+    title.includes('øvelse')
+  ) {
+    return '🏃';
+  }
+  if (
+    title.includes('cup') ||
+    title.includes('turnering') ||
+    title.includes('tournament')
+  ) {
+    return '🏆';
+  }
+
+  // Default Spond icon
+  return '📅';
+};
+
+/**
  * Check if activity is tentative (Spond activity with no response or declined)
  * @param {Object} activity - The activity object
  * @returns {boolean} True if tentative
@@ -144,16 +216,6 @@ export const getActivityColor = activity => {
     // School types
     school_schedule: '#BADAF8', // Pastell Blue
     school_activity: '#DEB2FA', // Pastell Pink
-
-    // Category-based
-    category_work: '#B2AEFF', // Pastell Light Purple
-    category_exercise: '#D2FCC3', // Pastell Green
-    category_family: '#DEB2FA', // Pastell Pink
-    category_meal: '#FCDD8C', // Pastell Orange
-    category_personal: '#BADAF8', // Pastell Blue
-    category_medical: '#F4B3BB', // Pastell Salmon
-    category_social: '#FFF48D', // Pastell Yellow
-    category_chores: '#ECECEC', // Pastell Gray
   };
 
   return colorMap[type] || '#B2AEFF'; // Default to light purple
@@ -174,25 +236,19 @@ export const getActivityIcon = activity => {
     return getMunicipalEventIcon(activity);
   }
 
+  // Special handling for Spond events
+  if (type === 'spond') {
+    return getSpondActivityIcon(activity);
+  }
+
   // Icon mapping
   const iconMap = {
     // Source-based
     manual: '✏️',
-    spond: '⚽',
 
     // School types
     school_schedule: '🏫',
     school_activity: '🎓',
-
-    // Category-based
-    category_work: '💼',
-    category_exercise: '🏃',
-    category_family: '👨‍👩‍👧',
-    category_meal: '🍽️',
-    category_personal: '⭐',
-    category_medical: '🏥',
-    category_social: '👥',
-    category_chores: '🧹',
   };
 
   return iconMap[type] || '📅'; // Default icon
