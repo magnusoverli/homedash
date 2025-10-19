@@ -1,14 +1,14 @@
 import Skeleton from './Skeleton';
 import './Skeleton.css';
-import './TodayViewSkeleton.css';
+import './HomeworkViewSkeleton.css';
 
 /**
- * Today View Skeleton
- * 
- * Skeleton loader for today's activity view.
- * Shows placeholders for activity cards.
+ * Homework View Skeleton
+ *
+ * Skeleton loader for homework view.
+ * Shows placeholders for homework cards.
  */
-const TodayViewSkeleton = () => {
+const HomeworkViewSkeleton = () => {
   return (
     <div className="today-view-skeleton">
       {/* "Now" section - large card */}
@@ -19,7 +19,11 @@ const TodayViewSkeleton = () => {
             <Skeleton width="40px" height="40px" borderRadius="50%" />
             <Skeleton width="80px" height="14px" />
           </div>
-          <Skeleton width="32px" height="32px" className="today-skeleton-icon" />
+          <Skeleton
+            width="32px"
+            height="32px"
+            className="today-skeleton-icon"
+          />
           <Skeleton width="60%" height="22px" />
           <Skeleton width="120px" height="14px" />
         </div>
@@ -43,7 +47,11 @@ const TodayViewSkeleton = () => {
 
       {/* "Later Today" section */}
       <div className="today-skeleton-section">
-        <Skeleton width="100px" height="18px" className="today-skeleton-title" />
+        <Skeleton
+          width="100px"
+          height="18px"
+          className="today-skeleton-title"
+        />
         <div className="today-skeleton-cards-compact">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="today-skeleton-card-compact">
@@ -60,6 +68,4 @@ const TodayViewSkeleton = () => {
   );
 };
 
-export default TodayViewSkeleton;
-
-
+export default HomeworkViewSkeleton;
