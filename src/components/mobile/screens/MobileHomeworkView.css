@@ -15,7 +15,7 @@
 .homework-content {
   flex: 1;
   padding: var(--mobile-space-m);
-  padding-bottom: calc(var(--mobile-space-m) + var(--mobile-space-l));
+  padding-bottom: var(--mobile-tab-bar-height);
   display: flex;
   flex-direction: column;
   gap: var(--mobile-space-xl);
