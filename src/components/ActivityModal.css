@@ -116,6 +116,34 @@
   font-family: inherit;
 }
 
+.member-select-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.member-option {
+  padding: 0.5rem 0.75rem;
+  border-radius: 5px;
+  border: 2px solid;
+  background: transparent;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.member-option:hover {
+  transform: translateY(-1px);
+  opacity: 0.8;
+}
+
+.member-option.selected {
+  color: #10011b;
+  font-weight: 600;
+}
+
 .category-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

@@ -4,7 +4,7 @@ import { formatTime, generateTimeOptions } from '../utils/timeUtils';
 import { createBackdropClickHandler } from '../utils/modalUtils';
 import './ActivityModal.css';
 
-const ActivityModal = ({ activity, onSave, onClose }) => {
+const ActivityModal = ({ activity, members = [], onSave, onClose }) => {
   const [formData, setFormData] = useState({
     title: '',
     category: 'personal',
@@ -76,6 +76,35 @@ const ActivityModal = ({ activity, onSave, onClose }) => {
               autoFocus
             />
           </div>
+
+          {members.length > 0 && (
+            <div className="form-group">
+              <label htmlFor="memberId" className="form-label">
+                Family Member
+              </label>
+              <div className="member-select-grid">
+                {members.map(member => (
+                  <button
+                    key={member.id}
+                    type="button"
+                    className={`member-option ${formData.memberId === member.id ? 'selected' : ''}`}
+                    onClick={() =>
+                      setFormData(prev => ({ ...prev, memberId: member.id }))
+                    }
+                    style={{
+                      backgroundColor:
+                        formData.memberId === member.id
+                          ? member.color || '#B2AEFF'
+                          : 'transparent',
+                      borderColor: member.color || '#B2AEFF',
+                    }}
+                  >
+                    {member.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="category" className="form-label">

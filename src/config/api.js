@@ -52,10 +52,14 @@ export const ENDPOINTS = {
     create: `${BASE_URL}/api/family-members`,
     update: id => `${BASE_URL}/api/family-members/${id}`,
     delete: id => `${BASE_URL}/api/family-members/${id}`,
-    importCalendar: id =>
-      `${BASE_URL}/api/family-members/${id}/import-calendar`,
-    removeCalendar: id =>
-      `${BASE_URL}/api/family-members/${id}/remove-calendar`,
+  },
+  calendarSources: {
+    list: `${BASE_URL}/api/calendar-sources`,
+    create: `${BASE_URL}/api/calendar-sources`,
+    get: id => `${BASE_URL}/api/calendar-sources/${id}`,
+    update: id => `${BASE_URL}/api/calendar-sources/${id}`,
+    delete: id => `${BASE_URL}/api/calendar-sources/${id}`,
+    sync: id => `${BASE_URL}/api/calendar-sources/${id}/sync`,
   },
   activities: {
     list: params => buildUrl('/api/activities', params),

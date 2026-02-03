@@ -40,11 +40,7 @@ const db = new Database(dbPath, err => {
       });
     });
 
-    console.log('✅ Database performance optimizations applied:');
-    console.log('   - WAL mode enabled (5-10x write performance)');
-    console.log('   - 64MB cache size');
-    console.log('   - Memory-mapped I/O (256MB)');
-    console.log('   - Optimized synchronous mode');
+    console.log('Database performance optimizations applied');
   }
 });
 
@@ -76,15 +72,13 @@ process.on('SIGTERM', () => {
 const initDatabase = () => {
   return new Promise((resolve, reject) => {
     db.serialize(() => {
+      // Family members table - simplified without calendar fields
       db.run(
         `
         CREATE TABLE IF NOT EXISTS family_members (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL,
           color TEXT NOT NULL,
-          calendar_url TEXT,
-          calendar_last_synced DATETIME,
-          calendar_event_count INTEGER DEFAULT 0,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -97,11 +91,35 @@ const initDatabase = () => {
         }
       );
 
+      // Calendar sources table - family-wide calendar imports
+      db.run(
+        `
+        CREATE TABLE IF NOT EXISTS calendar_sources (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          url TEXT NOT NULL,
+          color TEXT,
+          last_synced DATETIME,
+          event_count INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `,
+        err => {
+          if (err) {
+            console.error('Error creating calendar_sources table:', err);
+            return reject(err);
+          }
+        }
+      );
+
+      // Activities table - with optional member_id (NULL for family-wide events) and optional source_id
       db.run(
         `
         CREATE TABLE IF NOT EXISTS activities (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          member_id INTEGER NOT NULL,
+          member_id INTEGER,
+          source_id INTEGER,
           title TEXT NOT NULL,
           date TEXT NOT NULL,
           start_time TEXT NOT NULL,
@@ -110,9 +128,12 @@ const initDatabase = () => {
           activity_type TEXT DEFAULT 'manual',
           recurrence_type TEXT DEFAULT 'none',
           recurrence_end_date TEXT,
+          notes TEXT,
+          source TEXT DEFAULT 'manual',
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
+          FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE,
+          FOREIGN KEY (source_id) REFERENCES calendar_sources (id) ON DELETE SET NULL
         )
       `,
         err => {
@@ -123,11 +144,20 @@ const initDatabase = () => {
         }
       );
 
-      // Add new columns to existing activities table if they don't exist
+      // Migration: Add source_id column if it doesn't exist (for existing databases)
+      db.run(
+        `ALTER TABLE activities ADD COLUMN source_id INTEGER REFERENCES calendar_sources(id) ON DELETE SET NULL`,
+        err => {
+          if (err && !err.message.includes('duplicate column name')) {
+            console.error('Error adding source_id column:', err);
+          }
+        }
+      );
+
+      // Migration: Add columns that might be missing from older schemas
       db.run(
         `ALTER TABLE activities ADD COLUMN activity_type TEXT DEFAULT 'manual'`,
         err => {
-          // Ignore error if column already exists
           if (err && !err.message.includes('duplicate column name')) {
             console.error('Error adding activity_type column:', err);
           }
@@ -137,7 +167,6 @@ const initDatabase = () => {
       db.run(
         `ALTER TABLE activities ADD COLUMN recurrence_type TEXT DEFAULT 'none'`,
         err => {
-          // Ignore error if column already exists
           if (err && !err.message.includes('duplicate column name')) {
             console.error('Error adding recurrence_type column:', err);
           }
@@ -147,7 +176,6 @@ const initDatabase = () => {
       db.run(
         `ALTER TABLE activities ADD COLUMN recurrence_end_date TEXT`,
         err => {
-          // Ignore error if column already exists
           if (err && !err.message.includes('duplicate column name')) {
             console.error('Error adding recurrence_end_date column:', err);
           }
@@ -155,38 +183,11 @@ const initDatabase = () => {
       );
 
       db.run(`ALTER TABLE activities ADD COLUMN notes TEXT`, err => {
-        // Ignore error if column already exists
         if (err && !err.message.includes('duplicate column name')) {
           console.error('Error adding notes column:', err);
         }
       });
 
-      // Add calendar-related columns to family_members table
-      db.run(`ALTER TABLE family_members ADD COLUMN calendar_url TEXT`, err => {
-        if (err && !err.message.includes('duplicate column name')) {
-          console.error('Error adding calendar_url column:', err);
-        }
-      });
-
-      db.run(
-        `ALTER TABLE family_members ADD COLUMN calendar_last_synced DATETIME`,
-        err => {
-          if (err && !err.message.includes('duplicate column name')) {
-            console.error('Error adding calendar_last_synced column:', err);
-          }
-        }
-      );
-
-      db.run(
-        `ALTER TABLE family_members ADD COLUMN calendar_event_count INTEGER DEFAULT 0`,
-        err => {
-          if (err && !err.message.includes('duplicate column name')) {
-            console.error('Error adding calendar_event_count column:', err);
-          }
-        }
-      );
-
-      // Add source column to activities to track municipal calendar events
       db.run(
         `ALTER TABLE activities ADD COLUMN source TEXT DEFAULT 'manual'`,
         err => {
@@ -196,6 +197,101 @@ const initDatabase = () => {
         }
       );
 
+      // Migration: Make member_id nullable for family-wide calendar events
+      // Check if migration is needed by looking at existing constraint
+      db.get(
+        `SELECT sql FROM sqlite_master WHERE type='table' AND name='activities'`,
+        (err, row) => {
+          if (err) {
+            console.error('Error checking activities table schema:', err);
+            return;
+          }
+
+          // If table has NOT NULL on member_id, we need to migrate
+          if (
+            row &&
+            row.sql &&
+            row.sql.includes('member_id INTEGER NOT NULL')
+          ) {
+            console.log(
+              'Migration: Removing NOT NULL constraint from activities.member_id...'
+            );
+
+            db.serialize(() => {
+              db.run('PRAGMA foreign_keys = OFF');
+
+              // Create new table without NOT NULL constraint
+              db.run(`
+                CREATE TABLE IF NOT EXISTS activities_new (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  member_id INTEGER,
+                  source_id INTEGER,
+                  title TEXT NOT NULL,
+                  date TEXT NOT NULL,
+                  start_time TEXT NOT NULL,
+                  end_time TEXT NOT NULL,
+                  description TEXT,
+                  activity_type TEXT DEFAULT 'manual',
+                  recurrence_type TEXT DEFAULT 'none',
+                  recurrence_end_date TEXT,
+                  notes TEXT,
+                  source TEXT DEFAULT 'manual',
+                  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                  FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE,
+                  FOREIGN KEY (source_id) REFERENCES calendar_sources (id) ON DELETE SET NULL
+                )
+              `);
+
+              // Copy data from old table
+              db.run(`
+                INSERT INTO activities_new 
+                SELECT id, member_id, source_id, title, date, start_time, end_time, 
+                       description, activity_type, recurrence_type, recurrence_end_date,
+                       notes, source, created_at, updated_at
+                FROM activities
+              `);
+
+              // Drop old table
+              db.run('DROP TABLE activities');
+
+              // Rename new table
+              db.run('ALTER TABLE activities_new RENAME TO activities');
+
+              // Recreate indexes
+              db.run(`
+                CREATE INDEX IF NOT EXISTS idx_activities_member_date 
+                ON activities(member_id, date)
+              `);
+
+              db.run(`
+                CREATE INDEX IF NOT EXISTS idx_activities_date 
+                ON activities(date)
+              `);
+
+              db.run(`
+                CREATE INDEX IF NOT EXISTS idx_activities_source 
+                ON activities(source_id)
+              `);
+
+              db.run('PRAGMA foreign_keys = ON', pragmaErr => {
+                if (pragmaErr) {
+                  console.error(
+                    'Error re-enabling foreign keys after migration:',
+                    pragmaErr
+                  );
+                } else {
+                  console.log(
+                    'Migration complete: activities.member_id is now nullable'
+                  );
+                }
+              });
+            });
+          }
+        }
+      );
+
+      // Homework table
       db.run(
         `
         CREATE TABLE IF NOT EXISTS homework (
@@ -219,6 +315,7 @@ const initDatabase = () => {
         }
       );
 
+      // Settings table
       db.run(
         `
         CREATE TABLE IF NOT EXISTS settings (
@@ -235,6 +332,7 @@ const initDatabase = () => {
         }
       );
 
+      // Auth tokens table
       db.run(
         `
         CREATE TABLE IF NOT EXISTS auth_tokens (
@@ -255,6 +353,7 @@ const initDatabase = () => {
         }
       );
 
+      // Create indexes for activities
       db.run(`
         CREATE INDEX IF NOT EXISTS idx_activities_member_date 
         ON activities(member_id, date)
@@ -266,6 +365,12 @@ const initDatabase = () => {
       `);
 
       db.run(`
+        CREATE INDEX IF NOT EXISTS idx_activities_source 
+        ON activities(source_id)
+      `);
+
+      // Create indexes for homework
+      db.run(`
         CREATE INDEX IF NOT EXISTS idx_homework_member 
         ON homework(member_id)
       `);
@@ -275,111 +380,105 @@ const initDatabase = () => {
         ON homework(member_id, week_start_date)
       `);
 
+      // Create index for auth tokens
       db.run(`
         CREATE INDEX IF NOT EXISTS idx_auth_tokens_expires 
         ON auth_tokens(expires_at)
       `);
 
-      // Create Spond tables sequentially - temporarily disable foreign keys for creation
+      // Create Spond tables
       const createSpondTables = () => {
         return new Promise((tableResolve, tableReject) => {
-          console.log('🔨 Creating/verifying Spond tables...');
+          console.log('Creating/verifying Spond tables...');
 
-          // Temporarily disable foreign key constraints during table creation
           db.run('PRAGMA foreign_keys = OFF', pragmaErr => {
             if (pragmaErr) {
-              console.error('❌ Error disabling foreign keys:', pragmaErr);
+              console.error('Error disabling foreign keys:', pragmaErr);
               return tableReject(pragmaErr);
             }
-            console.log(
-              '🔧 Temporarily disabled foreign keys for table creation'
-            );
 
-            // Create Spond Groups Table (preserve existing data)
+            // Create Spond Groups Table
             db.run(
               `CREATE TABLE IF NOT EXISTS spond_groups (
-                      id TEXT NOT NULL,
-                      member_id INTEGER NOT NULL,
-                      profile_id TEXT NOT NULL,
-                      name TEXT NOT NULL,
-                      description TEXT,
-                      image_url TEXT,
-                      profile_name TEXT,
-                      is_active BOOLEAN DEFAULT FALSE,
-                      last_synced_at DATETIME,
-                      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                      PRIMARY KEY (id, member_id, profile_id),
-                      FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
-                    )`,
+                id TEXT NOT NULL,
+                member_id INTEGER NOT NULL,
+                profile_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                description TEXT,
+                image_url TEXT,
+                profile_name TEXT,
+                is_active BOOLEAN DEFAULT FALSE,
+                last_synced_at DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id, member_id, profile_id),
+                FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
+              )`,
               err => {
                 if (err) {
-                  console.error('❌ Error creating spond_groups table:', err);
+                  console.error('Error creating spond_groups table:', err);
                   return tableReject(err);
                 }
-                console.log('✅ spond_groups table created/verified');
 
-                // Create Spond Activities Table (preserve existing data)
+                // Create Spond Activities Table
                 db.run(
                   `CREATE TABLE IF NOT EXISTS spond_activities (
-                          id TEXT PRIMARY KEY,
-                          group_id TEXT NOT NULL,
-                          member_id INTEGER NOT NULL,
-                          profile_id TEXT NOT NULL,
-                          title TEXT NOT NULL,
-                          description TEXT,
-                          start_timestamp DATETIME NOT NULL,
-                          end_timestamp DATETIME NOT NULL,
-                          location_name TEXT,
-                          location_address TEXT,
-                          location_latitude REAL,
-                          location_longitude REAL,
-                          activity_type TEXT,
-                          is_cancelled BOOLEAN DEFAULT FALSE,
-                          max_accepted INTEGER,
-                          auto_accept BOOLEAN DEFAULT FALSE,
-                          response_status TEXT,
-                          response_comment TEXT,
-                          organizer_name TEXT,
-                          raw_data TEXT,
-                          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                          FOREIGN KEY (group_id, member_id, profile_id) REFERENCES spond_groups (id, member_id, profile_id) ON DELETE CASCADE,
-                          FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
-                        )`,
+                    id TEXT PRIMARY KEY,
+                    group_id TEXT NOT NULL,
+                    member_id INTEGER NOT NULL,
+                    profile_id TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    start_timestamp DATETIME NOT NULL,
+                    end_timestamp DATETIME NOT NULL,
+                    location_name TEXT,
+                    location_address TEXT,
+                    location_latitude REAL,
+                    location_longitude REAL,
+                    activity_type TEXT,
+                    is_cancelled BOOLEAN DEFAULT FALSE,
+                    max_accepted INTEGER,
+                    auto_accept BOOLEAN DEFAULT FALSE,
+                    response_status TEXT,
+                    response_comment TEXT,
+                    organizer_name TEXT,
+                    raw_data TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (group_id, member_id, profile_id) REFERENCES spond_groups (id, member_id, profile_id) ON DELETE CASCADE,
+                    FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
+                  )`,
                   err => {
                     if (err) {
                       console.error(
-                        '❌ Error creating spond_activities table:',
+                        'Error creating spond_activities table:',
                         err
                       );
                       return tableReject(err);
                     }
-                    console.log('✅ spond_activities table created/verified');
 
-                    // Create Spond Sync Log Table (preserve existing data)
+                    // Create Spond Sync Log Table
                     db.run(
                       `CREATE TABLE IF NOT EXISTS spond_sync_log (
-                              id INTEGER PRIMARY KEY AUTOINCREMENT,
-                              member_id INTEGER NOT NULL,
-                              group_id TEXT,
-                              sync_type TEXT NOT NULL,
-                              status TEXT NOT NULL,
-                              activities_synced INTEGER DEFAULT 0,
-                              error_message TEXT,
-                              sync_duration_ms INTEGER,
-                              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                              FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
-                            )`,
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        member_id INTEGER NOT NULL,
+                        group_id TEXT,
+                        sync_type TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        activities_synced INTEGER DEFAULT 0,
+                        error_message TEXT,
+                        sync_duration_ms INTEGER,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
+                      )`,
                       err => {
                         if (err) {
                           console.error(
-                            '❌ Error creating spond_sync_log table:',
+                            'Error creating spond_sync_log table:',
                             err
                           );
                           return tableReject(err);
                         }
-                        console.log('✅ spond_sync_log table created/verified');
 
                         // Create Spond Profile Mappings Table
                         db.run(
@@ -398,30 +497,22 @@ const initDatabase = () => {
                           err => {
                             if (err) {
                               console.error(
-                                '❌ Error creating spond_profile_mappings table:',
+                                'Error creating spond_profile_mappings table:',
                                 err
                               );
                               return tableReject(err);
                             }
-                            console.log(
-                              '✅ spond_profile_mappings table created/verified'
-                            );
 
                             // Re-enable foreign key constraints
                             db.run('PRAGMA foreign_keys = ON', pragmaErr2 => {
                               if (pragmaErr2) {
                                 console.error(
-                                  '❌ Error re-enabling foreign keys:',
+                                  'Error re-enabling foreign keys:',
                                   pragmaErr2
                                 );
                                 return tableReject(pragmaErr2);
                               }
-                              console.log(
-                                '🔧 Re-enabled foreign key constraints'
-                              );
-                              console.log(
-                                '🎉 All Spond tables created/verified successfully'
-                              );
+                              console.log('Spond tables created/verified');
                               tableResolve();
                             });
                           }
@@ -436,14 +527,11 @@ const initDatabase = () => {
         });
       };
 
-      // Create all Spond-related indexes after tables are created
+      // Create Spond indexes
       const createSpondIndexes = () => {
         return new Promise((indexResolve, indexReject) => {
           db.run(
-            `
-            CREATE INDEX IF NOT EXISTS idx_spond_groups_member 
-            ON spond_groups(member_id)
-          `,
+            `CREATE INDEX IF NOT EXISTS idx_spond_groups_member ON spond_groups(member_id)`,
             err => {
               if (err) {
                 console.error('Error creating idx_spond_groups_member:', err);
@@ -451,10 +539,7 @@ const initDatabase = () => {
               }
 
               db.run(
-                `
-              CREATE INDEX IF NOT EXISTS idx_spond_groups_active 
-              ON spond_groups(member_id, is_active)
-            `,
+                `CREATE INDEX IF NOT EXISTS idx_spond_groups_active ON spond_groups(member_id, is_active)`,
                 err => {
                   if (err) {
                     console.error(
@@ -465,10 +550,7 @@ const initDatabase = () => {
                   }
 
                   db.run(
-                    `
-                CREATE INDEX IF NOT EXISTS idx_spond_activities_member_time 
-                ON spond_activities(member_id, start_timestamp)
-              `,
+                    `CREATE INDEX IF NOT EXISTS idx_spond_activities_member_time ON spond_activities(member_id, start_timestamp)`,
                     err => {
                       if (err) {
                         console.error(
@@ -479,10 +561,7 @@ const initDatabase = () => {
                       }
 
                       db.run(
-                        `
-                  CREATE INDEX IF NOT EXISTS idx_spond_activities_group 
-                  ON spond_activities(group_id)
-                `,
+                        `CREATE INDEX IF NOT EXISTS idx_spond_activities_group ON spond_activities(group_id)`,
                         err => {
                           if (err) {
                             console.error(
@@ -493,10 +572,7 @@ const initDatabase = () => {
                           }
 
                           db.run(
-                            `
-                    CREATE INDEX IF NOT EXISTS idx_spond_sync_log_member 
-                    ON spond_sync_log(member_id)
-                  `,
+                            `CREATE INDEX IF NOT EXISTS idx_spond_sync_log_member ON spond_sync_log(member_id)`,
                             err => {
                               if (err) {
                                 console.error(
@@ -506,10 +582,8 @@ const initDatabase = () => {
                                 return indexReject(err);
                               }
 
-                              // Create index for profile mappings
                               db.run(
-                                `CREATE INDEX IF NOT EXISTS idx_spond_profile_mappings_member 
-                                ON spond_profile_mappings(member_id)`,
+                                `CREATE INDEX IF NOT EXISTS idx_spond_profile_mappings_member ON spond_profile_mappings(member_id)`,
                                 err => {
                                   if (
                                     err &&
@@ -520,10 +594,6 @@ const initDatabase = () => {
                                       err
                                     );
                                   }
-
-                                  console.log(
-                                    'All Spond indexes created successfully'
-                                  );
                                   indexResolve();
                                 }
                               );
@@ -540,12 +610,9 @@ const initDatabase = () => {
         });
       };
 
-      // Create Spond tables first, then indexes
+      // Create Spond tables and indexes
       createSpondTables()
-        .then(() => {
-          console.log('✅ All Spond tables created, now creating indexes...');
-          return createSpondIndexes();
-        })
+        .then(() => createSpondIndexes())
         .then(() => {
           console.log('Database initialized successfully');
           resolve();

@@ -13,6 +13,7 @@ import activitiesRoutes from './routes/activities.js';
 import homeworkRoutes from './routes/homework.js';
 import schoolPlanRoutes from './routes/schoolPlan.js';
 import spondRoutes from './routes/spond.js';
+import calendarSourcesRoutes from './routes/calendarSources.js';
 
 dotenv.config();
 
@@ -74,23 +75,6 @@ app.get('/api/health', (_, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-app.post('/api/debug/device-info', (req, res) => {
-  const deviceInfo = req.body;
-  console.log('\n📱 DEVICE DETECTION:');
-  console.log('==================');
-  console.log(`Device Type: ${deviceInfo.deviceType}`);
-  console.log(`Is Mobile: ${deviceInfo.isMobile}`);
-  console.log(`Is Tablet: ${deviceInfo.isTablet}`);
-  console.log(`Is Touch: ${deviceInfo.isTouch}`);
-  console.log(`Orientation: ${deviceInfo.orientation}`);
-  console.log(
-    `Screen Size: ${deviceInfo.screenWidth}x${deviceInfo.screenHeight}`
-  );
-  console.log(`User Agent: ${deviceInfo.userAgent}`);
-  console.log('==================\n');
-  res.json({ received: true });
-});
-
 app.use('/api/auth', authRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api', llmRoutes);
@@ -99,6 +83,7 @@ app.use('/api/activities', activitiesRoutes);
 app.use('/api/homework', homeworkRoutes);
 app.use('/api', schoolPlanRoutes);
 app.use('/api/spond', spondRoutes);
+app.use('/api/calendar-sources', calendarSourcesRoutes);
 
 initDatabase()
   .then(() => {

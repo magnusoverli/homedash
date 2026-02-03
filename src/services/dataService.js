@@ -270,6 +270,49 @@ class DataService {
     );
     return this.handleResponse(response);
   }
+
+  // Calendar Sources API
+  async getCalendarSources() {
+    const response = await fetch(`${API_URL}/api/calendar-sources`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async createCalendarSource(sourceData) {
+    const response = await fetch(`${API_URL}/api/calendar-sources`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(sourceData),
+    });
+    return this.handleResponse(response);
+  }
+
+  async updateCalendarSource(id, sourceData) {
+    const response = await fetch(`${API_URL}/api/calendar-sources/${id}`, {
+      method: 'PUT',
+      headers: this.getHeaders(),
+      body: JSON.stringify(sourceData),
+    });
+    return this.handleResponse(response);
+  }
+
+  async deleteCalendarSource(id) {
+    const response = await fetch(`${API_URL}/api/calendar-sources/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async syncCalendarSource(id) {
+    const response = await fetch(`${API_URL}/api/calendar-sources/${id}/sync`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
 }
 
 export default new DataService();

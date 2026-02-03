@@ -16,6 +16,14 @@
   min-height: 0;
 }
 
+.calendar-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
 .calendar-grid {
   display: grid;
   gap: 1rem;
@@ -43,7 +51,6 @@
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   }
 }
-
 
 .empty-state {
   flex: 1;
@@ -81,7 +88,7 @@
   .calendar-grid:has(.person-card:nth-child(3):last-child) {
     grid-template-columns: 1fr;
   }
-  
+
   /* Fallback for browsers without :has() support */
   @supports not selector(:has(*)) {
     .calendar-grid {

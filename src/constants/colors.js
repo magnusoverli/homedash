@@ -3,7 +3,7 @@
 
 /**
  * Avatar colors used for family member avatars
- * Used in: AddMemberForm, EditMemberModal, PersonCard, etc.
+ * Used in: AddMemberForm, EditMemberModal, CalendarSourcesManager, etc.
  */
 export const AVATAR_COLORS = [
   { name: 'Yellow', hex: '#FFF48D' },
@@ -64,7 +64,7 @@ export const CATEGORIES = [
 
 /**
  * Available colors for activity customization
- * Used in: PersonCard for custom activity colors
+ * Used in: WeekCalendar for member-colored activities
  */
 export const AVAILABLE_COLORS = [
   { name: 'Light Purple', value: '#B2AEFF', hex: '#B2AEFF' },

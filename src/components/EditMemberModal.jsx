@@ -62,13 +62,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
   const [groupsError, setGroupsError] = useState(null);
   const [selectedGroups, setSelectedGroups] = useState([]);
 
-  // Municipal calendar state
-  const [calendarUrl, setCalendarUrl] = useState('');
-  const [isImportingCalendar, setIsImportingCalendar] = useState(false);
-  const [calendarLastSynced, setCalendarLastSynced] = useState(null);
-  const [calendarEventCount, setCalendarEventCount] = useState(0);
-  const [isRemovingCalendar, setIsRemovingCalendar] = useState(false);
-
   useEffect(() => {
     if (member) {
       // Calculate current week's Monday as default
@@ -113,23 +106,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       );
     } catch (error) {
       console.error('Error checking for school schedule:', error);
-    }
-  }, [member?.id]);
-
-  const loadCalendarInfo = useCallback(async () => {
-    if (!member?.id) return;
-
-    try {
-      const members = await dataService.getFamilyMembers();
-      const currentMember = members.find(m => m.id === member.id);
-
-      if (currentMember) {
-        setCalendarUrl(currentMember.calendar_url || '');
-        setCalendarLastSynced(currentMember.calendar_last_synced);
-        setCalendarEventCount(currentMember.calendar_event_count || 0);
-      }
-    } catch (error) {
-      console.error('Error loading calendar info:', error);
     }
   }, [member?.id]);
 
@@ -216,15 +192,8 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       loadLlmSettings();
       checkForSchoolSchedule();
       loadSpondAuthState();
-      loadCalendarInfo();
     }
-  }, [
-    isOpen,
-    loadLlmSettings,
-    checkForSchoolSchedule,
-    loadSpondAuthState,
-    loadCalendarInfo,
-  ]);
+  }, [isOpen, loadLlmSettings, checkForSchoolSchedule, loadSpondAuthState]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -531,101 +500,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
   const handleSpondCredentialsChange = (email, password) => {
     setSpondEmail(email);
     setSpondPassword(password);
-  };
-
-  const handleImportCalendar = async () => {
-    if (!calendarUrl || !member?.id) {
-      showError('Please enter a calendar URL');
-      return;
-    }
-
-    setIsImportingCalendar(true);
-
-    try {
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-      const token = getAccessToken();
-      if (token) {
-        headers['x-access-token'] = token;
-      }
-
-      const response = await fetch(
-        `${API_ENDPOINTS.FAMILY_MEMBERS}/${member.id}/import-calendar`,
-        {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            calendarUrl: calendarUrl.trim(),
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        setCalendarLastSynced(new Date().toISOString());
-        setCalendarEventCount(data.eventsImported);
-        showSuccess(data.message || 'Calendar imported successfully!');
-      } else {
-        showError(data.error || 'Failed to import calendar');
-      }
-    } catch (error) {
-      console.error('Error importing calendar:', error);
-      showError('Network error while importing calendar');
-    } finally {
-      setIsImportingCalendar(false);
-    }
-  };
-
-  const handleRemoveCalendar = async () => {
-    if (!member?.id) return;
-
-    const confirmRemove = window.confirm(
-      'Are you sure you want to remove the school calendar? This will delete all imported school calendar events for this family member.'
-    );
-
-    if (!confirmRemove) return;
-
-    setIsRemovingCalendar(true);
-
-    try {
-      const headers = {};
-      const token = getAccessToken();
-      if (token) {
-        headers['x-access-token'] = token;
-      }
-
-      const response = await fetch(
-        `${API_ENDPOINTS.FAMILY_MEMBERS}/${member.id}/remove-calendar`,
-        {
-          method: 'DELETE',
-          headers,
-        }
-      );
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        // Clear local state
-        setCalendarUrl('');
-        setCalendarLastSynced(null);
-        setCalendarEventCount(0);
-        showSuccess('School calendar removed successfully');
-
-        // Refresh the page or trigger a data reload
-        if (onUpdate) {
-          onUpdate();
-        }
-      } else {
-        showError(data.error || 'Failed to remove calendar');
-      }
-    } catch (error) {
-      console.error('Error removing calendar:', error);
-      showError('Network error while removing calendar');
-    } finally {
-      setIsRemovingCalendar(false);
-    }
   };
 
   const testSpondCredentials = async () => {
@@ -1145,80 +1019,6 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                     )}
                   </div>
                 )}
-
-                <div className="section-divider"></div>
-
-                {/* School Calendar Section */}
-                <div className="modal-section">
-                  <div className="section-header">
-                    <h3 className="section-title">📆 School Calendar</h3>
-                    <p className="section-description">
-                      Import school calendar with holidays, planning days, and
-                      vacations
-                    </p>
-                  </div>
-
-                  <div className="calendar-import-form">
-                    <div className="form-group">
-                      <label htmlFor="calendar-url" className="form-label">
-                        Calendar URL (iCal/webcal)
-                      </label>
-                      <div className="calendar-url-input-group">
-                        <input
-                          type="text"
-                          id="calendar-url"
-                          className="form-input"
-                          value={calendarUrl}
-                          onChange={e => setCalendarUrl(e.target.value)}
-                          placeholder="webcal://example.com/calendar.ics"
-                          disabled={isImportingCalendar}
-                        />
-                        <button
-                          type="button"
-                          className="import-calendar-button"
-                          onClick={handleImportCalendar}
-                          disabled={!calendarUrl.trim() || isImportingCalendar}
-                        >
-                          {isImportingCalendar
-                            ? 'Importing...'
-                            : 'Import Calendar'}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Calendar Status */}
-                    {calendarLastSynced && (
-                      <div className="calendar-status-info">
-                        <div className="status-item">
-                          <CheckmarkIcon size={16} color="#22c55e" />
-                          <span className="status-text">
-                            Last imported:{' '}
-                            {new Date(calendarLastSynced).toLocaleString()}
-                          </span>
-                        </div>
-                        {calendarEventCount > 0 && (
-                          <div className="status-item">
-                            <span className="status-text">
-                              {calendarEventCount} events imported
-                            </span>
-                          </div>
-                        )}
-                        <div className="calendar-remove-section">
-                          <button
-                            type="button"
-                            className="remove-calendar-button"
-                            onClick={handleRemoveCalendar}
-                            disabled={isRemovingCalendar}
-                          >
-                            {isRemovingCalendar
-                              ? 'Removing...'
-                              : 'Remove Calendar'}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
               </>
             )}
 

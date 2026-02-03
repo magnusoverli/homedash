@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import FamilyMemberCard from './FamilyMemberCard';
 import AddMemberForm from './AddMemberForm';
 import EditMemberModal from './EditMemberModal';
+import CalendarSourcesManager from './CalendarSourcesManager';
 import { BackArrowIcon, PlusIcon } from './icons';
 import { getApiErrorMessage } from '../utils/errorUtils';
 import API_ENDPOINTS from '../config/api';
@@ -353,6 +354,17 @@ const Settings = () => {
                 </button>
               )}
             </div>
+          </section>
+
+          <section className="calendar-sources-section">
+            <div className="section-header">
+              <h2 className="section-title">Calendar Sources</h2>
+              <p className="section-description">
+                Import events from external calendars (iCal/webcal)
+              </p>
+            </div>
+
+            <CalendarSourcesManager />
           </section>
 
           <section className="llm-section">

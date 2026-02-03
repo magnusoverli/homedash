@@ -1,25 +1,23 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
-import PersonCard from './PersonCard';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import WeekCalendar from './WeekCalendar';
 import ActivityModal from './ActivityModal';
 import LoadingState from './LoadingState';
 import ErrorState from './ErrorState';
 import EmptyState from './EmptyState';
+import MemberLegend, { SHARED_FILTER_ID } from './MemberLegend';
 import dataService from '../services/dataService';
 import { formatLocalDate } from '../utils/timeUtils';
 import './MainPage.css';
 
 const MainPage = ({ currentWeek }) => {
-  const location = useLocation();
   const [familyMembers, setFamilyMembers] = useState([]);
-  const [activities, setActivities] = useState({});
-  const [homework, setHomework] = useState({});
+  const [activities, setActivities] = useState([]);
   const [editingActivity, setEditingActivity] = useState(null);
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [isLoadingMembers, setIsLoadingMembers] = useState(true);
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
-  const [isLoadingHomework, setIsLoadingHomework] = useState(true);
   const [error, setError] = useState('');
+  const [activeFilters, setActiveFilters] = useState(null); // null = not initialized yet
 
   const getWeekStart = useCallback(() => {
     const weekStart = new Date(currentWeek);
@@ -29,6 +27,13 @@ const MainPage = ({ currentWeek }) => {
     return weekStart;
   }, [currentWeek]);
 
+  const getWeekEnd = useCallback(() => {
+    const weekEnd = new Date(getWeekStart());
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    return weekEnd;
+  }, [getWeekStart]);
+
+  // Load family members
   useEffect(() => {
     const loadFamilyMembers = async () => {
       setIsLoadingMembers(true);
@@ -46,40 +51,32 @@ const MainPage = ({ currentWeek }) => {
     loadFamilyMembers();
   }, []);
 
+  // Load all activities for the week (not filtered by member)
   useEffect(() => {
     const loadActivities = async () => {
       setIsLoadingActivities(true);
       try {
-        const weekStart = getWeekStart();
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 6);
+        const startDateStr = formatLocalDate(getWeekStart());
+        const endDateStr = formatLocalDate(getWeekEnd());
 
-        const startDateStr = formatLocalDate(weekStart);
-        const endDateStr = formatLocalDate(weekEnd);
-
+        // Fetch ALL activities for the week (no member filter)
         const activitiesData = await dataService.getActivities({
           startDate: startDateStr,
           endDate: endDateStr,
         });
 
-        const structuredActivities = {};
-        const weekKey = getWeekKey(currentWeek);
-        structuredActivities[weekKey] = {};
+        // Filter out declined Spond activities
+        const filteredActivities = activitiesData.filter(
+          activity =>
+            !(
+              activity.source === 'spond' &&
+              activity.responseStatus === 'declined'
+            )
+        );
 
-        activitiesData.forEach(activity => {
-          if (
-            activity.source === 'spond' &&
-            activity.responseStatus === 'declined'
-          ) {
-            return;
-          }
+        setActivities(filteredActivities);
 
-          if (!structuredActivities[weekKey][activity.memberId]) {
-            structuredActivities[weekKey][activity.memberId] = [];
-          }
-          structuredActivities[weekKey][activity.memberId].push(activity);
-        });
-
+        // Background sync for Spond activities
         if (familyMembers.length > 0) {
           const syncPromises = familyMembers.map(async member => {
             try {
@@ -90,16 +87,12 @@ const MainPage = ({ currentWeek }) => {
 
               if (syncStatus.needsSync) {
                 console.log(
-                  `🔄 Syncing Spond for ${member.name}: ${syncStatus.reason}`
+                  `Syncing Spond for ${member.name}: ${syncStatus.reason}`
                 );
                 await dataService.syncSpondActivities(
                   member.id,
                   startDateStr,
                   endDateStr
-                );
-              } else {
-                console.log(
-                  `✅ Spond data fresh for ${member.name}: ${syncStatus.reason}`
                 );
               }
             } catch (error) {
@@ -110,47 +103,29 @@ const MainPage = ({ currentWeek }) => {
             }
           });
 
+          // After background sync, refresh activities
           Promise.all(syncPromises).then(async () => {
             try {
-              const refreshedActivitiesData = await dataService.getActivities({
+              const refreshedData = await dataService.getActivities({
                 startDate: startDateStr,
                 endDate: endDateStr,
               });
 
-              const refreshedStructuredActivities = {};
-              const weekKey = getWeekKey(currentWeek);
-              refreshedStructuredActivities[weekKey] = {};
-
-              refreshedActivitiesData.forEach(activity => {
-                if (
-                  activity.source === 'spond' &&
-                  activity.responseStatus === 'declined'
-                ) {
-                  return;
-                }
-
-                if (
-                  !refreshedStructuredActivities[weekKey][activity.memberId]
-                ) {
-                  refreshedStructuredActivities[weekKey][activity.memberId] =
-                    [];
-                }
-                refreshedStructuredActivities[weekKey][activity.memberId].push(
-                  activity
-                );
-              });
-
-              setActivities(refreshedStructuredActivities);
-            } catch (error) {
-              console.error(
-                '❌ Error refreshing activities after sync:',
-                error
+              const refreshedFiltered = refreshedData.filter(
+                activity =>
+                  !(
+                    activity.source === 'spond' &&
+                    activity.responseStatus === 'declined'
+                  )
               );
+
+              setActivities(refreshedFiltered);
+            } catch (error) {
+              console.error('Error refreshing activities after sync:', error);
             }
           });
         }
 
-        setActivities(structuredActivities);
         setError('');
       } catch (error) {
         console.error('Error loading activities:', error);
@@ -161,94 +136,14 @@ const MainPage = ({ currentWeek }) => {
     };
 
     loadActivities();
-  }, [currentWeek, getWeekStart, familyMembers]);
-
-  const loadHomework = useCallback(async () => {
-    if (familyMembers.length === 0) {
-      setIsLoadingHomework(false);
-      return;
-    }
-
-    setIsLoadingHomework(true);
-    try {
-      const weekStart = getWeekStart();
-      const weekStartStr = formatLocalDate(weekStart);
-
-      const homeworkData = {};
-
-      for (const member of familyMembers) {
-        const memberHomework = await dataService.getHomework({
-          member_id: member.id,
-          week_start_date: weekStartStr,
-        });
-        homeworkData[member.id] = memberHomework;
-      }
-      setHomework(homeworkData);
-      setError('');
-    } catch (error) {
-      console.error('Error loading homework:', error);
-    } finally {
-      setIsLoadingHomework(false);
-    }
-  }, [familyMembers, getWeekStart]);
-
-  useEffect(() => {
-    loadHomework();
-  }, [loadHomework, currentWeek]);
-
-  useEffect(() => {
-    if (location.pathname === '/' && familyMembers.length > 0) {
-      loadHomework();
-    }
-  }, [location.pathname, loadHomework, familyMembers]);
-
-  useEffect(() => {
-    const handleFocus = () => {
-      if (familyMembers.length > 0 && location.pathname === '/') {
-        loadHomework();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [loadHomework, familyMembers, location.pathname]);
-
-  const getWeekKey = date => {
-    const weekStart = new Date(date);
-    const day = weekStart.getDay();
-    const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
-    weekStart.setDate(diff);
-    return formatLocalDate(weekStart);
-  };
-
-  const getMemberActivities = memberId => {
-    const weekKey = getWeekKey(currentWeek);
-    const weekActivities = activities[weekKey] || {};
-    return weekActivities[memberId] || [];
-  };
-
-  const getMemberHomework = memberId => {
-    return homework[memberId] || [];
-  };
-
-  const handleHomeworkDeleted = (memberId, deletedHomeworkId) => {
-    setHomework(prevHomework => ({
-      ...prevHomework,
-      [memberId]: (prevHomework[memberId] || []).filter(
-        hw => hw.id !== deletedHomeworkId
-      ),
-    }));
-  };
+  }, [currentWeek, getWeekStart, getWeekEnd, familyMembers]);
 
   const handleAddActivity = activityData => {
     setEditingActivity(activityData);
     setShowActivityModal(true);
   };
 
-  const handleDeleteActivity = async (memberId, activityId) => {
+  const handleDeleteActivity = async activityId => {
     if (!activityId) {
       console.error('Cannot delete activity: no ID provided');
       return;
@@ -256,16 +151,7 @@ const MainPage = ({ currentWeek }) => {
 
     try {
       await dataService.deleteActivity(activityId);
-      const weekKey = getWeekKey(currentWeek);
-      setActivities(prev => {
-        const updated = { ...prev };
-        if (updated[weekKey] && updated[weekKey][memberId]) {
-          updated[weekKey][memberId] = updated[weekKey][memberId].filter(
-            a => a.id !== activityId
-          );
-        }
-        return updated;
-      });
+      setActivities(prev => prev.filter(a => a.id !== activityId));
     } catch (error) {
       console.error('Error deleting activity:', error);
       throw error;
@@ -273,9 +159,6 @@ const MainPage = ({ currentWeek }) => {
   };
 
   const handleSaveActivity = async activityData => {
-    const weekKey = getWeekKey(currentWeek);
-    const memberId = activityData.memberId;
-
     try {
       let savedActivity;
       if (activityData.id) {
@@ -283,29 +166,13 @@ const MainPage = ({ currentWeek }) => {
           activityData.id,
           activityData
         );
+        setActivities(prev =>
+          prev.map(a => (a.id === savedActivity.id ? savedActivity : a))
+        );
       } else {
         savedActivity = await dataService.createActivity(activityData);
+        setActivities(prev => [...prev, savedActivity]);
       }
-
-      setActivities(prev => {
-        const updated = { ...prev };
-        if (!updated[weekKey]) {
-          updated[weekKey] = {};
-        }
-        if (!updated[weekKey][memberId]) {
-          updated[weekKey][memberId] = [];
-        }
-
-        if (activityData.id) {
-          updated[weekKey][memberId] = updated[weekKey][memberId].map(a =>
-            a.id === savedActivity.id ? savedActivity : a
-          );
-        } else {
-          updated[weekKey][memberId].push(savedActivity);
-        }
-
-        return updated;
-      });
     } catch (error) {
       console.error('Error saving activity:', error);
       throw error;
@@ -315,10 +182,47 @@ const MainPage = ({ currentWeek }) => {
     setEditingActivity(null);
   };
 
+  // Initialize filters when family members are loaded
+  useEffect(() => {
+    if (familyMembers.length > 0 && activeFilters === null) {
+      // Start with all filters active (all members + shared)
+      const initialFilters = new Set(familyMembers.map(m => m.id));
+      initialFilters.add(SHARED_FILTER_ID);
+      setActiveFilters(initialFilters);
+    }
+  }, [familyMembers, activeFilters]);
+
+  // Create a member lookup map for the calendar to use
+  const memberMap = familyMembers.reduce((acc, member) => {
+    acc[member.id] = member;
+    return acc;
+  }, {});
+
+  // Filter activities based on active filters
+  const filteredActivities = useMemo(() => {
+    if (!activeFilters || activeFilters.size === 0) {
+      return []; // No filters active = show nothing
+    }
+
+    return activities.filter(activity => {
+      if (activity.memberId) {
+        // Member-specific activity
+        return activeFilters.has(activity.memberId);
+      } else {
+        // Shared/family-wide activity (no memberId)
+        return activeFilters.has(SHARED_FILTER_ID);
+      }
+    });
+  }, [activities, activeFilters]);
+
+  const handleFilterChange = newFilters => {
+    setActiveFilters(newFilters);
+  };
+
   return (
     <main className="main-page">
       <div className="container">
-        {isLoadingMembers || isLoadingActivities || isLoadingHomework ? (
+        {isLoadingMembers || isLoadingActivities ? (
           <LoadingState text="Loading your weekly schedule..." />
         ) : error ? (
           <ErrorState
@@ -333,23 +237,20 @@ const MainPage = ({ currentWeek }) => {
             message="Go to Settings to add family members and start planning your week!"
           />
         ) : (
-          <div className="calendar-grid">
-            {familyMembers.slice(0, 3).map(member => (
-              <PersonCard
-                key={member.id}
-                member={member}
-                activities={getMemberActivities(member.id)}
-                homework={getMemberHomework(member.id)}
-                weekStart={getWeekStart()}
-                onAddActivity={data =>
-                  handleAddActivity({ ...data, memberId: member.id })
-                }
-                onDeleteActivity={activityId =>
-                  handleDeleteActivity(member.id, activityId)
-                }
-                onHomeworkDeleted={handleHomeworkDeleted}
-              />
-            ))}
+          <div className="calendar-container">
+            <MemberLegend
+              members={familyMembers}
+              activeFilters={activeFilters}
+              onFilterChange={handleFilterChange}
+            />
+            <WeekCalendar
+              activities={filteredActivities}
+              members={familyMembers}
+              memberMap={memberMap}
+              weekStart={getWeekStart()}
+              onAddActivity={handleAddActivity}
+              onDeleteActivity={handleDeleteActivity}
+            />
           </div>
         )}
       </div>
@@ -357,6 +258,7 @@ const MainPage = ({ currentWeek }) => {
       {showActivityModal && (
         <ActivityModal
           activity={editingActivity}
+          members={familyMembers}
           onSave={handleSaveActivity}
           onClose={() => {
             setShowActivityModal(false);
