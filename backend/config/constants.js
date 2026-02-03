@@ -2,7 +2,6 @@ import multer from 'multer';
 
 export const TOKEN_EXPIRY_SHORT = 12 * 60 * 60 * 1000;
 export const TOKEN_EXPIRY_LONG = 7 * 24 * 60 * 60 * 1000;
-export const TOKEN_REFRESH_THRESHOLD = 30 * 60 * 1000;
 
 export const ACCESS_PASSWORD = process.env.ACCESS_PASSWORD;
 export const ACCESS_CONTROL_ENABLED = !!ACCESS_PASSWORD;

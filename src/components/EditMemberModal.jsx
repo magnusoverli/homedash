@@ -3,7 +3,6 @@ import GenericModal from './GenericModal';
 import {
   LoadingSpinner,
   TrashIcon,
-  UploadIcon,
   WarningIcon,
   CheckmarkIcon,
   CloseIcon,
@@ -193,8 +192,8 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       setLlmSettings({
         enabled: Boolean(
           settings.llmIntegrationEnabled === 'true' ||
-            settings.llmIntegrationEnabled === true ||
-            settings.llmIntegrationEnabled === 1
+          settings.llmIntegrationEnabled === true ||
+          settings.llmIntegrationEnabled === 1
         ),
         apiKey: settings.anthropicApiKey || '',
         selectedModel: settings.selectedAnthropicModel || '',
