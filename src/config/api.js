@@ -99,6 +99,33 @@ export const ENDPOINTS = {
       sync: memberId => `${BASE_URL}/api/spond/activities/${memberId}/sync`,
     },
   },
+  exchange: {
+    // Azure app configuration (admin)
+    config: {
+      get: `${BASE_URL}/api/exchange/config`,
+      save: `${BASE_URL}/api/exchange/config`,
+    },
+    // OAuth flow
+    auth: memberId => `${BASE_URL}/api/exchange/auth/${memberId}`,
+    callback: `${BASE_URL}/api/exchange/callback`,
+    // Credentials management
+    credentials: {
+      get: memberId => `${BASE_URL}/api/exchange/credentials/${memberId}`,
+      delete: memberId => `${BASE_URL}/api/exchange/credentials/${memberId}`,
+    },
+    // Calendars
+    calendars: {
+      list: memberId => `${BASE_URL}/api/exchange/calendars/${memberId}`,
+      select: memberId =>
+        `${BASE_URL}/api/exchange/calendars/${memberId}/select`,
+    },
+    // Events sync
+    events: {
+      syncStatus: memberId =>
+        `${BASE_URL}/api/exchange/events/${memberId}/sync-status`,
+      sync: memberId => `${BASE_URL}/api/exchange/events/${memberId}/sync`,
+    },
+  },
   settings: {
     list: `${BASE_URL}/api/settings`,
     update: key => `${BASE_URL}/api/settings/${key}`,
@@ -114,6 +141,13 @@ export const API_ENDPOINTS = {
   SPOND_CREDENTIALS: `${BASE_URL}/api/spond/credentials`,
   SPOND_GROUPS: `${BASE_URL}/api/spond/groups`,
   SPOND_GROUP_SELECTIONS: `${BASE_URL}/api/spond/groups`,
+  // Exchange integration
+  EXCHANGE_CONFIG: ENDPOINTS.exchange.config.get,
+  EXCHANGE_AUTH: `${BASE_URL}/api/exchange/auth`,
+  EXCHANGE_CALLBACK: ENDPOINTS.exchange.callback,
+  EXCHANGE_CREDENTIALS: `${BASE_URL}/api/exchange/credentials`,
+  EXCHANGE_CALENDARS: `${BASE_URL}/api/exchange/calendars`,
+  EXCHANGE_EVENTS: `${BASE_URL}/api/exchange/events`,
 };
 
 export default API_ENDPOINTS;

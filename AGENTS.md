@@ -220,6 +220,63 @@ Based on official documentation, current models include:
 - **No fallback data**: API failures should surface as errors, not masked with cached data
 - **Proxy through backend**: Never expose API keys in frontend code
 
+## Microsoft Exchange Calendar Integration
+
+### Overview
+
+HomeDash supports Microsoft Exchange/Outlook calendar integration, allowing family members to sync their calendars from personal Microsoft accounts (Outlook.com, Hotmail, Live.com).
+
+### How It Works
+
+1. **OAuth 2.0 Authentication**: Users authenticate via a popup window using Microsoft's OAuth flow
+2. **Calendar Selection**: After connecting, users can select which calendars to sync
+3. **Event Sync**: Events are fetched from Microsoft Graph API and stored locally
+4. **Per-Member Integration**: Each family member can connect their own Microsoft account
+
+### Configuration
+
+Exchange integration requires Azure App credentials set via environment variables in a `.env` file (see `.env.example`):
+
+```env
+AZURE_CLIENT_ID=your-azure-app-client-id
+AZURE_CLIENT_SECRET=your-azure-app-client-secret
+AZURE_TENANT_ID=consumers
+```
+
+**Registered redirect URIs in Azure:**
+
+- `http://localhost:3001/api/exchange/callback` (local development)
+- `https://homedash.overli.dev/api/exchange/callback` (production)
+
+**Account type:** Personal Microsoft accounts only (Outlook.com, Hotmail, Live.com)
+
+The redirect URI is automatically detected based on the request origin.
+
+### API Endpoints
+
+| Endpoint                                   | Method     | Description                     |
+| ------------------------------------------ | ---------- | ------------------------------- |
+| `/api/exchange/config`                     | GET        | Check if Exchange is configured |
+| `/api/exchange/auth/:memberId`             | GET        | Initiate OAuth flow             |
+| `/api/exchange/callback`                   | GET        | OAuth callback                  |
+| `/api/exchange/credentials/:memberId`      | GET/DELETE | Connection status / Disconnect  |
+| `/api/exchange/calendars/:memberId`        | GET        | List available calendars        |
+| `/api/exchange/calendars/:memberId/select` | POST       | Save calendar selections        |
+| `/api/exchange/events/:memberId/sync`      | POST       | Sync events                     |
+
+### Database Tables
+
+- `exchange_credentials` - OAuth tokens per member
+- `exchange_calendars` - Available calendars per member
+- `exchange_events` - Synced events
+- `exchange_sync_log` - Sync history
+
+### Files
+
+- `backend/routes/exchange.js` - All Exchange API routes
+- `src/components/EditMemberModal.jsx` - Exchange UI (Integrations tab)
+- `src/utils/activityUtils.js` - Exchange activity utilities
+
 ## Docker Deployment
 
 ### Architecture

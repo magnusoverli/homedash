@@ -623,15 +623,241 @@ const initDatabase = () => {
         });
       };
 
-      // Create Spond tables and indexes
+      // Create Exchange tables
+      const createExchangeTables = () => {
+        return new Promise((tableResolve, tableReject) => {
+          console.log('Creating/verifying Exchange tables...');
+
+          db.run('PRAGMA foreign_keys = OFF', pragmaErr => {
+            if (pragmaErr) {
+              console.error('Error disabling foreign keys:', pragmaErr);
+              return tableReject(pragmaErr);
+            }
+
+            // Create Exchange Credentials Table (per member)
+            db.run(
+              `CREATE TABLE IF NOT EXISTS exchange_credentials (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                member_id INTEGER NOT NULL UNIQUE,
+                access_token TEXT NOT NULL,
+                refresh_token TEXT NOT NULL,
+                token_expires_at DATETIME NOT NULL,
+                user_email TEXT,
+                user_display_name TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
+              )`,
+              err => {
+                if (err) {
+                  console.error(
+                    'Error creating exchange_credentials table:',
+                    err
+                  );
+                  return tableReject(err);
+                }
+
+                // Create Exchange Calendars Table
+                db.run(
+                  `CREATE TABLE IF NOT EXISTS exchange_calendars (
+                    id TEXT NOT NULL,
+                    member_id INTEGER NOT NULL,
+                    name TEXT NOT NULL,
+                    color TEXT,
+                    is_default BOOLEAN DEFAULT FALSE,
+                    is_active BOOLEAN DEFAULT FALSE,
+                    last_synced_at DATETIME,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id, member_id),
+                    FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
+                  )`,
+                  err => {
+                    if (err) {
+                      console.error(
+                        'Error creating exchange_calendars table:',
+                        err
+                      );
+                      return tableReject(err);
+                    }
+
+                    // Create Exchange Events Table
+                    db.run(
+                      `CREATE TABLE IF NOT EXISTS exchange_events (
+                        id TEXT PRIMARY KEY,
+                        calendar_id TEXT NOT NULL,
+                        member_id INTEGER NOT NULL,
+                        subject TEXT NOT NULL,
+                        body_preview TEXT,
+                        start_timestamp DATETIME NOT NULL,
+                        end_timestamp DATETIME NOT NULL,
+                        start_timezone TEXT,
+                        end_timezone TEXT,
+                        is_all_day BOOLEAN DEFAULT FALSE,
+                        is_cancelled BOOLEAN DEFAULT FALSE,
+                        location_name TEXT,
+                        location_address TEXT,
+                        response_status TEXT,
+                        show_as TEXT,
+                        organizer_name TEXT,
+                        organizer_email TEXT,
+                        web_link TEXT,
+                        raw_data TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
+                      )`,
+                      err => {
+                        if (err) {
+                          console.error(
+                            'Error creating exchange_events table:',
+                            err
+                          );
+                          return tableReject(err);
+                        }
+
+                        // Create Exchange Sync Log Table
+                        db.run(
+                          `CREATE TABLE IF NOT EXISTS exchange_sync_log (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            member_id INTEGER NOT NULL,
+                            calendar_id TEXT,
+                            sync_type TEXT NOT NULL,
+                            status TEXT NOT NULL,
+                            events_synced INTEGER DEFAULT 0,
+                            error_message TEXT,
+                            sync_duration_ms INTEGER,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            FOREIGN KEY (member_id) REFERENCES family_members (id) ON DELETE CASCADE
+                          )`,
+                          err => {
+                            if (err) {
+                              console.error(
+                                'Error creating exchange_sync_log table:',
+                                err
+                              );
+                              return tableReject(err);
+                            }
+
+                            // Re-enable foreign key constraints
+                            db.run('PRAGMA foreign_keys = ON', pragmaErr2 => {
+                              if (pragmaErr2) {
+                                console.error(
+                                  'Error re-enabling foreign keys:',
+                                  pragmaErr2
+                                );
+                                return tableReject(pragmaErr2);
+                              }
+                              console.log('Exchange tables created/verified');
+                              tableResolve();
+                            });
+                          }
+                        );
+                      }
+                    );
+                  }
+                );
+              }
+            );
+          });
+        });
+      };
+
+      // Create Exchange indexes
+      const createExchangeIndexes = () => {
+        return new Promise((indexResolve, indexReject) => {
+          db.run(
+            `CREATE INDEX IF NOT EXISTS idx_exchange_credentials_member ON exchange_credentials(member_id)`,
+            err => {
+              if (err) {
+                console.error(
+                  'Error creating idx_exchange_credentials_member:',
+                  err
+                );
+                return indexReject(err);
+              }
+
+              db.run(
+                `CREATE INDEX IF NOT EXISTS idx_exchange_calendars_member ON exchange_calendars(member_id)`,
+                err => {
+                  if (err) {
+                    console.error(
+                      'Error creating idx_exchange_calendars_member:',
+                      err
+                    );
+                    return indexReject(err);
+                  }
+
+                  db.run(
+                    `CREATE INDEX IF NOT EXISTS idx_exchange_calendars_active ON exchange_calendars(member_id, is_active)`,
+                    err => {
+                      if (err) {
+                        console.error(
+                          'Error creating idx_exchange_calendars_active:',
+                          err
+                        );
+                        return indexReject(err);
+                      }
+
+                      db.run(
+                        `CREATE INDEX IF NOT EXISTS idx_exchange_events_member_time ON exchange_events(member_id, start_timestamp)`,
+                        err => {
+                          if (err) {
+                            console.error(
+                              'Error creating idx_exchange_events_member_time:',
+                              err
+                            );
+                            return indexReject(err);
+                          }
+
+                          db.run(
+                            `CREATE INDEX IF NOT EXISTS idx_exchange_events_calendar ON exchange_events(calendar_id)`,
+                            err => {
+                              if (err) {
+                                console.error(
+                                  'Error creating idx_exchange_events_calendar:',
+                                  err
+                                );
+                                return indexReject(err);
+                              }
+
+                              db.run(
+                                `CREATE INDEX IF NOT EXISTS idx_exchange_sync_log_member ON exchange_sync_log(member_id)`,
+                                err => {
+                                  if (err) {
+                                    console.error(
+                                      'Error creating idx_exchange_sync_log_member:',
+                                      err
+                                    );
+                                    return indexReject(err);
+                                  }
+                                  indexResolve();
+                                }
+                              );
+                            }
+                          );
+                        }
+                      );
+                    }
+                  );
+                }
+              );
+            }
+          );
+        });
+      };
+
+      // Create Spond tables and indexes, then Exchange tables and indexes
       createSpondTables()
         .then(() => createSpondIndexes())
+        .then(() => createExchangeTables())
+        .then(() => createExchangeIndexes())
         .then(() => {
           console.log('Database initialized successfully');
           resolve();
         })
         .catch(err => {
-          console.error('Error creating Spond tables or indexes:', err);
+          console.error('Error creating tables or indexes:', err);
           return reject(err);
         });
     });

@@ -64,6 +64,41 @@ router.get('/', async (req, res) => {
     const spondActivities = await getAll(spondSql, spondParams);
     console.log(`⚽ Found ${spondActivities.length} Spond activities`);
 
+    // Fetch Exchange events from active calendars
+    let exchangeSql = `
+      SELECT ee.*, 
+        DATE(ee.start_timestamp, 'localtime') as date, 
+        TIME(ee.start_timestamp, 'localtime') as start_time, 
+        TIME(ee.end_timestamp, 'localtime') as end_time,
+        ee.subject as title,
+        ee.body_preview as description,
+        ee.location_name as location
+      FROM exchange_events ee
+      INNER JOIN exchange_calendars ec ON ee.calendar_id = ec.id AND ee.member_id = ec.member_id
+      WHERE ec.is_active = 1 AND ee.is_cancelled = 0`;
+    const exchangeParams = [];
+
+    if (member_id) {
+      exchangeSql += ' AND ee.member_id = ?';
+      exchangeParams.push(member_id);
+    }
+
+    if (date) {
+      exchangeSql += " AND DATE(ee.start_timestamp, 'localtime') = ?";
+      exchangeParams.push(date);
+    }
+
+    if (start_date && end_date) {
+      exchangeSql +=
+        " AND DATE(ee.start_timestamp, 'localtime') >= ? AND DATE(ee.start_timestamp, 'localtime') <= ?";
+      exchangeParams.push(start_date, end_date);
+    }
+
+    exchangeSql += ' ORDER BY ee.start_timestamp';
+
+    const exchangeActivities = await getAll(exchangeSql, exchangeParams);
+    console.log(`📅 Found ${exchangeActivities.length} Exchange events`);
+
     const combinedActivities = [
       ...regularActivities.map(activity => ({
         ...activity,
@@ -72,6 +107,14 @@ router.get('/', async (req, res) => {
       ...spondActivities.map(activity => ({
         ...activity,
         source: 'spond',
+      })),
+      ...exchangeActivities.map(activity => ({
+        ...activity,
+        source: 'exchange',
+        // Map Exchange-specific fields to standard format
+        responseStatus: activity.response_status,
+        showAs: activity.show_as,
+        isAllDay: Boolean(activity.is_all_day),
       })),
     ];
 
@@ -118,7 +161,7 @@ router.get('/', async (req, res) => {
     }
 
     console.log(
-      `✅ Combined ${combinedActivities.length} total activities (${regularActivities.length} regular + ${spondActivities.length} Spond), ${filteredActivities.length} after filtering`
+      `✅ Combined ${combinedActivities.length} total activities (${regularActivities.length} regular + ${spondActivities.length} Spond + ${exchangeActivities.length} Exchange), ${filteredActivities.length} after filtering`
     );
     res.json(filteredActivities);
   } catch (error) {

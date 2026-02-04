@@ -13,6 +13,7 @@ import activitiesRoutes from './routes/activities.js';
 import homeworkRoutes from './routes/homework.js';
 import schoolPlanRoutes from './routes/schoolPlan.js';
 import spondRoutes from './routes/spond.js';
+import exchangeRoutes from './routes/exchange.js';
 import calendarSourcesRoutes from './routes/calendarSources.js';
 
 dotenv.config();
@@ -83,6 +84,7 @@ app.use('/api/activities', activitiesRoutes);
 app.use('/api/homework', homeworkRoutes);
 app.use('/api', schoolPlanRoutes);
 app.use('/api/spond', spondRoutes);
+app.use('/api/exchange', exchangeRoutes);
 app.use('/api/calendar-sources', calendarSourcesRoutes);
 
 initDatabase()

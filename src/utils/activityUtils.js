@@ -33,6 +33,9 @@ export const getActivityType = activity => {
   if (activity.source === 'spond') {
     return 'spond';
   }
+  if (activity.source === 'exchange') {
+    return 'exchange';
+  }
   if (activity.source === 'municipal_calendar') {
     return 'municipal_calendar';
   }
@@ -57,6 +60,77 @@ export const isSchoolScheduleActivity = activity => {
  */
 export const isSpondActivity = activity => {
   return activity.source === 'spond';
+};
+
+/**
+ * Check if activity is from Exchange
+ * @param {Object} activity - The activity object
+ * @returns {boolean} True if from Exchange
+ */
+export const isExchangeActivity = activity => {
+  return activity.source === 'exchange';
+};
+
+/**
+ * Get the icon for an Exchange activity
+ * @param {Object} activity - The activity object
+ * @returns {string} The emoji icon
+ */
+export const getExchangeActivityIcon = activity => {
+  const title = (activity.title || activity.subject || '').toLowerCase();
+  const showAs = (activity.showAs || '').toLowerCase();
+
+  // Check showAs status for OOF (Out of Office)
+  if (showAs === 'oof') {
+    return '🏖️';
+  }
+
+  // Meeting patterns
+  if (title.includes('meeting') || title.includes('møte')) {
+    return '👥';
+  }
+  if (
+    title.includes('call') ||
+    title.includes('teams') ||
+    title.includes('zoom')
+  ) {
+    return '📞';
+  }
+  if (
+    title.includes('lunch') ||
+    title.includes('dinner') ||
+    title.includes('breakfast')
+  ) {
+    return '🍽️';
+  }
+  if (
+    title.includes('doctor') ||
+    title.includes('dentist') ||
+    title.includes('lege') ||
+    title.includes('tannlege')
+  ) {
+    return '🏥';
+  }
+  if (title.includes('birthday') || title.includes('bursdag')) {
+    return '🎂';
+  }
+  if (
+    title.includes('travel') ||
+    title.includes('flight') ||
+    title.includes('reise')
+  ) {
+    return '✈️';
+  }
+  if (
+    title.includes('vacation') ||
+    title.includes('ferie') ||
+    title.includes('holiday')
+  ) {
+    return '🏖️';
+  }
+
+  // Default Exchange icon
+  return '📅';
 };
 
 /**
@@ -223,6 +297,7 @@ export const getActivityColor = activity => {
     // Source-based
     manual: '#B2AEFF', // Pastell Light Purple
     spond: '#D2FCC3', // Pastell Green
+    exchange: '#BADAF8', // Pastell Blue
     municipal_calendar: '#FCDD8C', // Pastell Orange
 
     // School types
@@ -251,6 +326,11 @@ export const getActivityIcon = activity => {
   // Special handling for Spond events
   if (type === 'spond') {
     return getSpondActivityIcon(activity);
+  }
+
+  // Special handling for Exchange events
+  if (type === 'exchange') {
+    return getExchangeActivityIcon(activity);
   }
 
   // Icon mapping

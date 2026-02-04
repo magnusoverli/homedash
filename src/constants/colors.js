@@ -91,6 +91,12 @@ export const ACTIVITY_SOURCES = [
     defaultColor: '#FCDD8C',
     icon: '📚',
   },
+  {
+    value: 'exchange',
+    label: 'Exchange',
+    defaultColor: '#BADAF8',
+    icon: '📅',
+  },
 ];
 
 /**

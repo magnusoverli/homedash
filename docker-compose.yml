@@ -48,6 +48,12 @@ services:
       # Optional: Enable access control by setting a password
       # Uncomment the line below and set your desired password
       # - ACCESS_PASSWORD=your_password_here
+      #
+      # Microsoft Exchange Calendar Integration
+      # Set these to enable Exchange calendar sync for personal Microsoft accounts
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID:-}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET:-}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID:-consumers}
     volumes:
       - homedash-data:/app/data
     healthcheck:

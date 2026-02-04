@@ -67,6 +67,26 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
   const [groupsError, setGroupsError] = useState(null);
   const [selectedGroups, setSelectedGroups] = useState([]);
 
+  // Exchange integration state
+  const [exchangeAuthState, setExchangeAuthState] = useState({
+    connected: false,
+    userEmail: '',
+    displayName: '',
+    tokenExpired: false,
+  });
+  const [isLoadingExchangeState, setIsLoadingExchangeState] = useState(false);
+  const [isExchangeConfigured, setIsExchangeConfigured] = useState(false);
+  const [showExchangeCalendarsModal, setShowExchangeCalendarsModal] =
+    useState(false);
+  const [exchangeCalendars, setExchangeCalendars] = useState([]);
+  const [isLoadingExchangeCalendars, setIsLoadingExchangeCalendars] =
+    useState(false);
+  const [exchangeCalendarsError, setExchangeCalendarsError] = useState(null);
+  const [selectedExchangeCalendars, setSelectedExchangeCalendars] = useState(
+    []
+  );
+  const [isSyncingExchange, setIsSyncingExchange] = useState(false);
+
   useEffect(() => {
     if (member) {
       // Calculate current week's Monday as default
@@ -193,13 +213,286 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
     }
   }, []);
 
+  // Load Exchange auth state
+  const loadExchangeAuthState = useCallback(async () => {
+    if (!member?.id) return;
+
+    setIsLoadingExchangeState(true);
+
+    try {
+      const headers = {};
+      const token = getAccessToken();
+      if (token) {
+        headers['x-access-token'] = token;
+      }
+
+      // Check if Exchange is configured
+      const configResponse = await fetch(`${API_ENDPOINTS.EXCHANGE_CONFIG}`, {
+        headers,
+      });
+      if (configResponse.ok) {
+        const configData = await configResponse.json();
+        setIsExchangeConfigured(configData.isConfigured);
+      }
+
+      // Get credentials status
+      const response = await fetch(
+        `${API_ENDPOINTS.EXCHANGE_CREDENTIALS}/${member.id}`,
+        { headers }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setExchangeAuthState({
+          connected: data.connected,
+          userEmail: data.userEmail || '',
+          displayName: data.displayName || '',
+          tokenExpired: data.tokenExpired || false,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading Exchange auth state:', error);
+      setExchangeAuthState({
+        connected: false,
+        userEmail: '',
+        displayName: '',
+        tokenExpired: false,
+      });
+    } finally {
+      setIsLoadingExchangeState(false);
+    }
+  }, [member?.id]);
+
+  // Handle Exchange OAuth popup
+  const handleConnectExchange = async () => {
+    if (!member?.id) return;
+
+    try {
+      const headers = {};
+      const token = getAccessToken();
+      if (token) {
+        headers['x-access-token'] = token;
+      }
+
+      const response = await fetch(
+        `${API_ENDPOINTS.EXCHANGE_AUTH}/${member.id}`,
+        { headers }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        showError(error.message || 'Failed to initiate Exchange connection');
+        return;
+      }
+
+      const { authUrl } = await response.json();
+
+      // Open popup window
+      const width = 600;
+      const height = 700;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+
+      const popup = window.open(
+        authUrl,
+        'Exchange Login',
+        `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
+      );
+
+      // Listen for messages from popup
+      const handleMessage = event => {
+        if (event.data?.type === 'EXCHANGE_AUTH_SUCCESS') {
+          showSuccess(
+            `Connected to Exchange as ${event.data.displayName || event.data.userEmail}`
+          );
+          loadExchangeAuthState();
+          window.removeEventListener('message', handleMessage);
+        } else if (event.data?.type === 'EXCHANGE_AUTH_ERROR') {
+          showError(event.data.message || 'Exchange authentication failed');
+          window.removeEventListener('message', handleMessage);
+        }
+      };
+
+      window.addEventListener('message', handleMessage);
+
+      // Check if popup was blocked
+      if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+        showError('Popup was blocked. Please allow popups for this site.');
+        window.removeEventListener('message', handleMessage);
+      }
+    } catch (error) {
+      console.error('Error connecting Exchange:', error);
+      showError('Failed to connect Exchange');
+    }
+  };
+
+  // Disconnect Exchange
+  const handleDisconnectExchange = async () => {
+    if (!member?.id) return;
+
+    try {
+      const headers = {};
+      const token = getAccessToken();
+      if (token) {
+        headers['x-access-token'] = token;
+      }
+
+      const response = await fetch(
+        `${API_ENDPOINTS.EXCHANGE_CREDENTIALS}/${member.id}`,
+        { method: 'DELETE', headers }
+      );
+
+      if (response.ok) {
+        setExchangeAuthState({
+          connected: false,
+          userEmail: '',
+          displayName: '',
+          tokenExpired: false,
+        });
+        setExchangeCalendars([]);
+        setSelectedExchangeCalendars([]);
+        showSuccess('Exchange disconnected successfully');
+      } else {
+        const error = await response.json();
+        showError(error.message || 'Failed to disconnect Exchange');
+      }
+    } catch (error) {
+      console.error('Error disconnecting Exchange:', error);
+      showError('Failed to disconnect Exchange');
+    }
+  };
+
+  // Fetch Exchange calendars
+  const fetchExchangeCalendars = async () => {
+    if (!member?.id) return;
+
+    setIsLoadingExchangeCalendars(true);
+    setExchangeCalendarsError(null);
+
+    try {
+      const headers = {};
+      const token = getAccessToken();
+      if (token) {
+        headers['x-access-token'] = token;
+      }
+
+      const response = await fetch(
+        `${API_ENDPOINTS.EXCHANGE_CALENDARS}/${member.id}`,
+        { headers }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setExchangeCalendars(data.calendars || []);
+        setSelectedExchangeCalendars(
+          (data.calendars || []).filter(cal => cal.isActive).map(cal => cal.id)
+        );
+      } else {
+        const error = await response.json();
+        setExchangeCalendarsError(error.message || 'Failed to fetch calendars');
+      }
+    } catch (error) {
+      console.error('Error fetching Exchange calendars:', error);
+      setExchangeCalendarsError('Network error while fetching calendars');
+    } finally {
+      setIsLoadingExchangeCalendars(false);
+    }
+  };
+
+  // Save Exchange calendar selections
+  const saveExchangeCalendarSelections = async () => {
+    if (!member?.id) return;
+
+    try {
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      const token = getAccessToken();
+      if (token) {
+        headers['x-access-token'] = token;
+      }
+
+      const response = await fetch(
+        `${API_ENDPOINTS.EXCHANGE_CALENDARS}/${member.id}/select`,
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            selectedCalendarIds: selectedExchangeCalendars,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        setShowExchangeCalendarsModal(false);
+        showSuccess('Calendar selections saved');
+        // Trigger sync after saving selections
+        syncExchangeEvents();
+      } else {
+        const error = await response.json();
+        showError(error.message || 'Failed to save calendar selections');
+      }
+    } catch (error) {
+      console.error('Error saving calendar selections:', error);
+      showError('Failed to save calendar selections');
+    }
+  };
+
+  // Sync Exchange events
+  const syncExchangeEvents = async () => {
+    if (!member?.id) return;
+
+    setIsSyncingExchange(true);
+
+    try {
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      const token = getAccessToken();
+      if (token) {
+        headers['x-access-token'] = token;
+      }
+
+      const response = await fetch(
+        `${API_ENDPOINTS.EXCHANGE_EVENTS}/${member.id}/sync`,
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({}),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        showSuccess(
+          `Synced ${data.eventsCount} events from ${data.calendarsCount} calendar(s)`
+        );
+      } else {
+        const error = await response.json();
+        showError(error.message || 'Failed to sync events');
+      }
+    } catch (error) {
+      console.error('Error syncing Exchange events:', error);
+      showError('Failed to sync Exchange events');
+    } finally {
+      setIsSyncingExchange(false);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       loadLlmSettings();
       checkForSchoolSchedule();
       loadSpondAuthState();
+      loadExchangeAuthState();
     }
-  }, [isOpen, loadLlmSettings, checkForSchoolSchedule, loadSpondAuthState]);
+  }, [
+    isOpen,
+    loadLlmSettings,
+    checkForSchoolSchedule,
+    loadSpondAuthState,
+    loadExchangeAuthState,
+  ]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -1221,6 +1514,126 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                     )}
                   </div>
                 </div>
+
+                {/* Exchange Integration Section */}
+                <div className="modal-section">
+                  <div className="section-header">
+                    <h3 className="section-title">📅 Microsoft Exchange</h3>
+                    <p className="section-description">
+                      Connect with Microsoft 365 or Outlook calendar to sync
+                      events
+                    </p>
+                  </div>
+
+                  <div className="exchange-integration-form">
+                    {isLoadingExchangeState ? (
+                      <div className="exchange-status loading">
+                        <div className="status-icon">⏳</div>
+                        <div className="status-text">
+                          Loading connection status...
+                        </div>
+                      </div>
+                    ) : exchangeAuthState.connected ? (
+                      <>
+                        <div className="exchange-status authenticated">
+                          <div className="status-icon">✅</div>
+                          <div className="status-text">
+                            <strong>Connected</strong> as{' '}
+                            {exchangeAuthState.displayName ||
+                              exchangeAuthState.userEmail}
+                            {exchangeAuthState.tokenExpired && (
+                              <div className="status-warning">
+                                Token expired - please reconnect
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="exchange-actions">
+                          <button
+                            type="button"
+                            className="groups-button"
+                            onClick={() => {
+                              setShowExchangeCalendarsModal(true);
+                              fetchExchangeCalendars();
+                            }}
+                          >
+                            Select Calendars
+                          </button>
+                          <button
+                            type="button"
+                            className="sync-button"
+                            onClick={syncExchangeEvents}
+                            disabled={isSyncingExchange}
+                          >
+                            {isSyncingExchange ? 'Syncing...' : 'Sync Now'}
+                          </button>
+                          <button
+                            type="button"
+                            className="disconnect-button"
+                            onClick={handleDisconnectExchange}
+                          >
+                            Disconnect
+                          </button>
+                        </div>
+                      </>
+                    ) : !isExchangeConfigured ? (
+                      <div className="exchange-not-configured">
+                        <div className="status-icon">⚙️</div>
+                        <div className="status-text">
+                          <strong>Exchange integration not available</strong>
+                          <div className="status-details">
+                            Microsoft Exchange integration requires server
+                            configuration. Contact your administrator to enable
+                            this feature.
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="exchange-connect-section">
+                        <p className="connect-description">
+                          Connect your Microsoft account to sync calendar events
+                          automatically.
+                        </p>
+                        <button
+                          type="button"
+                          className="connect-exchange-button"
+                          onClick={handleConnectExchange}
+                        >
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 21 21"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <rect width="10" height="10" fill="#F25022" />
+                            <rect
+                              x="11"
+                              width="10"
+                              height="10"
+                              fill="#7FBA00"
+                            />
+                            <rect
+                              y="11"
+                              width="10"
+                              height="10"
+                              fill="#00A4EF"
+                            />
+                            <rect
+                              x="11"
+                              y="11"
+                              width="10"
+                              height="10"
+                              fill="#FFB900"
+                            />
+                          </svg>
+                          Connect with Microsoft
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </>
             )}
 
@@ -1525,6 +1938,118 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                   disabled={false}
                 >
                   Save Selection ({selectedGroups.length})
+                </button>
+              </div>
+            </div>
+          </div>
+        </GenericModal>
+
+        {/* Exchange Calendars Selection Modal */}
+        <GenericModal
+          isOpen={showExchangeCalendarsModal}
+          onClose={() => {
+            setShowExchangeCalendarsModal(false);
+            setExchangeCalendars([]);
+            setExchangeCalendarsError(null);
+          }}
+          title="Select Calendars"
+        >
+          <div className="calendars-modal-content">
+            <div className="modal-section">
+              <div className="section-header">
+                <p className="section-description">
+                  Select which calendars to sync events from
+                </p>
+              </div>
+
+              <div className="calendars-list">
+                {isLoadingExchangeCalendars ? (
+                  <div className="calendars-loading">
+                    <div className="loading-message">
+                      <span className="loading-icon">⏳</span>
+                      Loading calendars...
+                    </div>
+                  </div>
+                ) : exchangeCalendarsError ? (
+                  <div className="calendars-error">
+                    <div className="error-message">
+                      <span className="error-icon">❌</span>
+                      {exchangeCalendarsError}
+                    </div>
+                  </div>
+                ) : exchangeCalendars.length === 0 ? (
+                  <div className="calendars-empty">
+                    <div className="empty-message">
+                      <span className="empty-icon">📭</span>
+                      No calendars found
+                    </div>
+                  </div>
+                ) : (
+                  exchangeCalendars.map(calendar => (
+                    <div key={calendar.id} className="calendar-item">
+                      <div className="calendar-info">
+                        <div
+                          className="calendar-color"
+                          style={{
+                            backgroundColor: calendar.color || '#BADAF8',
+                          }}
+                        />
+                        <div className="calendar-details">
+                          <span className="calendar-name">{calendar.name}</span>
+                          {calendar.isDefault && (
+                            <span className="calendar-badge">Default</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="calendar-checkbox">
+                        <label className="checkbox-container">
+                          <input
+                            type="checkbox"
+                            id={`calendar-${calendar.id}`}
+                            checked={selectedExchangeCalendars.includes(
+                              calendar.id
+                            )}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                setSelectedExchangeCalendars([
+                                  ...selectedExchangeCalendars,
+                                  calendar.id,
+                                ]);
+                              } else {
+                                setSelectedExchangeCalendars(
+                                  selectedExchangeCalendars.filter(
+                                    id => id !== calendar.id
+                                  )
+                                );
+                              }
+                            }}
+                          />
+                          <span className="checkbox-custom"></span>
+                          <span className="checkbox-label">Sync</span>
+                        </label>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="calendars-modal-actions">
+                <button
+                  className="button button-secondary"
+                  onClick={() => {
+                    setShowExchangeCalendarsModal(false);
+                    setExchangeCalendars([]);
+                    setExchangeCalendarsError(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="button button-primary"
+                  onClick={saveExchangeCalendarSelections}
+                  disabled={isLoadingExchangeCalendars}
+                >
+                  Save & Sync ({selectedExchangeCalendars.length})
                 </button>
               </div>
             </div>
