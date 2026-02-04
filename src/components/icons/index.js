@@ -11,6 +11,7 @@
 export { default as BackArrowIcon } from './BackArrowIcon';
 export { default as CheckmarkIcon } from './CheckmarkIcon';
 export { default as CloseIcon } from './CloseIcon';
+export { default as EditIcon } from './EditIcon';
 export { default as HomeDashIcon } from './HomeDashIcon';
 export { default as LoadingSpinner } from './LoadingSpinner';
 export { default as PaletteIcon } from './PaletteIcon';

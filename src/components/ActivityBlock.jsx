@@ -6,6 +6,7 @@ import {
   isSpondActivity,
   isTentativeActivity,
   isMunicipalCalendarActivity,
+  isCalendarSourceActivity,
   getMunicipalEventType,
   getMunicipalEventIcon,
 } from '../utils/activityUtils';
@@ -56,19 +57,20 @@ const ActivityBlock = ({
   const getAbbreviatedTitle = title => {
     if (!title) return 'New Activity';
 
-    // For Spond activities, allow full title to span multiple lines
-    if (isSpondActivity(activity)) {
-      if (height < 30) {
+    // For Spond and calendar source activities, allow full title with CSS truncation
+    if (isSpondActivity(activity) || isCalendarSourceActivity(activity)) {
+      if (height < 25) {
         return getActivityIcon();
       }
-      // For heights >= 30, return full title (will wrap with CSS)
+      // Return full title - CSS will handle truncation with ellipsis
       return title;
     }
 
-    // Original logic for manual activities
-    if (height < 30) {
+    // Logic for manual/other activities
+    if (height < 25) {
       return getActivityIcon();
-    } else if (height < 50) {
+    } else if (height < 40) {
+      // Very short: show abbreviated
       const words = title.split(' ');
       if (words.length > 1) {
         return words
@@ -76,10 +78,12 @@ const ActivityBlock = ({
           .join('')
           .toUpperCase();
       }
-      return title.substring(0, 8);
-    } else if (height < 80) {
-      return title.length > 15 ? title.substring(0, 15) + '...' : title;
+      return title.substring(0, 10);
+    } else if (height < 60) {
+      // Short: truncate with ellipsis
+      return title.length > 20 ? title.substring(0, 20) + '...' : title;
     }
+    // Taller events: show full title (CSS will wrap)
     return title;
   };
 

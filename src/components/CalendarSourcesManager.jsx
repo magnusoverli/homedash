@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react';
-import { LoadingSpinner, TrashIcon, CheckmarkIcon, PlusIcon } from './icons';
+import {
+  LoadingSpinner,
+  TrashIcon,
+  CheckmarkIcon,
+  PlusIcon,
+  EditIcon,
+} from './icons';
 import dataService from '../services/dataService';
 import { useToast } from '../contexts/ToastContext';
 import { AVATAR_COLORS } from '../constants/colors';
@@ -10,6 +16,7 @@ const CalendarSourcesManager = () => {
   const [calendarSources, setCalendarSources] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingSource, setIsAddingSource] = useState(false);
+  const [editingSourceId, setEditingSourceId] = useState(null);
   const [syncingSourceId, setSyncingSourceId] = useState(null);
   const [deletingSourceId, setDeletingSourceId] = useState(null);
 
@@ -17,6 +24,11 @@ const CalendarSourcesManager = () => {
   const [newSourceName, setNewSourceName] = useState('');
   const [newSourceUrl, setNewSourceUrl] = useState('');
   const [newSourceColor, setNewSourceColor] = useState(AVATAR_COLORS[5].hex); // Default to blue
+
+  // Edit source form state
+  const [editSourceName, setEditSourceName] = useState('');
+  const [editSourceUrl, setEditSourceUrl] = useState('');
+  const [editSourceColor, setEditSourceColor] = useState('');
 
   useEffect(() => {
     loadCalendarSources();
@@ -117,6 +129,52 @@ const CalendarSourcesManager = () => {
     }
   };
 
+  const handleStartEdit = source => {
+    setEditingSourceId(source.id);
+    setEditSourceName(source.name);
+    setEditSourceUrl(source.url);
+    setEditSourceColor(source.color || AVATAR_COLORS[5].hex);
+    setIsAddingSource(false); // Close add form if open
+  };
+
+  const handleCancelEdit = () => {
+    setEditingSourceId(null);
+    setEditSourceName('');
+    setEditSourceUrl('');
+    setEditSourceColor('');
+  };
+
+  const handleSaveEdit = async e => {
+    e.preventDefault();
+
+    if (!editSourceName.trim() || !editSourceUrl.trim()) {
+      showError('Please enter both name and URL');
+      return;
+    }
+
+    try {
+      const updatedSource = await dataService.updateCalendarSource(
+        editingSourceId,
+        {
+          name: editSourceName.trim(),
+          url: editSourceUrl.trim(),
+          color: editSourceColor,
+        }
+      );
+
+      setCalendarSources(prev =>
+        prev.map(source =>
+          source.id === editingSourceId ? updatedSource : source
+        )
+      );
+      handleCancelEdit();
+      showSuccess('Calendar source updated successfully');
+    } catch (error) {
+      console.error('Error updating calendar source:', error);
+      showError(error.message || 'Failed to update calendar source');
+    }
+  };
+
   const formatLastSynced = dateString => {
     if (!dateString) return 'Never';
     const date = new Date(dateString);
@@ -143,56 +201,140 @@ const CalendarSourcesManager = () => {
             </p>
           </div>
         ) : (
-          calendarSources.map(source => (
-            <div key={source.id} className="source-item">
-              <div
-                className="source-color-indicator"
-                style={{ backgroundColor: source.color || '#BADAF8' }}
-              />
-              <div className="source-info">
-                <div className="source-name">{source.name}</div>
-                <div className="source-url" title={source.url}>
-                  {source.url}
+          calendarSources.map(source =>
+            editingSourceId === source.id ? (
+              <form
+                key={source.id}
+                className="edit-source-form"
+                onSubmit={handleSaveEdit}
+              >
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit-source-name" className="form-label">
+                      Calendar Name
+                    </label>
+                    <input
+                      type="text"
+                      id="edit-source-name"
+                      className="form-input"
+                      value={editSourceName}
+                      onChange={e => setEditSourceName(e.target.value)}
+                      placeholder="e.g., School Calendar"
+                      autoFocus
+                    />
+                  </div>
                 </div>
-                <div className="source-meta">
-                  {source.event_count > 0 && (
-                    <span className="source-event-count">
-                      {source.event_count} events
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit-source-url" className="form-label">
+                      Calendar URL (iCal/webcal)
+                    </label>
+                    <input
+                      type="text"
+                      id="edit-source-url"
+                      className="form-input"
+                      value={editSourceUrl}
+                      onChange={e => setEditSourceUrl(e.target.value)}
+                      placeholder="webcal://example.com/calendar.ics"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Calendar Color</label>
+                    <div className="color-options">
+                      {AVATAR_COLORS.map(color => (
+                        <button
+                          key={color.hex}
+                          type="button"
+                          className={`color-option ${editSourceColor === color.hex ? 'selected' : ''}`}
+                          style={{ backgroundColor: color.hex }}
+                          onClick={() => setEditSourceColor(color.hex)}
+                          aria-label={`Select ${color.name}`}
+                          title={color.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-actions">
+                  <button
+                    type="submit"
+                    className="button button-primary"
+                    disabled={!editSourceName.trim() || !editSourceUrl.trim()}
+                  >
+                    Save Changes
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={handleCancelEdit}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div key={source.id} className="source-item">
+                <div
+                  className="source-color-indicator"
+                  style={{ backgroundColor: source.color || '#BADAF8' }}
+                />
+                <div className="source-info">
+                  <div className="source-name">{source.name}</div>
+                  <div className="source-url" title={source.url}>
+                    {source.url}
+                  </div>
+                  <div className="source-meta">
+                    {source.event_count > 0 && (
+                      <span className="source-event-count">
+                        {source.event_count} events
+                      </span>
+                    )}
+                    <span className="source-last-synced">
+                      Last synced: {formatLastSynced(source.last_synced)}
                     </span>
-                  )}
-                  <span className="source-last-synced">
-                    Last synced: {formatLastSynced(source.last_synced)}
-                  </span>
+                  </div>
+                </div>
+                <div className="source-actions">
+                  <button
+                    className="source-action-btn edit-btn"
+                    onClick={() => handleStartEdit(source)}
+                    title="Edit calendar source"
+                  >
+                    <EditIcon size={16} />
+                  </button>
+                  <button
+                    className="source-action-btn sync-btn"
+                    onClick={() => handleSyncSource(source.id)}
+                    disabled={syncingSourceId === source.id}
+                    title="Sync calendar"
+                  >
+                    {syncingSourceId === source.id ? (
+                      <LoadingSpinner size={16} />
+                    ) : (
+                      <CheckmarkIcon size={16} />
+                    )}
+                  </button>
+                  <button
+                    className="source-action-btn delete-btn"
+                    onClick={() => handleDeleteSource(source.id)}
+                    disabled={deletingSourceId === source.id}
+                    title="Delete calendar source"
+                  >
+                    {deletingSourceId === source.id ? (
+                      <LoadingSpinner size={16} />
+                    ) : (
+                      <TrashIcon size={16} />
+                    )}
+                  </button>
                 </div>
               </div>
-              <div className="source-actions">
-                <button
-                  className="source-action-btn sync-btn"
-                  onClick={() => handleSyncSource(source.id)}
-                  disabled={syncingSourceId === source.id}
-                  title="Sync calendar"
-                >
-                  {syncingSourceId === source.id ? (
-                    <LoadingSpinner size={16} />
-                  ) : (
-                    <CheckmarkIcon size={16} />
-                  )}
-                </button>
-                <button
-                  className="source-action-btn delete-btn"
-                  onClick={() => handleDeleteSource(source.id)}
-                  disabled={deletingSourceId === source.id}
-                  title="Delete calendar source"
-                >
-                  {deletingSourceId === source.id ? (
-                    <LoadingSpinner size={16} />
-                  ) : (
-                    <TrashIcon size={16} />
-                  )}
-                </button>
-              </div>
-            </div>
-          ))
+            )
+          )
         )}
       </div>
 

@@ -12,7 +12,14 @@ router.get('/', async (req, res) => {
     const members = await getAll(
       'SELECT * FROM family_members ORDER BY created_at'
     );
-    res.json(members);
+    // Parse source_colors JSON for each member
+    const parsedMembers = members.map(member => ({
+      ...member,
+      source_colors: member.source_colors
+        ? JSON.parse(member.source_colors)
+        : null,
+    }));
+    res.json(parsedMembers);
   } catch (error) {
     console.error('Error fetching family members:', error);
     res.status(500).json({ error: 'Failed to fetch family members' });
@@ -21,20 +28,27 @@ router.get('/', async (req, res) => {
 
 // Create a new family member
 router.post('/', async (req, res) => {
-  const { name, color } = req.body;
+  const { name, color, source_colors } = req.body;
 
   if (!name || !color) {
     return res.status(400).json({ error: 'Name and color are required' });
   }
 
   try {
+    const sourceColorsJson = source_colors
+      ? JSON.stringify(source_colors)
+      : null;
     const result = await runQuery(
-      'INSERT INTO family_members (name, color) VALUES (?, ?)',
-      [name, color]
+      'INSERT INTO family_members (name, color, source_colors) VALUES (?, ?, ?)',
+      [name, color, sourceColorsJson]
     );
     const member = await getOne('SELECT * FROM family_members WHERE id = ?', [
       result.id,
     ]);
+    // Parse source_colors back to object
+    if (member.source_colors) {
+      member.source_colors = JSON.parse(member.source_colors);
+    }
     res.status(201).json(member);
   } catch (error) {
     console.error('Error creating family member:', error);
@@ -45,22 +59,29 @@ router.post('/', async (req, res) => {
 // Update a family member
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { name, color } = req.body;
+  const { name, color, source_colors } = req.body;
 
   if (!name || !color) {
     return res.status(400).json({ error: 'Name and color are required' });
   }
 
   try {
+    const sourceColorsJson = source_colors
+      ? JSON.stringify(source_colors)
+      : null;
     await runQuery(
-      'UPDATE family_members SET name = ?, color = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [name, color, id]
+      'UPDATE family_members SET name = ?, color = ?, source_colors = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [name, color, sourceColorsJson, id]
     );
     const member = await getOne('SELECT * FROM family_members WHERE id = ?', [
       id,
     ]);
     if (!member) {
       return res.status(404).json({ error: 'Family member not found' });
+    }
+    // Parse source_colors back to object
+    if (member.source_colors) {
+      member.source_colors = JSON.parse(member.source_colors);
     }
     res.json(member);
   } catch (error) {

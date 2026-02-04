@@ -77,3 +77,29 @@ export const AVAILABLE_COLORS = [
   { name: 'Light Gray', value: '#ECECEC', hex: '#ECECEC' },
   { name: 'Turquoise', value: '#C1FDFD', hex: '#C1FDFD' },
 ];
+
+/**
+ * Activity source types with labels and default colors
+ * Used in: EditMemberModal for configuring per-source colors
+ */
+export const ACTIVITY_SOURCES = [
+  { value: 'manual', label: 'Manual', defaultColor: '#B2AEFF', icon: '✏️' },
+  { value: 'spond', label: 'Spond', defaultColor: '#D2FCC3', icon: '⚽' },
+  {
+    value: 'school_plan',
+    label: 'School Plan',
+    defaultColor: '#FCDD8C',
+    icon: '📚',
+  },
+];
+
+/**
+ * Get default source colors for a new member
+ * Returns an object mapping source types to their default colors
+ */
+export const getDefaultSourceColors = () => {
+  return ACTIVITY_SOURCES.reduce((acc, source) => {
+    acc[source.value] = source.defaultColor;
+    return acc;
+  }, {});
+};

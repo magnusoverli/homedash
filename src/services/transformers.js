@@ -4,10 +4,9 @@ export const familyMemberFromAPI = apiData => {
   return {
     id: apiData.id,
     name: apiData.name,
-    avatarColor: apiData.color,
-    calendarUrl: apiData.calendar_url,
-    calendarLastSynced: apiData.calendar_last_synced,
-    calendarEventCount: apiData.calendar_event_count,
+    color: apiData.color,
+    avatarColor: apiData.color, // Alias for backwards compatibility
+    sourceColors: apiData.source_colors || null,
     createdAt: apiData.created_at,
     updatedAt: apiData.updated_at,
   };
@@ -19,6 +18,7 @@ export const familyMemberToAPI = clientData => {
   return {
     name: clientData.name,
     color: clientData.avatarColor || clientData.color,
+    source_colors: clientData.sourceColors || null,
   };
 };
 
@@ -28,6 +28,7 @@ export const activityFromAPI = apiData => {
   return {
     id: apiData.id,
     memberId: apiData.member_id,
+    sourceId: apiData.source_id,
     title: apiData.title,
     date: apiData.date,
     startTime: apiData.start_time,

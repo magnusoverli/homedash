@@ -73,12 +73,15 @@ const initDatabase = () => {
   return new Promise((resolve, reject) => {
     db.serialize(() => {
       // Family members table - simplified without calendar fields
+      // source_colors is a JSON object mapping source types to colors
+      // e.g., {"manual": "#B2AEFF", "spond": "#D2FCC3", "school_plan": "#FCDD8C"}
       db.run(
         `
         CREATE TABLE IF NOT EXISTS family_members (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL,
           color TEXT NOT NULL,
+          source_colors TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -193,6 +196,16 @@ const initDatabase = () => {
         err => {
           if (err && !err.message.includes('duplicate column name')) {
             console.error('Error adding source column:', err);
+          }
+        }
+      );
+
+      // Migration: Add source_colors column to family_members
+      db.run(
+        `ALTER TABLE family_members ADD COLUMN source_colors TEXT`,
+        err => {
+          if (err && !err.message.includes('duplicate column name')) {
+            console.error('Error adding source_colors column:', err);
           }
         }
       );

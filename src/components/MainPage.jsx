@@ -11,6 +11,7 @@ import './MainPage.css';
 
 const MainPage = ({ currentWeek }) => {
   const [familyMembers, setFamilyMembers] = useState([]);
+  const [calendarSources, setCalendarSources] = useState([]);
   const [activities, setActivities] = useState([]);
   const [editingActivity, setEditingActivity] = useState(null);
   const [showActivityModal, setShowActivityModal] = useState(false);
@@ -33,7 +34,7 @@ const MainPage = ({ currentWeek }) => {
     return weekEnd;
   }, [getWeekStart]);
 
-  // Load family members
+  // Load family members and calendar sources
   useEffect(() => {
     const loadFamilyMembers = async () => {
       setIsLoadingMembers(true);
@@ -48,7 +49,19 @@ const MainPage = ({ currentWeek }) => {
         setIsLoadingMembers(false);
       }
     };
+
+    const loadCalendarSources = async () => {
+      try {
+        const sources = await dataService.getCalendarSources();
+        setCalendarSources(sources || []);
+      } catch (error) {
+        console.error('Error loading calendar sources:', error);
+        // Don't set error state - calendar sources are optional
+      }
+    };
+
     loadFamilyMembers();
+    loadCalendarSources();
   }, []);
 
   // Load all activities for the week (not filtered by member)
@@ -198,6 +211,12 @@ const MainPage = ({ currentWeek }) => {
     return acc;
   }, {});
 
+  // Create a calendar sources lookup map
+  const calendarSourcesMap = calendarSources.reduce((acc, source) => {
+    acc[source.id] = source;
+    return acc;
+  }, {});
+
   // Filter activities based on active filters
   const filteredActivities = useMemo(() => {
     if (!activeFilters || activeFilters.size === 0) {
@@ -247,6 +266,7 @@ const MainPage = ({ currentWeek }) => {
               activities={filteredActivities}
               members={familyMembers}
               memberMap={memberMap}
+              calendarSourcesMap={calendarSourcesMap}
               weekStart={getWeekStart()}
               onAddActivity={handleAddActivity}
               onDeleteActivity={handleDeleteActivity}

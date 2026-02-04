@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import ActivityBlock from './ActivityBlock';
 import { formatLocalDate } from '../utils/timeUtils';
+import { getDefaultSourceColors } from '../constants/colors';
 import './WeekCalendar.css';
 
 const WeekCalendar = ({
   activities,
   members,
   memberMap,
+  calendarSourcesMap = {},
   weekStart,
   onAddActivity,
   onDeleteActivity,
@@ -24,10 +26,33 @@ const WeekCalendar = ({
     timeSlots.push(hour);
   }
 
-  // Get the member color for an activity
-  const getMemberColor = activity => {
-    if (!activity.memberId) return '#B2AEFF'; // Default pastel purple
+  // Get the color for an activity based on source
+  const getActivityColor = activity => {
+    const source = activity.source || 'manual';
+
+    // For shared/family-wide events (no memberId), use calendar source color
+    if (!activity.memberId) {
+      // If activity has a sourceId, use the calendar source's color
+      if (activity.sourceId && calendarSourcesMap[activity.sourceId]) {
+        return calendarSourcesMap[activity.sourceId].color || '#B2AEFF';
+      }
+      // Default purple for shared events without a specific source
+      return '#B2AEFF';
+    }
+
+    // For member-specific events, use the member's source colors
     const member = memberMap[activity.memberId];
+    if (member?.sourceColors?.[source]) {
+      return member.sourceColors[source];
+    }
+
+    // Fall back to default source colors
+    const defaultColors = getDefaultSourceColors();
+    if (defaultColors[source]) {
+      return defaultColors[source];
+    }
+
+    // Ultimate fallback: member's avatar color or default purple
     return member?.color || '#B2AEFF';
   };
 
@@ -222,8 +247,8 @@ const WeekCalendar = ({
                       ? overlaps.find(group => group.includes(activity)).length
                       : 1;
 
-                    // Get member color for activity background
-                    const memberColor = getMemberColor(activity);
+                    // Get color for activity based on source
+                    const activityColor = getActivityColor(activity);
 
                     return (
                       <ActivityBlock
@@ -247,7 +272,7 @@ const WeekCalendar = ({
                           }
                           onDeleteActivity(activity.id);
                         }}
-                        customColor={memberColor}
+                        customColor={activityColor}
                         memberMap={memberMap}
                       />
                     );

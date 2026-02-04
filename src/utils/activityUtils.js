@@ -144,12 +144,24 @@ export const isTentativeActivity = activity => {
 };
 
 /**
- * Check if activity is from municipal calendar
+ * Check if activity is from a calendar import (municipal/external calendar)
  * @param {Object} activity - The activity object
- * @returns {boolean} True if from municipal calendar
+ * @returns {boolean} True if from calendar import
  */
 export const isMunicipalCalendarActivity = activity => {
-  return activity.source === 'municipal_calendar';
+  return (
+    activity.source === 'municipal_calendar' ||
+    activity.source === 'calendar_import'
+  );
+};
+
+/**
+ * Check if activity is from any calendar source (has sourceId)
+ * @param {Object} activity - The activity object
+ * @returns {boolean} True if from a calendar source
+ */
+export const isCalendarSourceActivity = activity => {
+  return activity.sourceId != null || activity.source === 'calendar_import';
 };
 
 /**

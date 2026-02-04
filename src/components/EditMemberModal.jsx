@@ -10,7 +10,11 @@ import {
 import dataService from '../services/dataService';
 import { useToast } from '../contexts/ToastContext';
 import API_ENDPOINTS from '../config/api';
-import { AVATAR_COLORS } from '../constants/colors';
+import {
+  AVATAR_COLORS,
+  ACTIVITY_SOURCES,
+  getDefaultSourceColors,
+} from '../constants/colors';
 import { getInitials } from '../utils/stringUtils';
 import { getAccessToken } from '../services/authService';
 import { validateImageFile } from '../utils/fileValidation';
@@ -22,6 +26,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
   const [formData, setFormData] = useState({
     name: '',
     avatarColor: '#FFF48D',
+    sourceColors: getDefaultSourceColors(),
     schoolPlanImage: null,
     selectedWeekDate: null, // Week start date for schedule import
   });
@@ -76,6 +81,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
       setFormData({
         name: member.name || '',
         avatarColor: member.avatarColor || member.color || '#FFF48D',
+        sourceColors: member.sourceColors || getDefaultSourceColors(),
         schoolPlanImage: member.schoolPlanImage || null,
         selectedWeekDate: defaultWeek, // Default to current week
       });
@@ -373,6 +379,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
         ...member,
         name: formData.name.trim(),
         avatarColor: formData.avatarColor,
+        sourceColors: formData.sourceColors,
         schoolPlanImage: formData.schoolPlanImage,
       };
       onUpdate(updatedMember);
@@ -687,6 +694,52 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate, onDelete }) => {
                         ))}
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* Source Colors Section */}
+                <div className="modal-section">
+                  <div className="section-header">
+                    <h3 className="section-title">Event Source Colors</h3>
+                    <p className="section-description">
+                      Choose a color for events from each source
+                    </p>
+                  </div>
+
+                  <div className="source-colors-form">
+                    {ACTIVITY_SOURCES.map(source => (
+                      <div key={source.value} className="source-color-row">
+                        <div className="source-label">
+                          <span className="source-icon">{source.icon}</span>
+                          <span className="source-name">{source.label}</span>
+                        </div>
+                        <div className="source-color-options">
+                          {AVATAR_COLORS.map(color => (
+                            <button
+                              key={color.hex}
+                              className={`color-option small ${
+                                formData.sourceColors?.[source.value] ===
+                                color.hex
+                                  ? 'selected'
+                                  : ''
+                              }`}
+                              style={{ backgroundColor: color.hex }}
+                              onClick={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  sourceColors: {
+                                    ...prev.sourceColors,
+                                    [source.value]: color.hex,
+                                  },
+                                }));
+                              }}
+                              aria-label={`Select ${color.name} for ${source.label}`}
+                              title={color.name}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </>
